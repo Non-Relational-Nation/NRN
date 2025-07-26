@@ -3,7 +3,7 @@ interface ErrorPageProps {
 }
 
 export default function ErrorPage({
-  errorMessage = "Something went wrong. Please try again.",
+  errorMessage = "An unknown error has occurred",
 }: ErrorPageProps) {
   return (
     <>
