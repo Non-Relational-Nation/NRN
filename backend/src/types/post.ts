@@ -9,7 +9,6 @@ export enum PostVisibility {
   PUBLIC = 'public',
   FOLLOWERS = 'followers',
   MENTIONED = 'mentioned',
-  PRIVATE = 'private'
 }
 
 export interface MediaItem {
@@ -30,10 +29,6 @@ export interface Post {
   type: PostType;
   content?: string;
   media?: MediaItem[];
-  
-  // Repost data
-  originalPostId?: string;
-  repostComment?: string;
   
   // Engagement
   likesCount: number;
@@ -66,19 +61,4 @@ export interface CreatePostData {
 export interface UpdatePostData {
   content?: string;
   visibility?: PostVisibility;
-}
-
-export interface Comment {
-  id: string;
-  postId: string;
-  authorId: string;
-  content: string;
-  media?: MediaItem[];
-  likesCount: number;
-  repliesCount: number;
-  parentCommentId?: string; // for nested comments
-  mentions: string[];
-  createdAt: Date;
-  updatedAt: Date;
-  isDeleted: boolean;
 }
