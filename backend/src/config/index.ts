@@ -38,24 +38,24 @@ export const config: AppConfig = {
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
   
   databases: {
-    // MongoDB for primary data (users, posts, relationships)
-    primary: {
-      host: process.env.MONGODB_HOST || 'localhost',
-      port: parseInt(process.env.MONGODB_PORT || '27017'),
-      name: process.env.MONGODB_DATABASE || 'nrn_social',
-      username: process.env.MONGODB_USERNAME,
-      password: process.env.MONGODB_PASSWORD,
-      uri: process.env.MONGODB_URI // For MongoDB Atlas connection string
-    },
+    // // MongoDB for primary data (users, posts, relationships)
+    // primary: {
+    //   host: process.env.MONGODB_HOST || 'localhost',
+    //   port: parseInt(process.env.MONGODB_PORT || '27017'),
+    //   name: process.env.MONGODB_DATABASE || 'nrn_social',
+    //   username: process.env.MONGODB_USERNAME,
+    //   password: process.env.MONGODB_PASSWORD,
+    //   uri: process.env.MONGODB_URI // For MongoDB Atlas connection string
+    // },
     
-    // Redis for caching and real-time features
-    cache: {
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      name: process.env.REDIS_DB || '0',
-      password: process.env.REDIS_PASSWORD,
-      uri: process.env.REDIS_URI // For Redis Cloud connection string
-    }
+    // // Redis for caching and real-time features
+    // cache: {
+    //   host: process.env.REDIS_HOST || 'localhost',
+    //   port: parseInt(process.env.REDIS_PORT || '6379'),
+    //   name: process.env.REDIS_DB || '0',
+    //   password: process.env.REDIS_PASSWORD,
+    //   uri: process.env.REDIS_URI // For Redis Cloud connection string
+    // }
   },
   
   aws: {
