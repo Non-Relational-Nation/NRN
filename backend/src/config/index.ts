@@ -13,13 +13,18 @@ export interface AppConfig {
   nodeEnv: string;
   frontendUrl: string;
   
-  // Database configurations - extensible for multiple NoSQL databases
+  // ActivityPub federation (for later)
+  federation?: {
+    enabled: boolean;
+    domain: string;
+    publicKey: string;
+    privateKey: string;
+    userAgent: string;
+  };
+  
+  // Database configurations - simplified for MVP
   databases: {
-    primary?: DatabaseConfig;
-    cache?: DatabaseConfig;
-    media?: DatabaseConfig;
-    analytics?: DatabaseConfig;
-    search?: DatabaseConfig;
+    primary?: DatabaseConfig; // MongoDB for posts and user profiles
   };
   
   // External services
@@ -27,7 +32,7 @@ export interface AppConfig {
     region: string;
     accessKeyId: string;
     secretAccessKey: string;
-    s3Bucket: string;
+    s3Bucket: string; // For media storage
   };
 }
 
@@ -37,25 +42,25 @@ export const config: AppConfig = {
   nodeEnv: process.env.NODE_ENV || 'development',
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
   
+  // ActivityPub federation configuration
+  federation: {
+    enabled: process.env.FEDERATION_ENABLED === 'true',
+    domain: process.env.FEDERATION_DOMAIN || 'localhost:3001',
+    publicKey: process.env.FEDERATION_PUBLIC_KEY || '',
+    privateKey: process.env.FEDERATION_PRIVATE_KEY || '',
+    userAgent: process.env.FEDERATION_USER_AGENT || 'NRN/1.0.0'
+  },
+  
   databases: {
-    // // MongoDB for primary data (users, posts, relationships)
-    // primary: {
-    //   host: process.env.MONGODB_HOST || 'localhost',
-    //   port: parseInt(process.env.MONGODB_PORT || '27017'),
-    //   name: process.env.MONGODB_DATABASE || 'nrn_social',
-    //   username: process.env.MONGODB_USERNAME,
-    //   password: process.env.MONGODB_PASSWORD,
-    //   uri: process.env.MONGODB_URI // For MongoDB Atlas connection string
-    // },
-    
-    // // Redis for caching and real-time features
-    // cache: {
-    //   host: process.env.REDIS_HOST || 'localhost',
-    //   port: parseInt(process.env.REDIS_PORT || '6379'),
-    //   name: process.env.REDIS_DB || '0',
-    //   password: process.env.REDIS_PASSWORD,
-    //   uri: process.env.REDIS_URI // For Redis Cloud connection string
-    // }
+    // MongoDB for primary data (users, posts, comments)
+    primary: {
+      host: process.env.MONGODB_HOST || 'localhost',
+      port: parseInt(process.env.MONGODB_PORT || '27017'),
+      name: process.env.MONGODB_DATABASE || 'nrn_social',
+      username: process.env.MONGODB_USERNAME,
+      password: process.env.MONGODB_PASSWORD,
+      uri: process.env.MONGODB_URI // For MongoDB Atlas connection string
+    }
   },
   
   aws: {

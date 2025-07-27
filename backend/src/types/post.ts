@@ -8,14 +8,14 @@ export enum PostType {
 export enum PostVisibility {
   PUBLIC = 'public',
   FOLLOWERS = 'followers',
-  MENTIONED = 'mentioned',
+  MENTIONED = 'mentioned'
 }
 
 export interface MediaItem {
   id: string;
-  type: 'image' | 'video' ;
-  url: string;
-  thumbnailUrl?: string;
+  type: 'image' | 'video';
+  url: string; // S3 URL
+  thumbnailUrl?: string; // S3 URL for thumbnail
   duration?: number; // for video in seconds
   width?: number;
   height?: number;
@@ -28,9 +28,13 @@ export interface Post {
   authorId: string;
   type: PostType;
   content?: string;
-  media?: MediaItem[];
+  media?: MediaItem[]; // Stored in S3, URLs in MongoDB
   
-  // Engagement
+  // Original post data for reposts
+  originalPostId?: string;
+  repostComment?: string;
+  
+  // Engagement counters (stored in MongoDB document)
   likesCount: number;
   commentsCount: number;
   repostsCount: number;
@@ -38,7 +42,7 @@ export interface Post {
   
   // Metadata
   hashtags: string[];
-  mentions: string[];
+  mentions: string[]; // User IDs mentioned in post
   visibility: PostVisibility;
   
   // Timestamps
@@ -56,6 +60,10 @@ export interface CreatePostData {
   content?: string;
   media?: Omit<MediaItem, 'id'>[];
   visibility: PostVisibility;
+  originalPostId?: string; // For reposts
+  repostComment?: string; // Comment when reposting
+  hashtags?: string[]; // Extracted from content
+  mentions?: string[]; // Extracted from content
 }
 
 export interface UpdatePostData {
