@@ -1,4 +1,4 @@
-export interface Profile {
+export interface User {
   id: string;
   username: string;
   email: string;
@@ -27,7 +27,7 @@ export interface UserPreferences {
   };
 }
 
-export interface CreateProfileData {
+export interface CreateUserData {
   username: string;
   email: string;
   password: string;
@@ -35,7 +35,7 @@ export interface CreateProfileData {
   bio?: string;
 }
 
-export interface UpdateProfileData {
+export interface UpdateUserData {
   displayName?: string;
   bio?: string;
   avatar?: string;

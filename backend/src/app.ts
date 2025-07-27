@@ -1,6 +1,6 @@
 import express from 'express';
 import { authRoutes } from './routes/auth';
-import { profileRoutes } from './routes/profiles';
+import { userRoutes } from './routes/users';
 import { postRoutes } from './routes/posts';
 
 export const createApp = () => {
@@ -20,7 +20,7 @@ export const createApp = () => {
 
   // API routes
   app.use('/api/auth', authRoutes);
-  app.use('/api/profiles', profileRoutes);
+  app.use('/api/users', userRoutes);
   app.use('/api/posts', postRoutes);
 
   // 404 handler

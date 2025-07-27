@@ -1,33 +1,19 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
+import { AuthController } from '../controllers/AuthController';
 
 const router = Router();
+const authController = new AuthController();
 
 // Register new user
-router.post('/register', (req: Request, res: Response) => {
-  const { username, email, password } = req.body;
-  res.json({
-    success: true,
-    message: 'User registration - implementation needed',
-    data: { username, email }
-  });
-});
+router.post('/register', (req, res) => authController.register(req, res));
 
 // User login
-router.post('/login', (req: Request, res: Response) => {
-  const { email, password } = req.body;
-  res.json({
-    success: true,
-    message: 'User login - implementation needed',
-    data: { email }
-  });
-});
+router.post('/login', (req, res) => authController.login(req, res));
 
 // User logout
-router.post('/logout', (req: Request, res: Response) => {
-  res.json({
-    success: true,
-    message: 'User logout - implementation needed'
-  });
-});
+router.post('/logout', (req, res) => authController.logout(req, res));
+
+// Refresh token
+router.post('/refresh', (req, res) => authController.refreshToken(req, res));
 
 export { router as authRoutes };
