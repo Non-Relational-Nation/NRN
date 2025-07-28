@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction, RequestHandler } from "express";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 
 const JWKS = createRemoteJWKSet(
@@ -6,12 +6,12 @@ const JWKS = createRemoteJWKSet(
 );
 
 interface AuthenticatedRequest extends Request {
-  user: any;
+  user?: any;
 }
 
-const unauthedEndpoints: string[] = ["/api/health", "/api/auth/login"];
+const unauthedEndpoints: string[] = ["/health", "/login"];
 
-export const authMiddleware = async (
+export const authMiddleware: RequestHandler  = (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
@@ -23,17 +23,17 @@ export const authMiddleware = async (
 
   if (!token) return res.status(401).json({ error: "No token provided" });
 
-  try {
-    const { payload } = await jwtVerify(token, JWKS, {
-      issuer: "https://accounts.google.com",
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-
-    req.user = payload;
-    console.log(payload);
-    next();
-  } catch (err) {
-    console.error("Invalid Google token:", err);
-    res.status(401).json({ error: "Invalid or expired token" });
-  }
+  (async () => {
+    try {
+      const { payload } = await jwtVerify(token, JWKS, {
+        issuer: "https://accounts.google.com",
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      req.user = payload;
+      next();
+    } catch (err) {
+      console.error("Invalid Google token:", err);
+      res.status(401).json({ error: "Invalid or expired token" });
+    }
+  })();
 };
