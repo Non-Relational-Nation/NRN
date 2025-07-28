@@ -15,7 +15,7 @@ export const apiFetch = async ({
     method: method,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("JWT_TOKEN")}`,
+      Authorization: `Bearer ${sessionStorage.getItem("JWT_TOKEN")}`,
     },
     body: body,
   });

@@ -15,7 +15,7 @@ function App() {
     const path = location.pathname.replace(/^\//, "");
 
     if (
-      !localStorage.getItem("JWT_TOKEN") &&
+      !sessionStorage.getItem("JWT_TOKEN") &&
       !["login", "login/callback"].includes(path)
     ) {
       navigate("/login", { replace: true });
