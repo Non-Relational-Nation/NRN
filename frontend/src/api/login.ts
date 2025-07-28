@@ -32,7 +32,7 @@ export async function handleOAuthCallback() {
         return response.json();
       })
       .then((data) => {
-        localStorage.setItem("JWT_TOKEN", data.id_token);
+        sessionStorage.setItem("JWT_TOKEN", data.id_token);
       });
   } else {
     throw new Error("Login failed");

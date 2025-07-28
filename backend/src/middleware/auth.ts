@@ -9,7 +9,7 @@ interface AuthenticatedRequest extends Request {
   user?: any;
 }
 
-const unauthedEndpoints: string[] = ["/health", "/login"];
+const unauthedEndpoints: string[] = ["/health", "/api/auth/login"];
 
 export const authMiddleware: RequestHandler  = (
   req: AuthenticatedRequest,
