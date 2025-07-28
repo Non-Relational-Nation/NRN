@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 export interface DatabaseConfig {
   host: string;
   port: number;
@@ -46,7 +49,7 @@ export const config: AppConfig = {
   port: parseInt(process.env.PORT || "3001"),
   host: process.env.HOST || "localhost",
   nodeEnv: process.env.NODE_ENV || "development",
-  frontendUrl: process.env.FRONTEND_URL || "http://localhost:3000",
+  frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
 
   // ActivityPub federation configuration
   federation: {
