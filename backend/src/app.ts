@@ -2,12 +2,13 @@ import express from 'express';
 import { authRoutes } from './routes/auth';
 import { userRoutes } from './routes/users';
 import { postRoutes } from './routes/posts';
+import cors from 'cors';
 
 export const createApp = () => {
   const app = express();
-
   // Basic middleware
   app.use(express.json());
+  app.use(cors());
 
   // Health check
   app.get('/health', (req, res) => {
