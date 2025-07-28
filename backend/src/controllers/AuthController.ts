@@ -1,3 +1,4 @@
+import { config } from "../config/index";
 import { Request, Response } from "express";
 import { decodeJwt, JWTPayload } from "jose";
 
@@ -17,9 +18,9 @@ export class AuthController {
         },
         body: new URLSearchParams({
           code,
-          client_id: process.env.GOOGLE_CLIENT_ID!,
-          client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-          redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
+          client_id: config?.google.clientId ?? "",
+          client_secret: config?.google.clientSecret ?? "",
+          redirect_uri: config?.google.redirectUrl ?? "",
           grant_type: "authorization_code",
         }),
       });
