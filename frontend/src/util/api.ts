@@ -1,4 +1,4 @@
-const API_BASE_URL = "TODO: enter URL";
+import { API_URL } from "../config";
 
 type Props = {
   method: string;
@@ -11,9 +11,12 @@ export const apiFetch = async ({
   method,
   body,
 }: Props): Promise<Response> => {
-  const res = await fetch(API_BASE_URL + path, {
+  const res = await fetch(API_URL + path, {
     method: method,
-    headers: {},
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem("JWT_TOKEN")}`,
+    },
     body: body,
   });
   return res;
