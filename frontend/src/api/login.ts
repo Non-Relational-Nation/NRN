@@ -17,7 +17,6 @@ export function initiateGoogleLogin() {
 export async function handleOAuthCallback() {
   const urlParams = new URLSearchParams(window.location.search);
   const code = urlParams.get("code");
-  const error = urlParams.get("error");
 
   if (code) {
     return fetch(`${API_URL}/api/auth/login`, {
@@ -34,13 +33,8 @@ export async function handleOAuthCallback() {
       })
       .then((data) => {
         localStorage.setItem("JWT_TOKEN", data.id_token);
-        window.location.href = "/";
-      })
-      .catch((error) => {
-        console.log(error);
-        window.location.href = "/login";
       });
-  } else if (error) {
-    window.location.href = "/login";
+  } else {
+    throw new Error("Login failed");
   }
 }
