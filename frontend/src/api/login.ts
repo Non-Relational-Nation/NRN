@@ -1,6 +1,4 @@
-const GOOGLE_CLIENT_ID =
-  "580658106738-v39pbtsogta6rk3icthq2k97m30j935b.apps.googleusercontent.com";
-const GOOGLE_REDIRECT_URL = "http://localhost:5173/login/callback";
+import { API_URL, GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URL } from "../config";
 
 export function initiateGoogleLogin() {
   const params = new URLSearchParams({
@@ -22,7 +20,7 @@ export async function handleOAuthCallback() {
   const error = urlParams.get("error");
 
   if (code) {
-    return fetch("http://localhost:3001/api/auth/login", {
+    return fetch(`${API_URL}/api/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -35,12 +33,12 @@ export async function handleOAuthCallback() {
         return response.json();
       })
       .then((data) => {
-        localStorage.setItem("jwt", data.id_token);
+        localStorage.setItem("JWT_TOKEN", data.id_token);
         window.location.href = "/";
       })
       .catch((error) => {
-        console.log(error)
-        // window.location.href = "/login";
+        console.log(error);
+        window.location.href = "/login";
       });
   } else if (error) {
     window.location.href = "/login";
