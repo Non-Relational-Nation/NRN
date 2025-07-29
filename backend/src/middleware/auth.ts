@@ -1,12 +1,13 @@
+import { AuthUser } from "@/types/auth";
 import { Request, Response, NextFunction, RequestHandler } from "express";
-import { createRemoteJWKSet, jwtVerify } from "jose";
+import { createRemoteJWKSet, JWTPayload, jwtVerify } from "jose";
 
 const JWKS = createRemoteJWKSet(
   new URL("https://www.googleapis.com/oauth2/v3/certs")
 );
 
 interface AuthenticatedRequest extends Request {
-  user?: any;
+  user?: AuthUser;
 }
 
 const unauthedEndpoints: string[] = ["/health", "/api/auth/login"];
