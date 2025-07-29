@@ -1,0 +1,62 @@
+name: Deploy Infrastructure
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'infrastructure/**' ]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: af-south-1
+
+jobs:
+  deploy-infrastructure:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.5.0
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Setup SSH key
+      working-directory: ./infrastructure
+      run: |
+        echo "${{ secrets.TEAM_SSH_KEY }}" > team-key
+        echo "${{ secrets.TEAM_SSH_PUBLIC_KEY }}" > team-key.pub
+        chmod 600 team-key
+        chmod 644 team-key.pub
+
+    - name: Terraform Init
+      working-directory: ./infrastructure
+      run: terraform init
+
+    - name: Terraform Plan
+      working-directory: ./infrastructure
+      run: terraform plan -out=tfplan
+
+    - name: Terraform Apply
+      working-directory: ./infrastructure
+      run: terraform apply -auto-approve tfplan
+
+    - name: Save Infrastructure Outputs
+      working-directory: ./infrastructure
+      run: |
+        terraform output -json > infrastructure-outputs.json
+        echo "Infrastructure deployed successfully!"
+
+    - name: Upload outputs as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: infrastructure-outputs
+        path: infrastructure/infrastructure-outputs.json
