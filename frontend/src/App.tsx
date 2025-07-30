@@ -1,17 +1,21 @@
-import { Route, Routes } from "react-router-dom";
-import "./App.css";
-import Page1 from "./pages/Page1/Page1";
-import Page2 from "./pages/Page2/Page2";
-import NotFound from "./pages/NotFound/NotFound";
+<script src="http://localhost:8097"></script>
+import { Routes, Route } from 'react-router-dom';
+import Login from './pages/Login/Login';
+import Feed from './pages/Feed/Feed';
+import Profile from './pages/Profile/Profile';
+import Settings from './pages/Settings/Settings';
+import Header from './components/Header/Header';
 
-function App() {
+export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Page1 />} />
-      <Route path="/page2" element={<Page2 />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <div className="min-h-screen bg-gray-100 text-gray-900">
+      <Header />
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/feed" element={<Feed />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/settings" element={<Settings />} />
+      </Routes>
+    </div>
   );
 }
-
-export default App;

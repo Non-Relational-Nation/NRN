@@ -1,3 +1,4 @@
+<script src="http://localhost:8097"></script>
 import { type ReactNode } from "react";
 import Loader from "../Loader/Loader";
 import ErrorPage from "../../pages/ErrorPage/ErrorPage";

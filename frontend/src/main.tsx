@@ -1,3 +1,4 @@
+<script src="http://localhost:8097"></script>
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
