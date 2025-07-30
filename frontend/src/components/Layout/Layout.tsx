@@ -6,15 +6,16 @@ import ErrorPage from "../../pages/ErrorPage/ErrorPage";
 
 interface LayoutProps {
   children?: ReactNode;
-  loading: boolean;
+  loading?: boolean;
   error?: Error | null;
 }
 
-function Layout({ children, loading, error }: LayoutProps) {
+function Layout({ children, loading = false, error = null }: LayoutProps) {
   const navigate = useNavigate();
 
   return (
     <div id="layout">
+      {/* TODO style the heading better */}
       <header id="header">Non-Relational Nation</header>
       <main id="content">
         {loading ? (
@@ -26,6 +27,7 @@ function Layout({ children, loading, error }: LayoutProps) {
         )}
       </main>
       <footer id="footer">
+        {/* TODO style the buttons properly */}
         <nav id="navbar">
           <button className="nav-button" onClick={() => navigate("/")}>
             Feed
