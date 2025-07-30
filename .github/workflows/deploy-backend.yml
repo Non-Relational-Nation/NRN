@@ -1,0 +1,116 @@
+name: Deploy Backend to AWS
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'backend/**' ]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: af-south-1
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+    
+    # Add OIDC permissions
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ./backend
+      run: npm ci
+
+    - name: Build application
+      working-directory: ./backend
+      run: npm run build
+
+    - name: Configure AWS credentials via OIDC
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        role-session-name: github-actions-backend-deploy
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Get API server IP
+      id: get-api-ip
+      run: |
+        API_IP=$(aws ec2 describe-instances \
+          --region ${{ env.AWS_REGION }} \
+          --filters "Name=tag:Name,Values=nrn-api-grad-group01-dev" "Name=instance-state-name,Values=running" \
+          --query 'Reservations[0].Instances[0].PublicIpAddress' \
+          --output text)
+        echo "api_ip=$API_IP" >> $GITHUB_OUTPUT
+
+    - name: Deploy to API server
+      env:
+        API_IP: ${{ steps.get-api-ip.outputs.api_ip }}
+      run: |
+        # Create deployment package
+        tar -czf backend-deploy.tar.gz -C backend .
+        
+        # Setup SSH
+        echo "${{ secrets.TEAM_SSH_KEY }}" > team-key
+        chmod 600 team-key
+        
+        # Copy files to server
+        scp -i team-key -o StrictHostKeyChecking=no backend-deploy.tar.gz ec2-user@$API_IP:/home/ec2-user/
+        
+        # Deploy on server
+        ssh -i team-key -o StrictHostKeyChecking=no ec2-user@$API_IP << 'EOF'
+          # Stop existing application
+          sudo pkill -f "node.*app" || true
+          pm2 stop backend || true
+          
+          # Extract new code
+          rm -rf /home/ec2-user/backend
+          mkdir -p /home/ec2-user/backend
+          tar -xzf /home/ec2-user/backend-deploy.tar.gz -C /home/ec2-user/backend
+          cd /home/ec2-user/backend
+          
+          # Install dependencies
+          npm ci --production
+          
+          # Set environment variables
+          cat > .env << EOL
+          NODE_ENV=production
+          PORT=80
+          HOST=0.0.0.0
+          MONGODB_URI=${{ secrets.MONGODB_CONNECTION_STRING }}
+          S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
+          AWS_REGION=${{ env.AWS_REGION }}
+          EOL
+          
+          # Install PM2 globally if not exists
+          sudo npm install -g pm2 || true
+          
+          # Start application with PM2
+          pm2 start src/server.js --name "backend" --env production
+          pm2 save
+          
+          # Setup PM2 startup script
+          sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u ec2-user --hp /home/ec2-user || true
+        EOF
+
+    - name: Health check
+      env:
+        API_IP: ${{ steps.get-api-ip.outputs.api_ip }}
+      run: |
+        # Wait for application to start
+        sleep 30
+        
+        # Check if API is responding on port 80
+        curl -f http://$API_IP/health || curl -f http://$API_IP/ || exit 1
+        echo "✅ Backend deployed successfully!"
