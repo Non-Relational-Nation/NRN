@@ -1,7 +1,7 @@
 name: Destroy AWS Infrastructure
 
 on:
-  workflow_dispatch:  # Manual trigger only (for safety)
+  workflow_dispatch:  # Manual trigger only
 
 env:
   AWS_REGION: "af-south-1"
@@ -17,30 +17,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials via OIDC
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.5"  # Specify your version
+
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          role-session-name: github-actions-destroy
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Destroy Terraform infrastructure
-        run: |
-          # Initialize Terraform (if needed)
-          terraform init
+      - name: Terraform Init
+        run: terraform init
 
-          # Destroy all resources (auto-approve for CI/CD)
-          terraform destroy -auto-approve
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve
 
       - name: Verify destruction
         run: |
-          # Check if EC2 instances are terminated
           INSTANCES=$(aws ec2 describe-instances \
             --region ${{ env.AWS_REGION }} \
             --filters "Name=tag:Project,Values=nrn" \
             --query "Reservations[].Instances[].InstanceId" \
             --output text)
-
+          
           if [ -z "$INSTANCES" ]; then
             echo "✅ All resources destroyed."
           else
