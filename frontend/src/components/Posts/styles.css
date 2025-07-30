@@ -32,4 +32,7 @@
 #post-footer {
     border-top: 1px gray solid;
     padding-top: 0.5rem;
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
 }
