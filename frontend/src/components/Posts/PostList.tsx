@@ -1,33 +1,17 @@
-import Post from "./Post";
+import type { Post } from "../../models/Post";
+import PostCard from "./PostCard";
 import "./styles.css";
 
-export default function PostList() {
+interface PostListProps {
+  posts: Post[];
+}
+
+export default function PostList({ posts }: PostListProps) {
   return (
     <section id="post-container">
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
-      <Post></Post>
+        {posts.map((post, index) => (
+        <PostCard key={index} post={post} />
+      ))}
     </section>
   );
 }
