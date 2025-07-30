@@ -384,6 +384,8 @@ resource "aws_instance" "nrn_api_ec2_instance" {
   user_data = base64encode(<<-EOF
     #!/bin/bash
     yum update -y
+    curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
+    yum install -y nodejs git
     
     # Install Docker for containerized applications
     yum install -y docker
@@ -618,5 +620,4 @@ output "summary" {
   mongodb://${aws_eip.nrn_mongodb_ec2_eip.public_dns}:27017/nrn_db
   
   EOT
-  description = "Summary of all important information"
 }
