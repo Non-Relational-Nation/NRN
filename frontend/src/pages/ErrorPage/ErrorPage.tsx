@@ -1,3 +1,5 @@
+import "./styles.css"
+
 interface ErrorPageProps {
   errorMessage?: string;
 }

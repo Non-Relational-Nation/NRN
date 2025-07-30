@@ -1,3 +1,4 @@
+import "./styles.css"
 import { handleOAuthCallback } from "../../api/login";
 import Loader from "../../components/Loader/Loader";
 import { useNavigate } from "react-router-dom";
