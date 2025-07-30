@@ -6,10 +6,11 @@ terraform {
     }
   }
 
-  # Comment out the S3 backend for initial setup
-  # backend "s3" {        
-  #   region = var.region_name
-  # }
+  backend "s3" {
+    bucket = "nrn-bucket1"
+    key    = "terraform/nrn-group01-dev.tfstate" # You can change this path as needed
+    region = "af-south-1"
+  }
 }
 
 provider "aws" {
@@ -42,7 +43,7 @@ locals {
 # Key pairs for EC2 instances
 resource "aws_key_pair" "api_key" {
   key_name   = "${local.team_name}-api-key"
-  public_key = file("./team-key.pub")  # Team shared key
+  public_key = file("./team-key.pub")  
   
   tags = {
     Name        = "${local.project}-api-key-${local.team_name}-${local.environment}"
@@ -53,7 +54,7 @@ resource "aws_key_pair" "api_key" {
 
 resource "aws_key_pair" "web_key" {
   key_name   = "${local.team_name}-web-key"
-  public_key = file("./team-key.pub")  # Team shared key
+  public_key = file("./team-key.pub")  
   
   tags = {
     Name        = "${local.project}-web-key-${local.team_name}-${local.environment}"
@@ -64,7 +65,7 @@ resource "aws_key_pair" "web_key" {
 
 resource "aws_key_pair" "mongodb_key" {
   key_name   = "${local.team_name}-mongodb-key"
-  public_key = file("./team-key.pub")  # Team shared key
+  public_key = file("./team-key.pub")  
   
   tags = {
     Name        = "${local.project}-mongodb-key-${local.team_name}-${local.environment}"
@@ -295,7 +296,7 @@ resource "aws_security_group" "ec2_security_group" {
   }
 }
 
-# MongoDB on dedicated EC2 instance (RECOMMENDED for dev/prod consistency)
+# MongoDB on dedicated EC2 instance 
 resource "aws_security_group" "mongodb_security_group" {
   name_prefix = "nrn_mongodb_sg"
   vpc_id      = aws_vpc.nrn_vpc.id
@@ -365,11 +366,6 @@ EOT
     Environment = local.environment
     Team        = local.team_name
   }
-}
-
-resource "aws_eip" "nrn_mongodb_ec2_eip" {
-  instance = aws_instance.nrn_mongodb_ec2_instance.id
-  domain   = "vpc"
 }
 
 # Main application instances
@@ -539,85 +535,63 @@ resource "aws_budgets_budget" "nrn_budget" {
   }
 }
 
-# Elastic IPs
-resource "aws_eip" "nrn_api_ec2_eip" {
-  instance = aws_instance.nrn_api_ec2_instance.id
-  domain   = "vpc"
-}
-
-resource "aws_eip" "nrn_web_ec2_eip" {
-  instance = aws_instance.nrn_web_ec2_instance.id
-  domain   = "vpc"
-}
-
 # Note: Outputs are defined in outputs.tf to avoid duplication
 
 # Outputs
-output "s3_bucket_name" {
-  value       = aws_s3_bucket.nrn_object_storage.bucket
-  description = "Name of the S3 bucket for object storage"
-}
-
-output "s3_bucket_region" {
-  value       = aws_s3_bucket.nrn_object_storage.region
-  description = "Region of the S3 bucket"
-}
-
 output "api_ec2_host" {
-  value       = aws_eip.nrn_api_ec2_eip.public_dns
+  value       = aws_instance.nrn_api_ec2_instance.public_dns
   description = "The DNS endpoint of the API EC2 instance"
 }
 
-output "web_ec2_host" {
-  value       = aws_eip.nrn_web_ec2_eip.public_dns
-  description = "The DNS endpoint of the Web EC2 instance"
-}
-
-output "mongodb_host" {
-  value       = aws_eip.nrn_mongodb_ec2_eip.public_dns
-  description = "The DNS endpoint of the MongoDB EC2 instance"
-}
-
 output "api_ec2_ip" {
-  value       = aws_eip.nrn_api_ec2_eip.public_ip
+  value       = aws_instance.nrn_api_ec2_instance.public_ip
   description = "Public IP of API server"
 }
 
+output "web_ec2_host" {
+  value       = aws_instance.nrn_web_ec2_instance.public_dns
+  description = "The DNS endpoint of the Web EC2 instance"
+}
+
 output "web_ec2_ip" {
-  value       = aws_eip.nrn_web_ec2_eip.public_ip
+  value       = aws_instance.nrn_web_ec2_instance.public_ip
   description = "Public IP of Web server"
 }
 
+output "mongodb_host" {
+  value       = aws_instance.nrn_mongodb_ec2_instance.public_dns
+  description = "The DNS endpoint of the MongoDB EC2 instance"
+}
+
 output "mongodb_ec2_ip" {
-  value       = aws_eip.nrn_mongodb_ec2_eip.public_ip
+  value       = aws_instance.nrn_mongodb_ec2_instance.public_ip
   description = "Public IP of MongoDB server"
 }
 
-# Connection information for your application
 output "mongodb_connection_string" {
-  value       = "mongodb://${aws_eip.nrn_mongodb_ec2_eip.public_dns}:27017/nrn_db"
+  value       = "mongodb://${aws_instance.nrn_mongodb_ec2_instance.public_dns}:27017/nrn_db"
   description = "MongoDB connection string for your application"
 }
 
 output "summary" {
   value = <<-EOT
-  
+
   🎉 Infrastructure deployed successfully!
-  
+
   📝 SAVE THESE DETAILS:
-  
-  API Server:     ${aws_eip.nrn_api_ec2_eip.public_dns}
-  Web Server:     ${aws_eip.nrn_web_ec2_eip.public_dns}
-  MongoDB Server: ${aws_eip.nrn_mongodb_ec2_eip.public_dns}
+
+  API Server:     ${aws_instance.nrn_api_ec2_instance.public_dns}
+  Web Server:     ${aws_instance.nrn_web_ec2_instance.public_dns}
+  MongoDB Server: ${aws_instance.nrn_mongodb_ec2_instance.public_dns}
   S3 Bucket:      ${aws_s3_bucket.nrn_object_storage.bucket}
-  
+
   🔐 SSH Commands:
-  ssh -i team-key ec2-user@${aws_eip.nrn_api_ec2_eip.public_ip}
-  ssh -i team-key ec2-user@${aws_eip.nrn_web_ec2_eip.public_ip}
-  ssh -i team-key ec2-user@${aws_eip.nrn_mongodb_ec2_eip.public_ip}
-  
+  ssh -i team-key ec2-user@${aws_instance.nrn_api_ec2_instance.public_ip}
+  ssh -i team-key ec2-user@${aws_instance.nrn_web_ec2_instance.public_ip}
+  ssh -i team-key ec2-user@${aws_instance.nrn_mongodb_ec2_instance.public_ip}
+
   💾 MongoDB Connection:
-  mongodb://${aws_eip.nrn_mongodb_ec2_eip.public_dns}:27017/nrn_db
-  
+  mongodb://${aws_instance.nrn_mongodb_ec2_instance.public_dns}:27017/nrn_db
+
   EOT
 }
