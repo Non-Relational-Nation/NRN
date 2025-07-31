@@ -125,9 +125,57 @@ jobs:
       env:
         WEB_IP: ${{ steps.get-ips.outputs.web_ip }}
       run: |
-        # Wait for nginx to start
-        sleep 10
+        # Wait for nginx to start properly
+        echo "⏳ Waiting for nginx to start..."
+        sleep 20
         
-        # Check if frontend is responding
-        curl -f http://$WEB_IP || exit 1
-        echo "✅ Frontend deployed successfully!"
+        # Try health check multiple times with better error handling
+        for i in {1..5}; do
+          echo "🔍 Health check attempt $i/5 for http://$WEB_IP"
+          
+          # Try to connect and get response
+          if curl -f -m 15 -v http://$WEB_IP 2>&1; then
+            echo "✅ Frontend deployed successfully!"
+            exit 0
+          fi
+          
+          echo "❌ Health check failed, retrying in 15 seconds..."
+          sleep 15
+        done
+        
+        echo "🚨 Health check failed after 5 attempts. Checking server status..."
+        
+        # Setup SSH key for debugging
+        echo "${{ secrets.TEAM_SSH_KEY }}" > team-key
+        chmod 600 team-key
+        
+        # SSH back to server to check what's wrong
+        ssh -i team-key -o StrictHostKeyChecking=no ec2-user@$WEB_IP << 'EOF'
+          echo "=== Checking nginx status ==="
+          sudo systemctl status nginx --no-pager || true
+          
+          echo "=== Checking if nginx is listening on port 80 ==="
+          sudo netstat -tlnp | grep :80 || sudo ss -tlnp | grep :80 || true
+          
+          echo "=== Checking nginx processes ==="
+          ps aux | grep nginx || true
+          
+          echo "=== Checking web directory contents ==="
+          ls -la /var/www/html/ || true
+          
+          echo "=== Checking nginx error logs ==="
+          sudo tail -20 /var/log/nginx/error.log 2>/dev/null || echo "No nginx error log found"
+          
+          echo "=== Testing nginx configuration ==="
+          sudo nginx -t || true
+          
+          echo "=== Checking if files are accessible ==="
+          sudo cat /var/www/html/index.html | head -10 || echo "index.html not found or not readable"
+          
+          echo "=== Checking firewall/iptables ==="
+          sudo iptables -L INPUT -n || echo "Cannot check iptables"
+        EOF
+        
+        # Clean up SSH key
+        rm -f team-key
+        exit 1
