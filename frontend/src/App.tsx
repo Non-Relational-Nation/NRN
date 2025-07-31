@@ -29,7 +29,7 @@ function App() {
       <Route path="/" element={<Feed />} />
       <Route path="/login/callback" element={<Callback />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/profile" element={<Profile />} />
+      <Route path="/profile/:user?" element={<Profile />} />
       <Route path="/search" element={<Search />} />
       <Route path="/create-post" element={<CreatePost />} />
       <Route path="*" element={<NotFound />} />
