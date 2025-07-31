@@ -1,4 +1,4 @@
-import { createFederation, Endpoints, Person } from "@fedify/fedify";
+import { createFederation, Endpoints, Person, RequestContext } from "@fedify/fedify";
 import { MemoryKvStore, InProcessMessageQueue } from "@fedify/fedify";
 import { UserModel } from "./models/userModel.ts";
 
@@ -9,7 +9,7 @@ const federation = createFederation({
 
 federation.setActorDispatcher(
   "/users/{identifier}",
-  async (ctx, identifier) => {
+  async (ctx: RequestContext<unknown>, identifier: string) => {
     const user = await UserModel.findOne({ username: identifier });
 
     if (!user) return null;

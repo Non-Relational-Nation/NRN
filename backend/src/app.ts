@@ -28,7 +28,7 @@ export const createApp = () => {
   app.use("/api/auth", authRoutes);
   app.use("/", userRoutes);
   // ActivityPub routes
-  app.use(integrateFederation(federation, (req) => undefined));
+  app.use(integrateFederation(federation, (req: express.Request) => undefined));
   // 404 handler
   app.use("*", (req, res) => {
     res.status(404).json({

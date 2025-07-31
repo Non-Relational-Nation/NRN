@@ -1,4 +1,4 @@
-import { AuthUser } from "@/types/auth";
+import { AuthUser } from "../types/auth.ts";
 import { Request, Response, NextFunction, RequestHandler } from "express";
 import { createRemoteJWKSet, JWTPayload, jwtVerify } from "jose";
 
