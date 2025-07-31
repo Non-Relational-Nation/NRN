@@ -26,47 +26,34 @@ export interface MediaItem {
 export interface Post {
   id: string;
   authorId: string;
-  type: PostType;
-  content?: string;
-  media?: MediaItem[]; // Stored in S3, URLs in MongoDB
-  
-  // Original post data for reposts
-  originalPostId?: string;
-  repostComment?: string;
-  
-  // Engagement counters (stored in MongoDB document)
+  content: string;
+  title?: string;
+  visibility: 'public' | 'private' | 'followers';
   likesCount: number;
   commentsCount: number;
-  repostsCount: number;
-  viewsCount: number;
-  
-  // Metadata
-  hashtags: string[];
-  mentions: string[]; // User IDs mentioned in post
-  visibility: PostVisibility;
-  
-  // Timestamps
+  sharesCount: number;
   createdAt: Date;
   updatedAt: Date;
-  
-  // Moderation
-  isDeleted: boolean;
-  deletedAt?: Date;
-  flagged: boolean;
 }
 
 export interface CreatePostData {
-  type: PostType;
-  content?: string;
-  media?: Omit<MediaItem, 'id'>[];
-  visibility: PostVisibility;
-  originalPostId?: string; // For reposts
-  repostComment?: string; // Comment when reposting
-  hashtags?: string[]; // Extracted from content
-  mentions?: string[]; // Extracted from content
+  authorId: string;
+  content: string;
+  title?: string;
+  visibility?: 'public' | 'private' | 'followers';
 }
 
 export interface UpdatePostData {
   content?: string;
-  visibility?: PostVisibility;
+  title?: string;
+  visibility?: 'public' | 'private' | 'followers';
+}
+
+export interface PostWithAuthor extends Post {
+  author: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatar?: string;
+  };
 }

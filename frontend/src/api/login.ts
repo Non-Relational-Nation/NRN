@@ -28,7 +28,7 @@ export async function handleOAuthCallback() {
       signal: AbortSignal.timeout(5000),
     })
       .then((response) => {
-        if (!response.ok) throw new Error("Login failed");
+        if (!response.ok) throw new Error("Login failedll");
         return response.json();
       })
       .then((data) => {
@@ -36,6 +36,6 @@ export async function handleOAuthCallback() {
         sessionStorage.setItem("MY_USER_ID", "1");
       });
   } else {
-    throw new Error("Login failed");
+    throw new Error("Login failedl");
   }
 }

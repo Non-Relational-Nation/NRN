@@ -1,10 +1,11 @@
 import express from "express";
-import { authRoutes } from "./routes/auth.ts";
-import { userRoutes } from "./routes/users.ts";
+import { authRoutes } from "./routes/auth.js";
+import { userRoutes } from "./routes/users.js";
 import cors from "cors";
-import { authMiddleware } from "./middleware/auth.ts";
-import federation from "./federation.ts";
+import { authMiddleware } from "./middleware/auth.js";
+import federation from "./federation.js";
 import { integrateFederation } from "@fedify/express";
+import { activityPubRoutes } from './routes/activitypub.js';
 
 export const createApp = () => {
   const app = express();
@@ -23,6 +24,9 @@ export const createApp = () => {
       uptime: process.uptime(),
     });
   });
+
+  // ActivityPub routes (should be mounted before API routes to avoid conflicts)
+  app.use(activityPubRoutes);
   
   // API routes
   app.use("/api/auth", authRoutes);

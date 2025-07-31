@@ -1,10 +1,20 @@
-import { Router } from "express";
-import UserController from "../controllers/UserController.ts";
+import { Router } from 'express';
+import { UserController } from '../controllers/UserController';
+import { UserService } from '../services/userService';
+import { MockUserRepository } from '../repositories/implementations/MockUserRepository';
+import { IUserRepository } from '../repositories/interfaces/IUserRepository';
+
+const mockUserRepository = new MockUserRepository();
+
+const userService = new UserService(mockUserRepository);
+const userController = new UserController(userService);
 
 const router = Router();
 
-router.post("/setup", UserController.registerUser);
+router.get('/:id', (req, res) => userController.getUserProfile(req, res));
 
-export default router;
+router.put('/:id', (req, res) => userController.updateUserProfile(req, res));
 
-export { router as userRoutes };
+router.get('/', (req, res) => userController.searchUsers(req, res));
+
+export { router as userRoutes, mockUserRepository };

@@ -27,7 +27,7 @@ export interface AppConfig {
 
   // Database configurations - simplified for MVP
   databases: {
-    primary?: DatabaseConfig; // MongoDB for posts and user profiles
+    primary?: DatabaseConfig;
   };
 
   // External services
