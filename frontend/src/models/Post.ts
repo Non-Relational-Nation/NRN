@@ -21,7 +21,7 @@ export interface MediaItem {
   duration?: number; // for video in seconds
   width?: number;
   height?: number;
-  size: number; // file size in bytes
+  size?: number; // file size in bytes
   altText?: string;
 }
 
@@ -57,13 +57,38 @@ export interface Post {
   flagged: boolean;
 }
 
+const mockMediaItems: MediaItem[] = [
+  {
+    id: "1",
+    type: "image",
+    url: "https://images.unsplash.com/photo-1506744038136-46273834b3fb",
+    thumbnailUrl:
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=300&h=200&fit=crop",
+    width: 1920,
+    height: 1080,
+    size: 350000,
+    altText: "Mountain landscape during sunrise",
+  },
+  {
+    id: "2",
+    type: "video",
+    url: "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
+    thumbnailUrl: "https://peach.blender.org/wp-content/uploads/bbb-splash.png",
+    duration: 60,
+    width: 1280,
+    height: 720,
+    size: 1048576,
+    altText: "Sample animation video",
+  },
+];
+
 export const mockPosts: Post[] = [
   {
     id: "post1",
     authorId: mockUsers[0].id,
     type: PostType.TEXT,
     content: "Just joined Non-Relational Nation! Excited to be here 🚀",
-    media: [],
+    media: mockMediaItems,
     originalPostId: undefined,
     repostComment: undefined,
     likesCount: 12,
