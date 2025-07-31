@@ -1,11 +1,24 @@
+import { useQuery } from "@tanstack/react-query";
 import type { Post } from "../../models/Post";
 import "./styles.css";
+import { likePost } from "../../api/posts";
 
 interface PostCardProps {
   post: Post;
 }
 
 export default function PostCard({ post }: PostCardProps) {
+  const { refetch } = useQuery({
+    queryKey: ["like-post"],
+    queryFn: () => likePost(post?.id),
+    enabled: false,
+    retry: false,
+  });
+
+  const handleLike = async () => {
+    await refetch();
+  };
+
   return (
     <article id="post">
       <header id="post-header">
@@ -45,7 +58,7 @@ export default function PostCard({ post }: PostCardProps) {
         ) : null}
       </section>
       <footer id="post-footer">
-        <button>Like</button>
+        <button onClick={handleLike}>Like</button>
         <span>{post?.likesCount} Likes</span>
       </footer>
     </article>

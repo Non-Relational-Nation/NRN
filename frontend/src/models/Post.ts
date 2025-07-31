@@ -13,6 +13,11 @@ export enum PostVisibility {
   MENTIONED = "mentioned",
 }
 
+export interface CreatePost {
+  files: File[];
+  content: string;
+}
+
 export interface MediaItem {
   id: string;
   type: "image" | "video";

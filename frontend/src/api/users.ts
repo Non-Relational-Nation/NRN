@@ -31,7 +31,12 @@ export async function getUser(userId: string): Promise<User> {
   return await response.json();
 }
 
-export async function followUser(userId: string): Promise<User> {
+export async function followUser(userId?: string): Promise<User> {
+
+  if (!userId) {
+    throw new Error(`No user Id provided`);
+  }
+
   const response = await apiFetch({
     path: `/users/${userId}/follow`,
     method: "POST",
