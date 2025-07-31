@@ -12,3 +12,17 @@
 #google-logo {
   height: 1.5rem;
 }
+
+#login-card {
+  display: flex;
+  border: 1px gray solid;
+  margin: auto;
+  max-width: 20rem;
+  justify-content: center;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+#login-heading {
+  text-align: center;
+}
