@@ -25,7 +25,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '22'
         cache: 'npm'
         cache-dependency-path: backend/package-lock.json
 
@@ -74,6 +74,17 @@ jobs:
           sudo pkill -f "node.*app" || true
           pm2 stop backend || true
           
+          # Update Node.js to version 22 if needed
+          if ! node --version | grep -q "v22"; then
+            echo "Installing Node.js 22..."
+            # Install Node.js 22 using NodeSource repository
+            curl -fsSL https://rpm.nodesource.com/setup_22.x | sudo bash -
+            sudo yum install -y nodejs
+            echo "Node.js version after install: $(node --version)"
+          else
+            echo "Node.js 22 already installed: $(node --version)"
+          fi
+          
           # Extract new code
           rm -rf /home/ec2-user/backend
           mkdir -p /home/ec2-user/backend
@@ -81,10 +92,12 @@ jobs:
           cd /home/ec2-user/backend
           
           # Install dependencies (including dev dependencies for build)
-          npm ci
+          echo "Installing dependencies..."
+          npm ci || { echo "npm ci failed"; exit 1; }
           
           # Build the application
-          npm run build
+          echo "Building application..."
+          npm run build || { echo "Build failed"; exit 1; }
           
           # Set environment variables
           cat > .env << EOL
@@ -94,6 +107,7 @@ jobs:
           MONGODB_URI=${{ secrets.MONGODB_CONNECTION_STRING }}
           S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
           AWS_REGION=${{ env.AWS_REGION }}
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           EOL
           
           # Install PM2 globally if not exists
