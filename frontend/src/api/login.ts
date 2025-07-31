@@ -33,6 +33,7 @@ export async function handleOAuthCallback() {
       })
       .then((data) => {
         sessionStorage.setItem("JWT_TOKEN", data.id_token);
+        sessionStorage.setItem("MY_USER_ID", "1");
       });
   } else {
     throw new Error("Login failed");
