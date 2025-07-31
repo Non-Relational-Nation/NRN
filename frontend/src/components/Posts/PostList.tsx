@@ -7,9 +7,12 @@ interface PostListProps {
 }
 
 export default function PostList({ posts }: PostListProps) {
+  if (!posts?.length) {
+    return <section id="empty-container"><p>There are no posts to display</p></section>
+  }
   return (
     <section id="post-container">
-        {posts.map((post, index) => (
+        {posts?.map((post, index) => (
         <PostCard key={index} post={post} />
       ))}
     </section>
