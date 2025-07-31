@@ -1,9 +1,10 @@
 name: Deploy Infrastructure
 
 on:
-  push:
-    branches: [ main ]
-    paths: [ 'infrastructure/**' ]
+  # Temporarily disabled - infrastructure already deployed manually
+  # push:
+  #   branches: [ main ]
+  #   paths: [ 'infrastructure/**' ]
   workflow_dispatch:
 
 env:
