@@ -1,4 +1,4 @@
-import { config } from "../config/index";
+import { config } from "../config/index.ts";
 import { Request, Response } from "express";
 import { decodeJwt, JWTPayload } from "jose";
 

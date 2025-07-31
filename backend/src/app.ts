@@ -1,9 +1,10 @@
 import express from "express";
-import { authRoutes } from "./routes/auth";
-import { userRoutes } from "./routes/users";
-import { postRoutes } from "./routes/posts";
+import { authRoutes } from "./routes/auth.ts";
+import { userRoutes } from "./routes/users.ts";
 import cors from "cors";
-import { authMiddleware } from "./middleware";
+import { authMiddleware } from "./middleware/auth.ts";
+import federation from "./federation.ts";
+import { integrateFederation } from "@fedify/express";
 
 export const createApp = () => {
   const app = express();
@@ -11,7 +12,9 @@ export const createApp = () => {
   app.use(express.json());
   app.use(cors());
   app.use(authMiddleware);
+  app.set("trust proxy", true);
 
+  
   // Health check
   app.get("/health", (req, res) => {
     res.status(200).json({
@@ -20,12 +23,12 @@ export const createApp = () => {
       uptime: process.uptime(),
     });
   });
-
+  
   // API routes
   app.use("/api/auth", authRoutes);
-  app.use("/api/users", userRoutes);
-  app.use("/api/posts", postRoutes);
-
+  app.use("/", userRoutes);
+  // ActivityPub routes
+  app.use(integrateFederation(federation, (req) => undefined));
   // 404 handler
   app.use("*", (req, res) => {
     res.status(404).json({

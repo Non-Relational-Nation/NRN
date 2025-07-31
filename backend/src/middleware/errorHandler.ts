@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ApiResponse } from '../types/common';
+import { ApiResponse } from '../types/common.ts';
 
 export const errorHandler = (
   error: any,
