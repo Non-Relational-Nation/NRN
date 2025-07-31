@@ -1,7 +1,11 @@
-import { User, CreateUserData, UpdateUserData, LoginCredentials, AuthTokens } from '../types/user';
-import { IUserRepository } from '../repositories/interfaces/IUserRepository';
+import { findUserByUsername } from "../repositories/userRepository.ts";
 
 export class UserService {
-  constructor(private userRepository: IUserRepository) {}
-    // TODO - implementation
+  getUserByUsername = async (username: string) => {
+    const user = await findUserByUsername(username);
+
+    return user;
+  };
 }
+
+export default new UserService();
