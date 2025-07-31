@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ApiResponse } from '../types/common';
+import { ApiResponse } from '../types/common.ts';
 
 export const notFoundHandler = (req: Request, res: Response) => {
   const response: ApiResponse = {
