@@ -76,14 +76,33 @@ jobs:
           
           # Update Node.js to version 22 if needed
           if ! node --version | grep -q "v22"; then
-            echo "Installing Node.js 22..."
-            # Install Node.js 22 using NodeSource repository
-            curl -fsSL https://rpm.nodesource.com/setup_22.x | sudo bash -
-            sudo yum install -y nodejs
+            echo "Installing Node.js 22 via Node Version Manager (NVM)..."
+            # Install NVM if not present
+            if [ ! -d "$HOME/.nvm" ]; then
+              curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+              export NVM_DIR="$HOME/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            else
+              export NVM_DIR="$HOME/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            fi
+            
+            # Install and use Node.js 22
+            nvm install 22
+            nvm use 22
+            nvm alias default 22
+            
+            # Make sure node and npm are in PATH
+            export PATH="$NVM_DIR/versions/node/$(nvm version)/bin:$PATH"
             echo "Node.js version after install: $(node --version)"
           else
             echo "Node.js 22 already installed: $(node --version)"
           fi
+          
+          # Ensure Node.js and npm are available for subsequent commands
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          export PATH="$NVM_DIR/versions/node/$(nvm version)/bin:$PATH"
           
           # Extract new code
           rm -rf /home/ec2-user/backend
@@ -93,6 +112,11 @@ jobs:
           
           # Install dependencies (including dev dependencies for build)
           echo "Installing dependencies..."
+          # Ensure we're using the correct Node.js version
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          export PATH="$NVM_DIR/versions/node/$(nvm version)/bin:$PATH"
+          
           npm ci || { echo "npm ci failed"; exit 1; }
           
           # Build the application
@@ -111,14 +135,19 @@ jobs:
           EOL
           
           # Install PM2 globally if not exists
-          sudo npm install -g pm2 || true
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          export PATH="$NVM_DIR/versions/node/$(nvm version)/bin:$PATH"
+          
+          npm install -g pm2 || true
           
           # Start application with PM2 using the built JS file
           pm2 start dist/server.js --name "backend" --env production
           pm2 save
           
-          # Setup PM2 startup script
-          sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u ec2-user --hp /home/ec2-user || true
+          # Setup PM2 startup script (use NVM node path)
+          NODE_PATH="$NVM_DIR/versions/node/$(nvm version)/bin/node"
+          sudo env PATH="$NVM_DIR/versions/node/$(nvm version)/bin:$PATH" pm2 startup systemd -u ec2-user --hp /home/ec2-user || true
           
           # Show PM2 status and logs for debugging
           pm2 status
