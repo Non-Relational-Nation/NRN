@@ -6,7 +6,7 @@ import type { Post } from "../../models/Post";
 import { useQuery } from "@tanstack/react-query";
 import { getUsersFeed } from "../../api/posts";
 import type { User } from "../../models/User";
-import { getUser } from "../../api/users";
+import { followUser, getUser } from "../../api/users";
 import UserAvatar from "../../components/Users/UserAvatar";
 
 export default function Profile() {
@@ -34,10 +34,21 @@ export default function Profile() {
     retry: false,
   });
 
+  const { refetch, error: followError } = useQuery({
+    queryKey: [`follow-user-${user}`],
+    queryFn: () => followUser(userData?.id),
+    enabled: false,
+    retry: false,
+  });
+
+  const handleFollow = async () => {
+    await refetch();
+  };
+
   return (
     <Layout
       loading={isUserFeedLoading || isUserLoading}
-      error={userFeedError || userError}
+      error={userFeedError || userError || followError }
     >
       <section id="profile-container">
         <header id="profile-header">
@@ -46,7 +57,11 @@ export default function Profile() {
           <section id="follower-container">
             <span>Followers: {userData?.followersCount}</span>
             <span>Following: {userData?.followingCount}</span>
-            {!isMyProfile && <button id="follow-button">Follow</button>}
+            {!isMyProfile && (
+              <button id="follow-button" onClick={handleFollow}>
+                Follow
+              </button>
+            )}
           </section>
         </header>
         <PostList posts={userFeed}></PostList>

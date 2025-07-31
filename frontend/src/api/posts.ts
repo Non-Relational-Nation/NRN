@@ -1,4 +1,4 @@
-import { mockPosts, type Post } from "../models/Post";
+import { mockPosts, type CreatePost, type Post } from "../models/Post";
 import { apiFetch } from "../util/api";
 
 export async function getFeed(): Promise<Post[]> {
@@ -16,13 +16,13 @@ export async function getFeed(): Promise<Post[]> {
 }
 
 export async function getUsersFeed(userId: string): Promise<Post[]> {
-  return mockPosts.filter(post => post.authorId === userId);
+  return mockPosts.filter((post) => post.authorId === userId);
 
   const response = await apiFetch({
     path: `/feed/${userId}`,
     method: "GET",
   });
-  
+
   if (!response.ok) {
     throw new Error(`${response.status}`);
   }
@@ -30,10 +30,23 @@ export async function getUsersFeed(userId: string): Promise<Post[]> {
   return await response.json();
 }
 
-export async function likePost(postId: number): Promise<Post> {
+export async function likePost(postId: string): Promise<Post> {
   const response = await apiFetch({
     path: `/post/${postId}/like`,
     method: "POST",
+  });
+  if (!response.ok) {
+    throw new Error(`${response.status}`);
+  }
+
+  return await response.json();
+}
+
+export async function createPost(post: CreatePost): Promise<Post> {
+  const response = await apiFetch({
+    path: `/post`,
+    method: "POST",
+    body: JSON.stringify(post),
   });
   if (!response.ok) {
     throw new Error(`${response.status}`);
