@@ -80,8 +80,11 @@ jobs:
           tar -xzf /home/ec2-user/backend-deploy.tar.gz -C /home/ec2-user/backend
           cd /home/ec2-user/backend
           
-          # Install dependencies
-          npm ci --production
+          # Install dependencies (including dev dependencies for build)
+          npm ci
+          
+          # Build the application
+          npm run build
           
           # Set environment variables
           cat > .env << EOL
@@ -96,12 +99,16 @@ jobs:
           # Install PM2 globally if not exists
           sudo npm install -g pm2 || true
           
-          # Start application with PM2
-          pm2 start src/server.js --name "backend" --env production
+          # Start application with PM2 using the built JS file
+          pm2 start dist/server.js --name "backend" --env production
           pm2 save
           
           # Setup PM2 startup script
           sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u ec2-user --hp /home/ec2-user || true
+          
+          # Show PM2 status and logs for debugging
+          pm2 status
+          pm2 logs backend --lines 10
         EOF
 
     - name: Health check
@@ -109,8 +116,26 @@ jobs:
         API_IP: ${{ steps.get-api-ip.outputs.api_ip }}
       run: |
         # Wait for application to start
+        echo "⏳ Waiting for application to start..."
         sleep 30
         
-        # Check if API is responding on port 80
-        curl -f http://$API_IP/health || curl -f http://$API_IP/ || exit 1
-        echo "✅ Backend deployed successfully!"
+        # Try health check endpoint multiple times
+        for i in {1..5}; do
+          echo "🔍 Health check attempt $i/5..."
+          if curl -f -m 10 http://$API_IP/health; then
+            echo "✅ Backend deployed successfully!"
+            exit 0
+          fi
+          echo "❌ Health check failed, retrying in 10 seconds..."
+          sleep 10
+        done
+        
+        echo "🚨 Health check failed after 5 attempts. Checking server logs..."
+        # SSH back to server to check logs
+        ssh -i team-key -o StrictHostKeyChecking=no ec2-user@$API_IP << 'EOF'
+          echo "=== PM2 Status ==="
+          pm2 status
+          echo "=== PM2 Logs ==="
+          pm2 logs backend --lines 20
+        EOF
+        exit 1
