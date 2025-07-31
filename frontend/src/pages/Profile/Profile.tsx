@@ -1,8 +1,14 @@
+import { useParams } from "react-router-dom";
 import Layout from "../../components/Layout/Layout";
-import "./styles.css"
+import "./styles.css";
 
 export default function Profile() {
+  const { user } = useParams();
   return (
-    <Layout><h1>Profile</h1></Layout>
+    <Layout>
+      <header>
+        <h1>Profile for user {user}</h1>
+      </header>
+    </Layout>
   );
 }

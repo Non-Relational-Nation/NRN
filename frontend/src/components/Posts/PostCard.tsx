@@ -9,8 +9,8 @@ export default function PostCard({ post }: PostCardProps) {
   return (
     <article id="post">
       <header id="post-header">
-        <span>Posted by {post?.postedBy?.username}</span>
-        <span>{(new Date(post?.postedAt)?.toLocaleString())}</span>
+        <span>Posted by {post?.authorId}</span>
+        <span>{(new Date(post?.createdAt)?.toLocaleString())}</span>
       </header>
       <section id="post-content">
         <p>
@@ -19,7 +19,7 @@ export default function PostCard({ post }: PostCardProps) {
       </section>
       <footer id="post-footer">
         <button>Like</button>
-        <span>{post?.likes} Likes</span>
+        <span>{post?.likesCount} Likes</span>
       </footer>
     </article>
   );

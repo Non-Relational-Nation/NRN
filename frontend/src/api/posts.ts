@@ -2,11 +2,12 @@ import { mockPosts, type Post } from "../models/Post";
 import { apiFetch } from "../util/api";
 
 export async function getFeed(): Promise<Post[]> {
+  return mockPosts;
+
   const response = await apiFetch({
     path: `/feed`,
     method: "GET",
   });
-  return mockPosts;
   if (!response.ok) {
     throw new Error(`${response.status}`);
   }
@@ -15,11 +16,13 @@ export async function getFeed(): Promise<Post[]> {
 }
 
 export async function getUsersFeed(userId: string): Promise<Post[]> {
+  return mockPosts;
+  
   const response = await apiFetch({
     path: `/feed/${userId}`,
     method: "GET",
   });
-  return mockPosts;
+  
   if (!response.ok) {
     throw new Error(`${response.status}`);
   }
