@@ -16,8 +16,8 @@ export async function getFeed(): Promise<Post[]> {
 }
 
 export async function getUsersFeed(userId: string): Promise<Post[]> {
-  return mockPosts;
-  
+  return mockPosts.filter(post => post.authorId === userId);
+
   const response = await apiFetch({
     path: `/feed/${userId}`,
     method: "GET",
