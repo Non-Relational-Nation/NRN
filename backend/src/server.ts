@@ -9,7 +9,7 @@ const app = createApp();
 // Start server first, then attempt database connection
 app.listen(Number(PORT), HOST, () => {
   console.log(`🚀 Server running on http://${HOST}:${PORT}`);
-  console.log(`📊 Health check available at http://${HOST}:${PORT}/health`);
+  console.log(`📊 Health check available at http://${HOST}:${PORT}/api/health`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
   
   // Attempt database connection after server is running
