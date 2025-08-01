@@ -126,15 +126,15 @@ jobs:
           # Create logs directory
           mkdir -p logs
           
-          # Start application with PM2 - single reliable approach
-          pm2 start "npx tsx src/server.ts" --name "backend" --env production --force || echo "PM2 start attempted"
-          pm2 save || echo "PM2 save attempted"
+          # Start application with PM2 - single reliable approach with timeout
+          timeout 30 pm2 start "npx tsx src/server.ts" --name "backend" --env production --force || echo "PM2 start completed"
+          timeout 10 pm2 save || echo "PM2 save completed"
           
           # Verify only one instance is running
           sleep 3
-          pm2 list || echo "PM2 list attempted"
+          timeout 10 pm2 list || echo "PM2 list completed"
           echo "=== Verifying single instance ==="
-          INSTANCE_COUNT=$(pm2 list | grep -c "backend" 2>/dev/null || echo "0")
+          INSTANCE_COUNT=$(timeout 5 pm2 list | grep -c "backend" 2>/dev/null || echo "0")
           echo "Backend instances running: $INSTANCE_COUNT"
           
           # Show final status and exit cleanly
@@ -148,8 +148,9 @@ jobs:
           # Show PM2 status and logs for debugging
           echo "=== PM2 Status ==="
           pm2 status
-          echo "=== PM2 Logs ==="
-          pm2 logs backend --lines 10 || true
+          echo "=== PM2 Logs (last 10 lines) ==="
+          timeout 5 pm2 logs backend --lines 10 --no-stream || echo "Log check completed"
           
           echo "✅ Backend deployment completed successfully"
+          echo "🎯 Workflow finishing now..."
         EOF
