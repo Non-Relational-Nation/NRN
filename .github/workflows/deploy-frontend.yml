@@ -83,17 +83,17 @@ jobs:
         chmod 600 team-key
         
         # Copy files to server
-        scp -i team-key -o StrictHostKeyChecking=no frontend-deploy.tar.gz ec2-user@$WEB_IP:/home/ec2-user/
+        scp -i team-key -o StrictHostKeyChecking=no frontend-deploy.tar.gz ubuntu@$WEB_IP:/home/ubuntu/
         
         # Deploy on server
-        ssh -i team-key -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=3 ec2-user@$WEB_IP << 'EOF'
+        ssh -i team-key -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=3 ubuntu@$WEB_IP << 'EOF'
           set -e  # Exit on any error
           
-          # Install Node.js 18 (Amazon Linux 2023 compatible)
+          # Install Node.js 18 (Ubuntu 22.04 compatible)
           if ! node --version | grep -q "v18"; then
-            echo "Installing Node.js 18 on Amazon Linux 2023..."
-            curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
-            sudo yum install -y nodejs
+            echo "Installing Node.js 18 on Ubuntu 22.04..."
+            curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+            sudo apt-get install -y nodejs
           fi
           
           # Verify Node.js installation
@@ -106,10 +106,10 @@ jobs:
           pm2 delete frontend || true
           
           # Deploy frontend files
-          rm -rf /home/ec2-user/frontend
-          mkdir -p /home/ec2-user/frontend
-          tar -xzf /home/ec2-user/frontend-deploy.tar.gz -C /home/ec2-user/frontend
-          cd /home/ec2-user/frontend
+          rm -rf /home/ubuntu/frontend
+          mkdir -p /home/ubuntu/frontend
+          tar -xzf /home/ubuntu/frontend-deploy.tar.gz -C /home/ubuntu/frontend
+          cd /home/ubuntu/frontend
           
           # Install serve and PM2 globally
           sudo npm install -g serve pm2@latest
@@ -119,7 +119,7 @@ jobs:
             echo "First PM2 approach failed, trying alternative for frontend..."
             # Alternative approach: create a simple start script
             echo '#!/bin/bash' > start-frontend.sh
-            echo 'cd /home/ec2-user/frontend' >> start-frontend.sh
+            echo 'cd /home/ubuntu/frontend' >> start-frontend.sh
             echo 'exec serve -s . -l 3000' >> start-frontend.sh
             chmod +x start-frontend.sh
             pm2 start ./start-frontend.sh --name "frontend"
@@ -128,7 +128,7 @@ jobs:
           pm2 save
           
           # Setup PM2 startup script
-          sudo pm2 startup systemd -u ec2-user --hp /home/ec2-user || true
+          sudo pm2 startup systemd -u ubuntu --hp /home/ubuntu || true
           
           # Show PM2 status for debugging
           echo "=== PM2 Status ==="

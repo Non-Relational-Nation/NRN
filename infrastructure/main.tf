@@ -25,14 +25,19 @@ provider "aws" {
 # DATA SOURCES & LOCALS
 # ============================================================================
 
-# Data source to fetch the latest Amazon Linux 2023 AMI
-data "aws_ami" "amazon_linux" {
+# Data source to fetch the latest Ubuntu 22.04 LTS AMI
+data "aws_ami" "ubuntu" {
   most_recent = true
-  owners      = ["amazon"]
+  owners      = ["099720109477"] # Canonical
 
   filter {
     name   = "name"
-    values = ["al2023-ami-*-x86_64"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
   }
 }
 
@@ -69,17 +74,6 @@ resource "aws_key_pair" "web_key" {
 
   tags = {
     Name        = "${local.project}-web-key-${local.team_name}-${local.environment}"
-    Environment = local.environment
-    Team        = local.team_name
-  }
-}
-
-resource "aws_key_pair" "mongodb_key" {
-  key_name   = "${local.team_name}-mongodb-key"
-  public_key = file("./team-key.pub")
-
-  tags = {
-    Name        = "${local.project}-mongodb-key-${local.team_name}-${local.environment}"
     Environment = local.environment
     Team        = local.team_name
   }
@@ -347,6 +341,22 @@ resource "aws_security_group" "ec2_security_group" {
     security_groups = [aws_security_group.alb_security_group.id]
   }
 
+  # Neo4j HTTP interface (for admin - restrict as needed)
+  ingress {
+    from_port   = 7474
+    to_port     = 7474
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Consider restricting this
+  }
+
+  # Neo4j Bolt protocol (for applications)
+  ingress {
+    from_port   = 7687
+    to_port     = 7687
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Consider restricting this
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -359,86 +369,14 @@ resource "aws_security_group" "ec2_security_group" {
   }
 }
 
-# MongoDB on dedicated EC2 instance 
-resource "aws_security_group" "mongodb_security_group" {
-  name_prefix = "nrn_mongodb_sg"
-  vpc_id      = aws_vpc.nrn_vpc.id
-
-  # MongoDB port - ONLY accessible from app security group (internal access)
-  ingress {
-    from_port       = 27017
-    to_port         = 27017
-    protocol        = "tcp"
-    security_groups = [aws_security_group.ec2_security_group.id]
-  }
-
-  # SSH access
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "nrn_mongodb_security_group"
-  }
-}
-
 # ============================================================================
 # COMPUTE (EC2 Instances)
 # ============================================================================
 
-resource "aws_instance" "nrn_mongodb_ec2_instance" {
-  ami                    = data.aws_ami.amazon_linux.id
-  instance_type          = "t3.micro"
-  key_name               = aws_key_pair.mongodb_key.key_name
-  subnet_id              = aws_subnet.subnet_az1.id
-  vpc_security_group_ids = [aws_security_group.mongodb_security_group.id]
-  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
-
-  user_data = base64encode(<<-EOF
-    #!/bin/bash
-    yum update -y
-    
-    # Install MongoDB for Amazon Linux 2023
-    cat <<EOT > /etc/yum.repos.d/mongodb-org-7.0.repo
-[mongodb-org-7.0]
-name=MongoDB Repository
-baseurl=https://repo.mongodb.org/yum/amazon/2023/mongodb-org/7.0/x86_64/
-gpgcheck=1
-enabled=1
-gpgkey=https://www.mongodb.org/static/pgp/server-7.0.asc
-EOT
-    
-    yum install -y mongodb-org
-    systemctl start mongod
-    systemctl enable mongod
-    
-    # Configure MongoDB for remote connections (bind to all interfaces)
-    sed -i 's/bindIp: 127.0.0.1/bindIp: 0.0.0.0/' /etc/mongod.conf
-    systemctl restart mongod
-  EOF
-  )
-
-  tags = {
-    Name        = "${local.project}-mongodb-${local.team_name}-${local.environment}"
-    Environment = local.environment
-    Team        = local.team_name
-  }
-}
-
-# Main application instances
+# Main API instance with co-located databases
 resource "aws_instance" "nrn_api_ec2_instance" {
-  ami                    = data.aws_ami.amazon_linux.id
-  instance_type          = "t3.micro"
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = "t3.small" # Upgraded for multiple services
   key_name               = aws_key_pair.api_key.key_name
   subnet_id              = aws_subnet.subnet_az1.id
   vpc_security_group_ids = [aws_security_group.ec2_security_group.id]
@@ -446,24 +384,51 @@ resource "aws_instance" "nrn_api_ec2_instance" {
 
   user_data = base64encode(<<-EOF
     #!/bin/bash
-    yum update -y
-    curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
-    yum install -y nodejs git
+    apt update -y
     
-    # Install Docker for containerized applications
-    yum install -y docker
+    # Install Node.js 18
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    apt install -y nodejs git unzip
+    
+    # Install Docker
+    apt install -y docker.io
     systemctl start docker
     systemctl enable docker
-    usermod -a -G docker ec2-user
+    usermod -a -G docker ubuntu
     
     # Install AWS CLI v2
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-    yum install -y unzip
     unzip awscliv2.zip
     ./aws/install
     
-    # MongoDB will be on separate dedicated instance
-    # Connection string: mongodb://MONGODB_HOST:27017/your_database
+    # Install MongoDB
+    wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
+    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+    apt update -y
+    apt install -y mongodb-org
+    systemctl start mongod
+    systemctl enable mongod
+    
+    # Install Redis
+    apt install -y redis-server
+    systemctl start redis-server
+    systemctl enable redis-server
+    
+    # Install Neo4j
+    wget -O - https://debian.neo4j.com/neotechnology.gpg.key | sudo apt-key add -
+    echo 'deb https://debian.neo4j.com stable latest' | sudo tee -a /etc/apt/sources.list.d/neo4j.list
+    apt update -y
+    apt install -y neo4j
+    systemctl start neo4j
+    systemctl enable neo4j
+    
+    # Configure services for localhost access
+    # MongoDB already configured for localhost by default
+    # Redis already configured for localhost by default
+    # Neo4j - set initial password
+    neo4j-admin set-initial-password neo4jpassword || true
+    
+    echo "All services installed and configured"
   EOF
   )
 
@@ -475,7 +440,7 @@ resource "aws_instance" "nrn_api_ec2_instance" {
 }
 
 resource "aws_instance" "nrn_web_ec2_instance" {
-  ami                    = data.aws_ami.amazon_linux.id
+  ami                    = data.aws_ami.ubuntu.id
   instance_type          = "t3.micro"
   key_name               = aws_key_pair.web_key.key_name
   subnet_id              = aws_subnet.subnet_az2.id
@@ -484,21 +449,21 @@ resource "aws_instance" "nrn_web_ec2_instance" {
 
   user_data = base64encode(<<-EOF
     #!/bin/bash
-    yum update -y
+    apt update -y
     
-    # Install Node.js for TypeScript frontend
-    curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
-    yum install -y nodejs
+    # Install Node.js 18
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    apt install -y nodejs
     
     # Install Docker
-    yum install -y docker
+    apt install -y docker.io
     systemctl start docker
     systemctl enable docker
-    usermod -a -G docker ec2-user
+    usermod -a -G docker ubuntu
     
     # Install AWS CLI v2
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-    yum install -y unzip
+    apt install -y unzip
     unzip awscliv2.zip
     ./aws/install
   EOF
@@ -599,14 +564,30 @@ resource "aws_lb_listener" "http_listener" {
   port              = "80"
   protocol          = "HTTP"
 
-  # Default action forwards to API (you can change this to web if preferred)
+  # Default action forwards to web frontend for root paths
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.api_tg.arn
+    target_group_arn = aws_lb_target_group.web_tg.arn
   }
 }
 
-# Path-based routing rules (since we don't have custom domains)
+# Default rule for root path forwarding to web frontend
+resource "aws_lb_listener_rule" "web_default_rule" {
+  listener_arn = aws_lb_listener.http_listener.arn
+  priority     = 50
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.web_tg.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/*"]
+    }
+  }
+}
+
 # Web app will be accessible at: http://your-alb-dns/web
 resource "aws_lb_listener_rule" "web_path_rule" {
   listener_arn = aws_lb_listener.http_listener.arn

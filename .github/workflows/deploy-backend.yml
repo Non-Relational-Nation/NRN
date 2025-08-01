@@ -66,10 +66,10 @@ jobs:
         chmod 600 team-key
         
         # Copy files to server
-        scp -i team-key -o StrictHostKeyChecking=no backend-deploy.tar.gz ec2-user@$API_IP:/home/ec2-user/
+        scp -i team-key -o StrictHostKeyChecking=no backend-deploy.tar.gz ubuntu@$API_IP:/home/ubuntu/
         
         # Deploy on server
-        ssh -i team-key -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=3 ec2-user@$API_IP << 'EOF'
+        ssh -i team-key -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=3 ubuntu@$API_IP << 'EOF'
           set -e  # Exit on any error
           
           # Stop existing application
@@ -77,22 +77,22 @@ jobs:
           pm2 stop backend || true
           pm2 delete backend || true
           
-          # Install Node.js 18 (Amazon Linux 2023 has compatible GLIBC)
-          echo "Setting up Node.js 18 on Amazon Linux 2023..."
+          # Install Node.js 18 (Ubuntu 22.04)
+          echo "Setting up Node.js 18 on Ubuntu 22.04..."
           
-          # Install Node.js 18 from NodeSource (AL2023 compatible)
-          curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
-          sudo yum install -y nodejs
+          # Install Node.js 18 from NodeSource (Ubuntu compatible)
+          curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+          sudo apt-get install -y nodejs
           
           # Verify installation
           echo "Node.js version: $(node --version)"
           echo "NPM version: $(npm --version)"
           
           # Extract new code
-          rm -rf /home/ec2-user/backend
-          mkdir -p /home/ec2-user/backend
-          tar -xzf /home/ec2-user/backend-deploy.tar.gz -C /home/ec2-user/backend
-          cd /home/ec2-user/backend
+          rm -rf /home/ubuntu/backend
+          mkdir -p /home/ubuntu/backend
+          tar -xzf /home/ubuntu/backend-deploy.tar.gz -C /home/ubuntu/backend
+          cd /home/ubuntu/backend
           
           # Install dependencies
           echo "Installing dependencies..."
@@ -103,7 +103,10 @@ jobs:
           echo "NODE_ENV=production" > .env
           echo "PORT=5000" >> .env
           echo "HOST=0.0.0.0" >> .env
-          echo "MONGODB_URI=${{ secrets.MONGODB_CONNECTION_STRING }}" >> .env
+          echo "MONGODB_URI=mongodb://localhost:27017/nrn_db" >> .env
+          echo "REDIS_HOST=localhost" >> .env
+          echo "REDIS_PORT=6379" >> .env
+          echo "NEO4J_URI=bolt://localhost:7687" >> .env
           echo "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}" >> .env
           echo "AWS_REGION=${{ env.AWS_REGION }}" >> .env
           echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
@@ -119,7 +122,7 @@ jobs:
             echo "First PM2 approach failed, trying alternative..."
             # Alternative approach: create a simple start script
             echo '#!/bin/bash' > start.sh
-            echo 'cd /home/ec2-user/backend' >> start.sh
+            echo 'cd /home/ubuntu/backend' >> start.sh
             echo 'exec npx tsx src/server.ts' >> start.sh
             chmod +x start.sh
             pm2 start ./start.sh --name "backend" --env production
@@ -128,7 +131,7 @@ jobs:
           pm2 save
           
           # Setup PM2 startup script
-          sudo pm2 startup systemd -u ec2-user --hp /home/ec2-user || true
+          sudo pm2 startup systemd -u ubuntu --hp /home/ubuntu || true
           
           # Show PM2 status and logs for debugging
           echo "=== PM2 Status ==="
@@ -144,8 +147,8 @@ jobs:
         API_IP: ${{ steps.get-api-ip.outputs.api_ip }}
       run: |
         # Wait for application to start and database to connect
-        echo "⏳ Waiting for application to start and database to connect..."
-        sleep 45
+        echo "⏳ Waiting for application to start and co-located databases to connect..."
+        sleep 60
         
         # Try health check endpoint multiple times
         for i in {1..6}; do

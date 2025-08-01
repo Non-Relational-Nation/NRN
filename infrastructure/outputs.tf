@@ -1,7 +1,8 @@
-# Outputs
-output "api_ec2_host" {
-  value       = aws_instance.nrn_api_ec2_instance.public_dns
-  description = "The DNS endpoint of the API EC2 instance"
+# Terraform Output Values
+
+output "alb_dns_name" {
+  value       = aws_lb.nrn_alb.dns_name
+  description = "The DNS name of the Application Load Balancer"
 }
 
 output "api_ec2_ip" {
@@ -9,59 +10,61 @@ output "api_ec2_ip" {
   description = "Public IP of API server"
 }
 
-output "web_ec2_host" {
-  value       = aws_instance.nrn_web_ec2_instance.public_dns
-  description = "The DNS endpoint of the Web EC2 instance"
-}
-
 output "web_ec2_ip" {
   value       = aws_instance.nrn_web_ec2_instance.public_ip
   description = "Public IP of Web server"
 }
 
-output "mongodb_host" {
-  value       = aws_instance.nrn_mongodb_ec2_instance.public_dns
-  description = "The DNS endpoint of the MongoDB EC2 instance"
-}
-
-output "mongodb_ec2_ip" {
-  value       = aws_instance.nrn_mongodb_ec2_instance.public_ip
-  description = "Public IP of MongoDB server"
-}
-
 output "mongodb_connection_string" {
-  value       = "mongodb://${aws_instance.nrn_mongodb_ec2_instance.public_dns}:27017/nrn_db"
-  description = "MongoDB connection string for your application"
+  value       = "mongodb://localhost:27017/nrn_db"
+  description = "MongoDB connection string (localhost - co-located with API)"
 }
 
-# ALB Outputs
-output "alb_dns_name" {
-  value       = aws_lb.nrn_alb.dns_name
-  description = "DNS name of the Application Load Balancer"
+output "redis_connection_string" {
+  value       = "redis://localhost:6379"
+  description = "Redis connection string (localhost - co-located with API)"
 }
 
-output "alb_zone_id" {
-  value       = aws_lb.nrn_alb.zone_id
-  description = "Zone ID of the Application Load Balancer"
+output "neo4j_connection_string" {
+  value       = "bolt://localhost:7687"
+  description = "Neo4j connection string (localhost - co-located with API)"
+}
+
+output "s3_bucket_name" {
+  value       = aws_s3_bucket.nrn_object_storage.bucket
+  description = "Name of the S3 bucket for static file storage"
 }
 
 output "api_url" {
   value       = "http://${aws_lb.nrn_alb.dns_name}/api"
-  description = "API URL using load balancer DNS (path-based routing)"
+  description = "URL to access the API through the load balancer"
 }
 
 output "web_url" {
-  value       = "http://${aws_lb.nrn_alb.dns_name}/web"
-  description = "Web URL using load balancer DNS (path-based routing)"
+  value       = "http://${aws_lb.nrn_alb.dns_name}"
+  description = "URL to access the web application through the load balancer"
 }
 
-output "root_url" {
-  value       = "http://${aws_lb.nrn_alb.dns_name}"
-  description = "Root URL (defaults to API)"
+output "vpc_id" {
+  value       = aws_vpc.nrn_vpc.id
+  description = "ID of the VPC"
+}
+
+output "public_subnet_ids" {
+  value       = [aws_subnet.subnet_az1.id, aws_subnet.subnet_az2.id]
+  description = "IDs of the public subnets"
+}
+
+output "security_group_ids" {
+  value = {
+    alb = aws_security_group.alb_security_group.id
+    ec2 = aws_security_group.ec2_security_group.id
+  }
+  description = "IDs of the security groups"
 }
 
 output "summary" {
-  value = <<-EOT
+  value       = <<-EOT
 
   🎉 Infrastructure deployed successfully!
 
@@ -69,36 +72,34 @@ output "summary" {
 
   🌐 APPLICATION URLs (Free Load Balancer DNS):
   
-  🚀 API ENDPOINT:
-  http://${aws_lb.nrn_alb.dns_name}/api
-  
-  🌐 WEB APPLICATION:
-  http://${aws_lb.nrn_alb.dns_name}/web
-  
-  📋 ROOT URL (defaults to API):
+  🚀 WEB APPLICATION (Default):
   http://${aws_lb.nrn_alb.dns_name}
   
-  � TESTING COMMANDS:
-  Test API: curl http://${aws_lb.nrn_alb.dns_name}/api/health
-  Test Web: curl http://${aws_lb.nrn_alb.dns_name}/web
+  🔧 API ENDPOINT:
+  http://${aws_lb.nrn_alb.dns_name}/api
   
   📋 ALB DNS Name: ${aws_lb.nrn_alb.dns_name}
 
+  🧪 TESTING COMMANDS:
+  Test API: curl http://${aws_lb.nrn_alb.dns_name}/api/health
+  Test Web: curl http://${aws_lb.nrn_alb.dns_name}
+
   🖥️  Direct Server Access (Development):
-  API Server:     ${aws_instance.nrn_api_ec2_instance.public_dns}
-  Web Server:     ${aws_instance.nrn_web_ec2_instance.public_dns}
-  MongoDB Server: ${aws_instance.nrn_mongodb_ec2_instance.public_dns}
-  S3 Bucket:      ${aws_s3_bucket.nrn_object_storage.bucket}
+  API Server (with co-located DBs): ${aws_instance.nrn_api_ec2_instance.public_dns}
+  Web Server:                       ${aws_instance.nrn_web_ec2_instance.public_dns}
+  S3 Bucket:                        ${aws_s3_bucket.nrn_object_storage.bucket}
 
-  🔐 SSH Commands:
-  ssh -i team-key ec2-user@${aws_instance.nrn_api_ec2_instance.public_ip}
-  ssh -i team-key ec2-user@${aws_instance.nrn_web_ec2_instance.public_ip}
-  ssh -i team-key ec2-user@${aws_instance.nrn_mongodb_ec2_instance.public_ip}
+  🔐 SSH Commands (Ubuntu):
+  ssh -i team-key ubuntu@${aws_instance.nrn_api_ec2_instance.public_ip}
+  ssh -i team-key ubuntu@${aws_instance.nrn_web_ec2_instance.public_ip}
 
-  💾 MongoDB Connection:
-  mongodb://${aws_instance.nrn_mongodb_ec2_instance.public_dns}:27017/nrn_db
+  💾 Database Connections (Co-located on API server):
+  MongoDB: mongodb://localhost:27017/nrn_db
+  Redis:   redis://localhost:6379  
+  Neo4j:   bolt://localhost:7687
 
-  💰 COST-EFFECTIVE: No Route53 charges, no SSL certificate costs!
+  💰 COST-EFFECTIVE: Simplified 2-instance architecture with co-located databases!
 
   EOT
+  description = "Summary of deployed infrastructure and access details"
 }
