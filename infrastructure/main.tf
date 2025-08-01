@@ -571,23 +571,6 @@ resource "aws_lb_listener" "http_listener" {
   }
 }
 
-# Default rule for root path forwarding to web frontend
-resource "aws_lb_listener_rule" "web_default_rule" {
-  listener_arn = aws_lb_listener.http_listener.arn
-  priority     = 50
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.web_tg.arn
-  }
-
-  condition {
-    path_pattern {
-      values = ["/*"]
-    }
-  }
-}
-
 # Web app will be accessible at: http://your-alb-dns/web
 resource "aws_lb_listener_rule" "web_path_rule" {
   listener_arn = aws_lb_listener.http_listener.arn

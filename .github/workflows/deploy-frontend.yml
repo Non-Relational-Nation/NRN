@@ -170,7 +170,7 @@ jobs:
         chmod 600 team-key
         
         # SSH back to server to check what's wrong
-        ssh -i team-key -o StrictHostKeyChecking=no ec2-user@$WEB_IP << 'EOF'
+        ssh -i team-key -o StrictHostKeyChecking=no ubuntu@$WEB_IP << 'EOF'
           echo "=== PM2 Status ==="
           pm2 status
           
@@ -184,10 +184,10 @@ jobs:
           ps aux | grep serve || echo "No serve processes found"
           
           echo "=== Checking frontend directory contents ==="
-          ls -la /home/ec2-user/frontend/ || echo "Frontend directory not found"
+          ls -la /home/ubuntu/frontend/ || echo "Frontend directory not found"
           
           echo "=== Checking if index.html exists ==="
-          cat /home/ec2-user/frontend/index.html | head -10 || echo "index.html not found"
+          cat /home/ubuntu/frontend/index.html | head -10 || echo "index.html not found"
           
           echo "=== System resources ==="
           free -h

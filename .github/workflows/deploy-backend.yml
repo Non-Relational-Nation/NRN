@@ -179,7 +179,7 @@ jobs:
         
         echo "🚨 Health check failed after 6 attempts. Checking server logs..."
         # SSH back to server to check logs
-        ssh -i team-key -o StrictHostKeyChecking=no ec2-user@$API_IP << 'EOF'
+        ssh -i team-key -o StrictHostKeyChecking=no ubuntu@$API_IP << 'EOF'
           echo "=== PM2 Status ==="
           pm2 status
           echo "=== PM2 Logs ==="
