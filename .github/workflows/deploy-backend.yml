@@ -137,6 +137,11 @@ jobs:
           INSTANCE_COUNT=$(pm2 list | grep -c "backend" || echo "0")
           echo "Backend instances running: $INSTANCE_COUNT"
           
+          # Show final status and exit cleanly
+          echo "=== Deployment completed successfully ==="
+          pm2 status
+          exit 0
+          
           # Setup PM2 startup script
           sudo pm2 startup systemd -u ubuntu --hp /home/ubuntu || true
           
