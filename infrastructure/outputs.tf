@@ -51,8 +51,8 @@ output "api_https_url" {
 }
 
 output "web_https_url" {
-  value       = "https://web.nrn.com"
-  description = "HTTPS URL for Web access (requires DNS setup)"
+  value       = "https://${aws_lb.nrn_alb.dns_name}"
+  description = "HTTPS URL for Web access via ALB (use Host: web.nrn.com header)"
 }
 
 output "ssl_certificate_arn" {
@@ -67,10 +67,23 @@ output "summary" {
 
   📝 SAVE THESE DETAILS:
 
-  🌐 HTTPS URLs (Production):
-  API:            https://${aws_lb.nrn_alb.dns_name}
-  Web:            https://web.nrn.com (requires DNS)
-  ALB DNS:        ${aws_lb.nrn_alb.dns_name}
+  🌐 TESTING URLs (No DNS Setup Required):
+  
+  🚀 MAIN API ENDPOINT:
+  https://${aws_lb.nrn_alb.dns_name}
+  
+  🔧 TESTING ENDPOINTS:
+  For Web App Testing:
+  curl -H "Host: web.nrn.com" https://${aws_lb.nrn_alb.dns_name}
+  
+  For API Testing: 
+  curl -H "Host: api.nrn.com" https://${aws_lb.nrn_alb.dns_name}
+  
+  📋 ALB DNS Name: ${aws_lb.nrn_alb.dns_name}
+  
+  ⚠️  SSL Certificate: Will have browser warnings until DNS validation
+  For testing, use --insecure flag with curl:
+  curl -k https://${aws_lb.nrn_alb.dns_name}/health
 
   🖥️  Direct Server Access (Development):
   API Server:     ${aws_instance.nrn_api_ec2_instance.public_dns}

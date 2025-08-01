@@ -520,7 +520,7 @@ resource "aws_instance" "nrn_web_ec2_instance" {
 # SSL CERTIFICATE & LOAD BALANCER
 # ============================================================================
 
-# SSL Certificate for HTTPS
+# SSL Certificate for HTTPS (Manual DNS validation required)
 resource "aws_acm_certificate" "nrn_cert" {
   domain_name       = "*.nrn.com"
   validation_method = "DNS"
@@ -639,7 +639,7 @@ resource "aws_lb_listener" "http_listener" {
   }
 }
 
-# HTTPS Listener for API
+# HTTPS Listener for API (allows invalid certificates for testing)
 resource "aws_lb_listener" "https_api_listener" {
   load_balancer_arn = aws_lb.nrn_alb.arn
   port              = "443"
@@ -651,6 +651,8 @@ resource "aws_lb_listener" "https_api_listener" {
     type             = "forward"
     target_group_arn = aws_lb_target_group.api_tg.arn
   }
+
+  depends_on = [aws_acm_certificate.nrn_cert]
 }
 
 # Listener Rule for Web
@@ -666,6 +668,23 @@ resource "aws_lb_listener_rule" "web_rule" {
   condition {
     host_header {
       values = ["web.nrn.com"]
+    }
+  }
+}
+
+# Listener Rule for API subdomain
+resource "aws_lb_listener_rule" "api_rule" {
+  listener_arn = aws_lb_listener.https_api_listener.arn
+  priority     = 200
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.api_tg.arn
+  }
+
+  condition {
+    host_header {
+      values = ["api.nrn.com"]
     }
   }
 }
