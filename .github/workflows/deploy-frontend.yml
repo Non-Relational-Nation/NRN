@@ -112,8 +112,17 @@ jobs:
           # Install serve and PM2 globally
           sudo npm install -g serve pm2@latest
           
-          # Start the frontend on port 3000 using PM2
-          pm2 start --name "frontend" --interpreter none -- serve -s . -l 3000
+          # Start the frontend on port 3000 using PM2 with robust fallback
+          if ! pm2 start "serve -s . -l 3000" --name "frontend"; then
+            echo "First PM2 approach failed, trying alternative for frontend..."
+            # Alternative approach: create a simple start script
+            echo '#!/bin/bash' > start-frontend.sh
+            echo 'cd /home/ec2-user/frontend' >> start-frontend.sh
+            echo 'exec serve -s . -l 3000' >> start-frontend.sh
+            chmod +x start-frontend.sh
+            pm2 start ./start-frontend.sh --name "frontend"
+          fi
+          
           pm2 save
           
           # Setup PM2 startup script
