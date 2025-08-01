@@ -16,7 +16,7 @@ export const createApp = () => {
   app.set("trust proxy", true);
 
   
-  // Health check with database connectivity verification at /api/health
+  // Health check with database connectivity verification at /api/health only
   app.get("/api/health", async (req, res) => {
     try {
       const healthStatus = {
