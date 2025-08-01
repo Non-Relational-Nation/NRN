@@ -45,19 +45,19 @@ output "alb_zone_id" {
   description = "Zone ID of the Application Load Balancer"
 }
 
-output "api_https_url" {
-  value       = "https://${aws_lb.nrn_alb.dns_name}"
-  description = "HTTPS URL for API access via ALB"
+output "api_url" {
+  value       = "http://${aws_lb.nrn_alb.dns_name}/api"
+  description = "API URL using load balancer DNS (path-based routing)"
 }
 
-output "web_https_url" {
-  value       = "https://${aws_lb.nrn_alb.dns_name}"
-  description = "HTTPS URL for Web access via ALB (use Host: web.nrn.com header)"
+output "web_url" {
+  value       = "http://${aws_lb.nrn_alb.dns_name}/web"
+  description = "Web URL using load balancer DNS (path-based routing)"
 }
 
-output "ssl_certificate_arn" {
-  value       = aws_acm_certificate.nrn_cert.arn
-  description = "ARN of the SSL certificate"
+output "root_url" {
+  value       = "http://${aws_lb.nrn_alb.dns_name}"
+  description = "Root URL (defaults to API)"
 }
 
 output "summary" {
@@ -67,23 +67,22 @@ output "summary" {
 
   📝 SAVE THESE DETAILS:
 
-  🌐 TESTING URLs (No DNS Setup Required):
+  🌐 APPLICATION URLs (Free Load Balancer DNS):
   
-  🚀 MAIN API ENDPOINT:
-  https://${aws_lb.nrn_alb.dns_name}
+  🚀 API ENDPOINT:
+  http://${aws_lb.nrn_alb.dns_name}/api
   
-  🔧 TESTING ENDPOINTS:
-  For Web App Testing:
-  curl -H "Host: web.nrn.com" https://${aws_lb.nrn_alb.dns_name}
+  🌐 WEB APPLICATION:
+  http://${aws_lb.nrn_alb.dns_name}/web
   
-  For API Testing: 
-  curl -H "Host: api.nrn.com" https://${aws_lb.nrn_alb.dns_name}
+  📋 ROOT URL (defaults to API):
+  http://${aws_lb.nrn_alb.dns_name}
+  
+  � TESTING COMMANDS:
+  Test API: curl http://${aws_lb.nrn_alb.dns_name}/api/health
+  Test Web: curl http://${aws_lb.nrn_alb.dns_name}/web
   
   📋 ALB DNS Name: ${aws_lb.nrn_alb.dns_name}
-  
-  ⚠️  SSL Certificate: Will have browser warnings until DNS validation
-  For testing, use --insecure flag with curl:
-  curl -k https://${aws_lb.nrn_alb.dns_name}/health
 
   🖥️  Direct Server Access (Development):
   API Server:     ${aws_instance.nrn_api_ec2_instance.public_dns}
@@ -98,6 +97,8 @@ output "summary" {
 
   💾 MongoDB Connection:
   mongodb://${aws_instance.nrn_mongodb_ec2_instance.public_dns}:27017/nrn_db
+
+  💰 COST-EFFECTIVE: No Route53 charges, no SSL certificate costs!
 
   EOT
 }

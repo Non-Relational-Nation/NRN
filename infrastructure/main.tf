@@ -12,7 +12,7 @@ terraform {
 
   backend "s3" {
     bucket = "nrn-bucket1"
-    key    = "terraform/nrn-group01-dev.tfstate" 
+    key    = "terraform/nrn-group01-dev.tfstate"
     region = "af-south-1"
   }
 }
@@ -29,12 +29,12 @@ provider "aws" {
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
-  
+
   filter {
     name   = "name"
     values = ["amzn2-ami-hvm-*-x86_64-gp2"]
   }
-  
+
   filter {
     name   = "virtualization-type"
     values = ["hvm"]
@@ -59,8 +59,8 @@ locals {
 # Key pairs for EC2 instances
 resource "aws_key_pair" "api_key" {
   key_name   = "${local.team_name}-api-key"
-  public_key = file("./team-key.pub")  
-  
+  public_key = file("./team-key.pub")
+
   tags = {
     Name        = "${local.project}-api-key-${local.team_name}-${local.environment}"
     Environment = local.environment
@@ -70,8 +70,8 @@ resource "aws_key_pair" "api_key" {
 
 resource "aws_key_pair" "web_key" {
   key_name   = "${local.team_name}-web-key"
-  public_key = file("./team-key.pub")  
-  
+  public_key = file("./team-key.pub")
+
   tags = {
     Name        = "${local.project}-web-key-${local.team_name}-${local.environment}"
     Environment = local.environment
@@ -81,8 +81,8 @@ resource "aws_key_pair" "web_key" {
 
 resource "aws_key_pair" "mongodb_key" {
   key_name   = "${local.team_name}-mongodb-key"
-  public_key = file("./team-key.pub")  
-  
+  public_key = file("./team-key.pub")
+
   tags = {
     Name        = "${local.project}-mongodb-key-${local.team_name}-${local.environment}"
     Environment = local.environment
@@ -351,7 +351,7 @@ resource "aws_security_group" "ec2_security_group" {
     protocol        = "tcp"
     security_groups = [aws_security_group.alb_security_group.id]
   }
-  
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -384,7 +384,7 @@ resource "aws_security_group" "mongodb_security_group" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -403,7 +403,7 @@ resource "aws_security_group" "mongodb_security_group" {
 
 resource "aws_instance" "nrn_mongodb_ec2_instance" {
   ami                    = data.aws_ami.amazon_linux.id
-  instance_type          = "t3.micro"  
+  instance_type          = "t3.micro"
   key_name               = aws_key_pair.mongodb_key.key_name
   subnet_id              = aws_subnet.subnet_az1.id
   vpc_security_group_ids = [aws_security_group.mongodb_security_group.id]
@@ -516,30 +516,6 @@ resource "aws_instance" "nrn_web_ec2_instance" {
   }
 }
 
-# ============================================================================
-# SSL CERTIFICATE & LOAD BALANCER
-# ============================================================================
-
-# SSL Certificate for HTTPS (Manual DNS validation required)
-resource "aws_acm_certificate" "nrn_cert" {
-  domain_name       = "*.nrn.com"
-  validation_method = "DNS"
-
-  subject_alternative_names = [
-    "nrn.com"
-  ]
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  tags = {
-    Name        = "${local.project}-cert-${local.team_name}-${local.environment}"
-    Environment = local.environment
-    Team        = local.team_name
-  }
-}
-
 # Application Load Balancer
 resource "aws_lb" "nrn_alb" {
   name               = "${local.project}-alb-${local.team_name}-${local.environment}"
@@ -622,42 +598,23 @@ resource "aws_lb_target_group_attachment" "web_attachment" {
   port             = 3000
 }
 
-# HTTP Listener (redirects to HTTPS)
+# HTTP Listener (Development - Free load balancer DNS only)
 resource "aws_lb_listener" "http_listener" {
   load_balancer_arn = aws_lb.nrn_alb.arn
   port              = "80"
   protocol          = "HTTP"
 
-  default_action {
-    type = "redirect"
-
-    redirect {
-      port        = "443"
-      protocol    = "HTTPS"
-      status_code = "HTTP_301"
-    }
-  }
-}
-
-# HTTPS Listener for API (allows invalid certificates for testing)
-resource "aws_lb_listener" "https_api_listener" {
-  load_balancer_arn = aws_lb.nrn_alb.arn
-  port              = "443"
-  protocol          = "HTTPS"
-  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
-  certificate_arn   = aws_acm_certificate.nrn_cert.arn
-
+  # Default action forwards to API (you can change this to web if preferred)
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.api_tg.arn
   }
-
-  depends_on = [aws_acm_certificate.nrn_cert]
 }
 
-# Listener Rule for Web
-resource "aws_lb_listener_rule" "web_rule" {
-  listener_arn = aws_lb_listener.https_api_listener.arn
+# Path-based routing rules (since we don't have custom domains)
+# Web app will be accessible at: http://your-alb-dns/web
+resource "aws_lb_listener_rule" "web_path_rule" {
+  listener_arn = aws_lb_listener.http_listener.arn
   priority     = 100
 
   action {
@@ -666,15 +623,15 @@ resource "aws_lb_listener_rule" "web_rule" {
   }
 
   condition {
-    host_header {
-      values = ["web.nrn.com"]
+    path_pattern {
+      values = ["/web*"]
     }
   }
 }
 
-# Listener Rule for API subdomain
-resource "aws_lb_listener_rule" "api_rule" {
-  listener_arn = aws_lb_listener.https_api_listener.arn
+# API will be accessible at: http://your-alb-dns/api
+resource "aws_lb_listener_rule" "api_path_rule" {
+  listener_arn = aws_lb_listener.http_listener.arn
   priority     = 200
 
   action {
@@ -683,8 +640,8 @@ resource "aws_lb_listener_rule" "api_rule" {
   }
 
   condition {
-    host_header {
-      values = ["api.nrn.com"]
+    path_pattern {
+      values = ["/api*"]
     }
   }
 }
