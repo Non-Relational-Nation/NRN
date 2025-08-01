@@ -25,7 +25,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '22'
+        node-version: '18'
         cache: 'npm'
         cache-dependency-path: backend/package-lock.json
 
@@ -74,9 +74,9 @@ jobs:
           sudo pkill -f "node.*app" || true
           pm2 stop backend || true
           
-          # Update Node.js to version 22 if needed
-          if ! node --version | grep -q "v22"; then
-            echo "Installing Node.js 22 via Node Version Manager (NVM)..."
+          # Update Node.js to version 18 if needed (compatible with Amazon Linux 2)
+          if ! node --version | grep -q "v18"; then
+            echo "Installing Node.js 18 via Node Version Manager (NVM)..."
             # Install NVM if not present
             if [ ! -d "$HOME/.nvm" ]; then
               curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
@@ -87,16 +87,16 @@ jobs:
               [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             fi
             
-            # Install and use Node.js 22
-            nvm install 22
-            nvm use 22
-            nvm alias default 22
+            # Install and use Node.js 18 (compatible with glibc 2.26)
+            nvm install 18
+            nvm use 18
+            nvm alias default 18
             
             # Make sure node and npm are in PATH
             export PATH="$NVM_DIR/versions/node/$(nvm version)/bin:$PATH"
             echo "Node.js version after install: $(node --version)"
           else
-            echo "Node.js 22 already installed: $(node --version)"
+            echo "Node.js 18 already installed: $(node --version)"
           fi
           
           # Ensure Node.js and npm are available for subsequent commands

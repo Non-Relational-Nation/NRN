@@ -1,3 +1,7 @@
+# ============================================================================
+# TERRAFORM CONFIGURATION
+# ============================================================================
+
 terraform {
   required_providers {
     aws = {
@@ -17,6 +21,10 @@ provider "aws" {
   region = var.region_name
 }
 
+# ============================================================================
+# DATA SOURCES & LOCALS
+# ============================================================================
+
 # Data source to fetch the latest Amazon Linux 2 AMI
 data "aws_ami" "amazon_linux" {
   most_recent = true
@@ -33,12 +41,20 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
+data "aws_availability_zones" "available_zones" {
+  state = "available"
+}
+
 # Team-specific naming
 locals {
   team_name   = "grad-group01"
   environment = "dev"
   project     = "nrn"
 }
+
+# ============================================================================
+# SSH KEY PAIRS
+# ============================================================================
 
 # Key pairs for EC2 instances
 resource "aws_key_pair" "api_key" {
@@ -73,6 +89,10 @@ resource "aws_key_pair" "mongodb_key" {
     Team        = local.team_name
   }
 }
+
+# ============================================================================
+# NETWORKING (VPC, Subnets, Internet Gateway, Routing)
+# ============================================================================
 
 resource "aws_vpc" "nrn_vpc" {
   cidr_block           = "10.0.0.0/16"
@@ -155,6 +175,10 @@ resource "aws_route_table_association" "public_rta_az2" {
   route_table_id = aws_route_table.nrn_public_rt.id
 }
 
+# ============================================================================
+# STORAGE (S3 Bucket Configuration)
+# ============================================================================
+
 # S3 Bucket for object storage
 resource "aws_s3_bucket" "nrn_object_storage" {
   bucket = "${local.project}-${local.team_name}-${local.environment}-${random_string.bucket_suffix.result}"
@@ -198,6 +222,10 @@ resource "aws_s3_bucket_public_access_block" "nrn_bucket_pab" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
+
+# ============================================================================
+# IAM (Roles, Policies, Instance Profiles)
+# ============================================================================
 
 # IAM role for EC2 instances to access S3
 resource "aws_iam_role" "ec2_s3_role" {
@@ -250,6 +278,10 @@ resource "aws_iam_instance_profile" "ec2_profile" {
   name = "nrn_ec2_profile"
   role = aws_iam_role.ec2_s3_role.name
 }
+
+# ============================================================================
+# SECURITY GROUPS
+# ============================================================================
 
 # Security group for EC2 instances (API and Web)
 resource "aws_security_group" "ec2_security_group" {
@@ -328,6 +360,10 @@ resource "aws_security_group" "mongodb_security_group" {
     Name = "nrn_mongodb_security_group"
   }
 }
+
+# ============================================================================
+# COMPUTE (EC2 Instances)
+# ============================================================================
 
 resource "aws_instance" "nrn_mongodb_ec2_instance" {
   ami                    = data.aws_ami.amazon_linux.id
@@ -444,6 +480,10 @@ resource "aws_instance" "nrn_web_ec2_instance" {
   }
 }
 
+# ============================================================================
+# BUDGET CONFIGURATION
+# ============================================================================
+
 # Budget configuration
 resource "aws_budgets_budget" "nrn_budget" {
   name              = "nrn_budget"
@@ -533,65 +573,4 @@ resource "aws_budgets_budget" "nrn_budget" {
     notification_type          = "ACTUAL"
     subscriber_email_addresses = var.budget_notification_emails
   }
-}
-
-# Note: Outputs are defined in outputs.tf to avoid duplication
-
-# Outputs
-output "api_ec2_host" {
-  value       = aws_instance.nrn_api_ec2_instance.public_dns
-  description = "The DNS endpoint of the API EC2 instance"
-}
-
-output "api_ec2_ip" {
-  value       = aws_instance.nrn_api_ec2_instance.public_ip
-  description = "Public IP of API server"
-}
-
-output "web_ec2_host" {
-  value       = aws_instance.nrn_web_ec2_instance.public_dns
-  description = "The DNS endpoint of the Web EC2 instance"
-}
-
-output "web_ec2_ip" {
-  value       = aws_instance.nrn_web_ec2_instance.public_ip
-  description = "Public IP of Web server"
-}
-
-output "mongodb_host" {
-  value       = aws_instance.nrn_mongodb_ec2_instance.public_dns
-  description = "The DNS endpoint of the MongoDB EC2 instance"
-}
-
-output "mongodb_ec2_ip" {
-  value       = aws_instance.nrn_mongodb_ec2_instance.public_ip
-  description = "Public IP of MongoDB server"
-}
-
-output "mongodb_connection_string" {
-  value       = "mongodb://${aws_instance.nrn_mongodb_ec2_instance.public_dns}:27017/nrn_db"
-  description = "MongoDB connection string for your application"
-}
-
-output "summary" {
-  value = <<-EOT
-
-  🎉 Infrastructure deployed successfully!
-
-  📝 SAVE THESE DETAILS:
-
-  API Server:     ${aws_instance.nrn_api_ec2_instance.public_dns}
-  Web Server:     ${aws_instance.nrn_web_ec2_instance.public_dns}
-  MongoDB Server: ${aws_instance.nrn_mongodb_ec2_instance.public_dns}
-  S3 Bucket:      ${aws_s3_bucket.nrn_object_storage.bucket}
-
-  🔐 SSH Commands:
-  ssh -i team-key ec2-user@${aws_instance.nrn_api_ec2_instance.public_ip}
-  ssh -i team-key ec2-user@${aws_instance.nrn_web_ec2_instance.public_ip}
-  ssh -i team-key ec2-user@${aws_instance.nrn_mongodb_ec2_instance.public_ip}
-
-  💾 MongoDB Connection:
-  mongodb://${aws_instance.nrn_mongodb_ec2_instance.public_dns}:27017/nrn_db
-
-  EOT
 }
