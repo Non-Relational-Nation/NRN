@@ -114,8 +114,17 @@ jobs:
           # Create logs directory
           mkdir -p logs
           
-          # Start application with PM2 using tsx directly
-          pm2 start --name "backend" --interpreter none --env production -- npx tsx src/server.ts
+          # Start application with PM2 - try multiple approaches for compatibility
+          if ! pm2 start "npx tsx src/server.ts" --name "backend" --env production; then
+            echo "First PM2 approach failed, trying alternative..."
+            # Alternative approach: create a simple start script
+            echo '#!/bin/bash' > start.sh
+            echo 'cd /home/ec2-user/backend' >> start.sh
+            echo 'exec npx tsx src/server.ts' >> start.sh
+            chmod +x start.sh
+            pm2 start ./start.sh --name "backend" --env production
+          fi
+          
           pm2 save
           
           # Setup PM2 startup script
