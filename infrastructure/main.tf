@@ -12,7 +12,7 @@ terraform {
 
   backend "s3" {
     bucket = "nrn-bucket1"
-    key    = "terraform/nrn-group01-dev.tfstate" # You can change this path as needed
+    key    = "terraform/nrn-group01-dev.tfstate" 
     region = "af-south-1"
   }
 }
@@ -131,10 +131,6 @@ resource "aws_route_table" "nrn_public_rt" {
     Environment = local.environment
     Team        = local.team_name
   }
-}
-
-data "aws_availability_zones" "available_zones" {
-  state = "available"
 }
 
 # Create subnets in different AZs
@@ -283,6 +279,39 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 # SECURITY GROUPS
 # ============================================================================
 
+# Security group for Application Load Balancer
+resource "aws_security_group" "alb_security_group" {
+  name_prefix = "nrn_alb_sg"
+  vpc_id      = aws_vpc.nrn_vpc.id
+
+  # HTTP access
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # HTTPS access
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "nrn_alb_security_group"
+  }
+}
+
 # Security group for EC2 instances (API and Web)
 resource "aws_security_group" "ec2_security_group" {
   name_prefix = "nrn_app_sg"
@@ -296,24 +325,31 @@ resource "aws_security_group" "ec2_security_group" {
   }
 
   ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb_security_group.id]
   }
 
   ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb_security_group.id]
   }
 
   ingress {
-    from_port   = 444
-    to_port     = 444
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port       = 3000
+    to_port         = 3000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb_security_group.id]
+  }
+
+  ingress {
+    from_port       = 5000
+    to_port         = 5000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb_security_group.id]
   }
   
   egress {
@@ -481,96 +517,155 @@ resource "aws_instance" "nrn_web_ec2_instance" {
 }
 
 # ============================================================================
-# BUDGET CONFIGURATION
+# SSL CERTIFICATE & LOAD BALANCER
 # ============================================================================
 
-# Budget configuration
-resource "aws_budgets_budget" "nrn_budget" {
-  name              = "nrn_budget"
-  budget_type       = "COST"
-  limit_amount      = "25"
-  limit_unit        = "USD"
-  time_period_end   = "2025-08-12_00:00"
-  time_period_start = "2025-07-29_00:00"
-  time_unit         = "MONTHLY"
+# SSL Certificate for HTTPS
+resource "aws_acm_certificate" "nrn_cert" {
+  domain_name       = "*.nrn.com"
+  validation_method = "DNS"
 
-  notification {
-    comparison_operator        = "EQUAL_TO"
-    threshold                  = 50
-    threshold_type             = "PERCENTAGE"
-    notification_type          = "FORECASTED"
-    subscriber_email_addresses = var.budget_notification_emails
+  subject_alternative_names = [
+    "nrn.com"
+  ]
+
+  lifecycle {
+    create_before_destroy = true
   }
 
-  notification {
-    comparison_operator        = "EQUAL_TO"
-    threshold                  = 75
-    threshold_type             = "PERCENTAGE"
-    notification_type          = "FORECASTED"
-    subscriber_email_addresses = var.budget_notification_emails
+  tags = {
+    Name        = "${local.project}-cert-${local.team_name}-${local.environment}"
+    Environment = local.environment
+    Team        = local.team_name
+  }
+}
+
+# Application Load Balancer
+resource "aws_lb" "nrn_alb" {
+  name               = "${local.project}-alb-${local.team_name}-${local.environment}"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb_security_group.id]
+  subnets            = [aws_subnet.subnet_az1.id, aws_subnet.subnet_az2.id]
+
+  enable_deletion_protection = false
+
+  tags = {
+    Name        = "${local.project}-alb-${local.team_name}-${local.environment}"
+    Environment = local.environment
+    Team        = local.team_name
+  }
+}
+
+# Target Group for API
+resource "aws_lb_target_group" "api_tg" {
+  name     = "${local.project}-api-tg-${local.team_name}-${local.environment}"
+  port     = 5000
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.nrn_vpc.id
+
+  health_check {
+    enabled             = true
+    healthy_threshold   = 2
+    interval            = 30
+    matcher             = "200"
+    path                = "/health"
+    port                = "traffic-port"
+    protocol            = "HTTP"
+    timeout             = 5
+    unhealthy_threshold = 2
   }
 
-  notification {
-    comparison_operator        = "GREATER_THAN"
-    threshold                  = 10
-    threshold_type             = "PERCENTAGE"
-    notification_type          = "ACTUAL"
-    subscriber_email_addresses = var.budget_notification_emails
+  tags = {
+    Name        = "${local.project}-api-tg-${local.team_name}-${local.environment}"
+    Environment = local.environment
+    Team        = local.team_name
+  }
+}
+
+# Target Group for Web
+resource "aws_lb_target_group" "web_tg" {
+  name     = "${local.project}-web-tg-${local.team_name}-${local.environment}"
+  port     = 3000
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.nrn_vpc.id
+
+  health_check {
+    enabled             = true
+    healthy_threshold   = 2
+    interval            = 30
+    matcher             = "200"
+    path                = "/"
+    port                = "traffic-port"
+    protocol            = "HTTP"
+    timeout             = 5
+    unhealthy_threshold = 2
   }
 
-  notification {
-    comparison_operator        = "GREATER_THAN"
-    threshold                  = 20
-    threshold_type             = "PERCENTAGE"
-    notification_type          = "ACTUAL"
-    subscriber_email_addresses = var.budget_notification_emails
+  tags = {
+    Name        = "${local.project}-web-tg-${local.team_name}-${local.environment}"
+    Environment = local.environment
+    Team        = local.team_name
+  }
+}
+
+# Target Group Attachments
+resource "aws_lb_target_group_attachment" "api_attachment" {
+  target_group_arn = aws_lb_target_group.api_tg.arn
+  target_id        = aws_instance.nrn_api_ec2_instance.id
+  port             = 5000
+}
+
+resource "aws_lb_target_group_attachment" "web_attachment" {
+  target_group_arn = aws_lb_target_group.web_tg.arn
+  target_id        = aws_instance.nrn_web_ec2_instance.id
+  port             = 3000
+}
+
+# HTTP Listener (redirects to HTTPS)
+resource "aws_lb_listener" "http_listener" {
+  load_balancer_arn = aws_lb.nrn_alb.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+# HTTPS Listener for API
+resource "aws_lb_listener" "https_api_listener" {
+  load_balancer_arn = aws_lb.nrn_alb.arn
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
+  certificate_arn   = aws_acm_certificate.nrn_cert.arn
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.api_tg.arn
+  }
+}
+
+# Listener Rule for Web
+resource "aws_lb_listener_rule" "web_rule" {
+  listener_arn = aws_lb_listener.https_api_listener.arn
+  priority     = 100
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.web_tg.arn
   }
 
-  notification {
-    comparison_operator        = "GREATER_THAN"
-    threshold                  = 30
-    threshold_type             = "PERCENTAGE"
-    notification_type          = "ACTUAL"
-    subscriber_email_addresses = var.budget_notification_emails
-  }
-
-  notification {
-    comparison_operator        = "GREATER_THAN"
-    threshold                  = 40
-    threshold_type             = "PERCENTAGE"
-    notification_type          = "ACTUAL"
-    subscriber_email_addresses = var.budget_notification_emails
-  }
-
-  notification {
-    comparison_operator        = "GREATER_THAN"
-    threshold                  = 50
-    threshold_type             = "PERCENTAGE"
-    notification_type          = "ACTUAL"
-    subscriber_email_addresses = var.budget_notification_emails
-  }
-
-  notification {
-    comparison_operator        = "GREATER_THAN"
-    threshold                  = 60
-    threshold_type             = "PERCENTAGE"
-    notification_type          = "ACTUAL"
-    subscriber_email_addresses = var.budget_notification_emails
-  }
-
-  notification {
-    comparison_operator        = "GREATER_THAN"
-    threshold                  = 80
-    threshold_type             = "PERCENTAGE"
-    notification_type          = "ACTUAL"
-    subscriber_email_addresses = var.budget_notification_emails
-  }
-
-  notification {
-    comparison_operator        = "GREATER_THAN"
-    threshold                  = 90
-    threshold_type             = "PERCENTAGE"
-    notification_type          = "ACTUAL"
-    subscriber_email_addresses = var.budget_notification_emails
+  condition {
+    host_header {
+      values = ["web.nrn.com"]
+    }
   }
 }

@@ -34,6 +34,32 @@ output "mongodb_connection_string" {
   description = "MongoDB connection string for your application"
 }
 
+# ALB Outputs
+output "alb_dns_name" {
+  value       = aws_lb.nrn_alb.dns_name
+  description = "DNS name of the Application Load Balancer"
+}
+
+output "alb_zone_id" {
+  value       = aws_lb.nrn_alb.zone_id
+  description = "Zone ID of the Application Load Balancer"
+}
+
+output "api_https_url" {
+  value       = "https://${aws_lb.nrn_alb.dns_name}"
+  description = "HTTPS URL for API access via ALB"
+}
+
+output "web_https_url" {
+  value       = "https://web.nrn.com"
+  description = "HTTPS URL for Web access (requires DNS setup)"
+}
+
+output "ssl_certificate_arn" {
+  value       = aws_acm_certificate.nrn_cert.arn
+  description = "ARN of the SSL certificate"
+}
+
 output "summary" {
   value = <<-EOT
 
@@ -41,6 +67,12 @@ output "summary" {
 
   📝 SAVE THESE DETAILS:
 
+  🌐 HTTPS URLs (Production):
+  API:            https://${aws_lb.nrn_alb.dns_name}
+  Web:            https://web.nrn.com (requires DNS)
+  ALB DNS:        ${aws_lb.nrn_alb.dns_name}
+
+  🖥️  Direct Server Access (Development):
   API Server:     ${aws_instance.nrn_api_ec2_instance.public_dns}
   Web Server:     ${aws_instance.nrn_web_ec2_instance.public_dns}
   MongoDB Server: ${aws_instance.nrn_mongodb_ec2_instance.public_dns}
