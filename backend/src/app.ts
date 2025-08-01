@@ -66,6 +66,57 @@ export const createApp = () => {
     }
   });
   
+  // Legacy health check endpoint for backward compatibility
+  app.get("/health", async (req, res) => {
+    // Redirect to the new API health endpoint logic
+    try {
+      const healthStatus = {
+        status: "OK",
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || "development",
+        database: {
+          status: "unknown",
+          readyState: mongoose.connection.readyState
+        }
+      };
+
+      // Check MongoDB connection state
+      switch (mongoose.connection.readyState) {
+        case 1: // Connected
+          await mongoose.connection.db?.admin().ping();
+          healthStatus.database.status = "connected";
+          break;
+        case 2: // Connecting
+          healthStatus.database.status = "connecting";
+          healthStatus.status = "DEGRADED";
+          break;
+        case 0: // Disconnected
+          healthStatus.database.status = "disconnected";
+          healthStatus.status = "UNHEALTHY";
+          break;
+        default:
+          healthStatus.database.status = "unknown";
+          healthStatus.status = "DEGRADED";
+      }
+
+      const statusCode = healthStatus.status === "UNHEALTHY" ? 503 : 200;
+      res.status(statusCode).json(healthStatus);
+      
+    } catch (error) {
+      res.status(503).json({
+        status: "UNHEALTHY",
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || "development",
+        database: {
+          status: "error",
+          error: error instanceof Error ? error.message : "Database check failed"
+        }
+      });
+    }
+  });
+  
   // API routes
   app.use("/api/auth", authRoutes);
   app.use("/", userRoutes);
