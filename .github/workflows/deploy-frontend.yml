@@ -100,10 +100,11 @@ jobs:
           echo "Node.js version: $(node --version)"
           echo "NPM version: $(npm --version)"
           
-          # Stop any existing application
+          # Stop any existing application - more aggressive cleanup
           sudo pkill -f "serve" || true
-          pm2 stop frontend || true
-          pm2 delete frontend || true
+          pm2 stop all || true
+          pm2 delete all || true
+          pm2 kill || true
           
           # Deploy frontend files
           rm -rf /home/ubuntu/frontend
@@ -115,12 +116,12 @@ jobs:
           sudo npm install -g serve pm2@latest
           
           # Start the frontend on port 3000 using PM2 with robust fallback
-          if ! pm2 start "serve -s . -l 3000" --name "frontend"; then
-            echo "First PM2 approach failed, trying alternative for frontend..."
+          if ! pm2 start "serve -s . -l 3000 -n" --name "frontend"; then
+            echo "Primary serve approach failed, trying alternative..."
             # Alternative approach: create a simple start script
             echo '#!/bin/bash' > start-frontend.sh
             echo 'cd /home/ubuntu/frontend' >> start-frontend.sh
-            echo 'exec serve -s . -l 3000' >> start-frontend.sh
+            echo 'exec serve -s . -l 3000 -n' >> start-frontend.sh
             chmod +x start-frontend.sh
             pm2 start ./start-frontend.sh --name "frontend"
           fi

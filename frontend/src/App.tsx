@@ -7,6 +7,7 @@ import Login from "./pages/Login/Login";
 import { useEffect } from "react";
 import Callback from "./pages/Login/Callback";
 
+// NRN Social Media App
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
