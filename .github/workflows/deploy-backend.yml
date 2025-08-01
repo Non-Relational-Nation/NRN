@@ -126,18 +126,16 @@ jobs:
           # Create logs directory
           mkdir -p logs
           
-          # Start application with PM2 - try multiple approaches for compatibility
-          if ! pm2 start "npx tsx src/server.ts" --name "backend" --env production; then
-            echo "First PM2 approach failed, trying alternative..."
-            # Alternative approach: create a simple start script
-            echo '#!/bin/bash' > start.sh
-            echo 'cd /home/ubuntu/backend' >> start.sh
-            echo 'exec npx tsx src/server.ts' >> start.sh
-            chmod +x start.sh
-            pm2 start ./start.sh --name "backend" --env production
-          fi
-          
+          # Start application with PM2 - single reliable approach
+          pm2 start "npx tsx src/server.ts" --name "backend" --env production --force
           pm2 save
+          
+          # Verify only one instance is running
+          sleep 3
+          pm2 list
+          echo "=== Verifying single instance ==="
+          INSTANCE_COUNT=$(pm2 list | grep -c "backend" || echo "0")
+          echo "Backend instances running: $INSTANCE_COUNT"
           
           # Setup PM2 startup script
           sudo pm2 startup systemd -u ubuntu --hp /home/ubuntu || true
