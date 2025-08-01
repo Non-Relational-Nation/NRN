@@ -3,7 +3,7 @@ name: Deploy Infrastructure
 on:
   # Temporarily disabled - infrastructure already deployed manually
   # push:
-  #   branches: [ main ]
+  #   branches: [ main, infrastructure ]
   #   paths: [ 'infrastructure/**' ]
   workflow_dispatch:
 

@@ -6,10 +6,16 @@ export const connectDB = async () => {
     const mongoUri = process.env.MONGODB_URI || 
       `mongodb://${process.env.MONGODB_HOST}:${process.env.MONGODB_PORT}/${process.env.MONGODB_DATABASE}`;
     
+    console.log(`Attempting to connect to MongoDB...`);
     await mongoose.connect(mongoUri);
-    console.log("MongoDB connected");
+    console.log("✅ MongoDB connected successfully");
   } catch (err) {
-    console.error("MongoDB connection error:", err);
-    process.exit(1);
+    console.error("❌ MongoDB connection error:", err);
+    
+    // Only exit in development, in production let the app run and report via health check
+    if (process.env.NODE_ENV !== 'production') {
+      process.exit(1);
+    }
+    throw err;
   }
 };

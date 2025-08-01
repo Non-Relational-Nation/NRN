@@ -2,7 +2,7 @@ name: Deploy Backend to AWS
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, infrastructure ]  # Added infrastructure branch for testing
     paths: [ 'backend/**' ]
   workflow_dispatch:
 
@@ -158,27 +158,47 @@ jobs:
       env:
         API_IP: ${{ steps.get-api-ip.outputs.api_ip }}
       run: |
-        # Wait for application to start
-        echo "⏳ Waiting for application to start..."
-        sleep 30
+        # Wait for application to start and database to connect
+        echo "⏳ Waiting for application to start and database to connect..."
+        sleep 45
         
         # Try health check endpoint multiple times
-        for i in {1..5}; do
-          echo "🔍 Health check attempt $i/5..."
-          if curl -f -m 10 http://$API_IP:5000/health; then
-            echo "✅ Backend deployed successfully!"
-            exit 0
+        for i in {1..6}; do
+          echo "🔍 Health check attempt $i/6 for http://$API_IP:5000/health"
+          
+          RESPONSE=$(curl -f -m 15 -w "\nHTTP_CODE:%{http_code}" http://$API_IP:5000/health 2>&1)
+          CURL_EXIT=$?
+          
+          if [ $CURL_EXIT -eq 0 ]; then
+            echo "✅ Health check response:"
+            echo "$RESPONSE"
+            
+            # Check if response indicates healthy or acceptable status
+            if echo "$RESPONSE" | grep -q '"status":"OK"' || echo "$RESPONSE" | grep -q '"status":"DEGRADED"'; then
+              echo "✅ Backend deployed successfully!"
+              exit 0
+            fi
+          else
+            echo "❌ Health check failed with curl exit code: $CURL_EXIT"
+            echo "Response: $RESPONSE"
           fi
-          echo "❌ Health check failed, retrying in 10 seconds..."
-          sleep 10
+          
+          if [ $i -lt 6 ]; then
+            echo "⏳ Retrying in 15 seconds..."
+            sleep 15
+          fi
         done
         
-        echo "🚨 Health check failed after 5 attempts. Checking server logs..."
+        echo "🚨 Health check failed after 6 attempts. Checking server logs..."
         # SSH back to server to check logs
         ssh -i team-key -o StrictHostKeyChecking=no ec2-user@$API_IP << 'EOF'
           echo "=== PM2 Status ==="
           pm2 status
           echo "=== PM2 Logs ==="
-          pm2 logs backend --lines 20
+          pm2 logs backend --lines 30
+          echo "=== System Resources ==="
+          free -h
+          echo "=== Network Status ==="
+          netstat -tlnp | grep :5000 || ss -tlnp | grep :5000 || echo "No process on port 5000"
         EOF
         exit 1

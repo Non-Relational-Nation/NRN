@@ -2,7 +2,7 @@ name: Deploy Frontend to AWS
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, infrastructure ]  # Added infrastructure branch for testing
     paths: [ 'frontend/**' ]
   workflow_dispatch:
 
@@ -124,13 +124,13 @@ jobs:
       env:
         WEB_IP: ${{ steps.get-endpoints.outputs.web_ip }}
       run: |
-        # Wait for nginx to start properly
-        echo "⏳ Waiting for nginx to start..."
-        sleep 20
+        # Wait for serve to start properly
+        echo "⏳ Waiting for serve to start..."
+        sleep 30
         
         # Try health check multiple times with better error handling
-        for i in {1..5}; do
-          echo "🔍 Health check attempt $i/5 for http://$WEB_IP:3000"
+        for i in {1..6}; do
+          echo "🔍 Health check attempt $i/6 for http://$WEB_IP:3000"
           
           # Try to connect and get response
           if curl -f -m 15 -v http://$WEB_IP:3000 2>&1; then
@@ -142,7 +142,7 @@ jobs:
           sleep 15
         done
         
-        echo "🚨 Health check failed after 5 attempts. Checking server status..."
+        echo "🚨 Health check failed after 6 attempts. Checking server status..."
         
         # Setup SSH key for debugging
         echo "${{ secrets.TEAM_SSH_KEY }}" > team-key
@@ -150,29 +150,27 @@ jobs:
         
         # SSH back to server to check what's wrong
         ssh -i team-key -o StrictHostKeyChecking=no ec2-user@$WEB_IP << 'EOF'
-          echo "=== Checking nginx status ==="
-          sudo systemctl status nginx --no-pager || true
+          echo "=== PM2 Status ==="
+          pm2 status
           
-          echo "=== Checking if nginx is listening on port 80 ==="
-          sudo netstat -tlnp | grep :80 || sudo ss -tlnp | grep :80 || true
+          echo "=== PM2 Frontend Logs ==="
+          pm2 logs frontend --lines 20 || echo "No frontend logs found"
           
-          echo "=== Checking nginx processes ==="
-          ps aux | grep nginx || true
+          echo "=== Checking if serve is listening on port 3000 ==="
+          sudo netstat -tlnp | grep :3000 || sudo ss -tlnp | grep :3000 || echo "No process listening on port 3000"
           
-          echo "=== Checking web directory contents ==="
-          ls -la /var/www/html/ || true
+          echo "=== Checking serve processes ==="
+          ps aux | grep serve || echo "No serve processes found"
           
-          echo "=== Checking nginx error logs ==="
-          sudo tail -20 /var/log/nginx/error.log 2>/dev/null || echo "No nginx error log found"
+          echo "=== Checking frontend directory contents ==="
+          ls -la /home/ec2-user/frontend/ || echo "Frontend directory not found"
           
-          echo "=== Testing nginx configuration ==="
-          sudo nginx -t || true
+          echo "=== Checking if index.html exists ==="
+          cat /home/ec2-user/frontend/index.html | head -10 || echo "index.html not found"
           
-          echo "=== Checking if files are accessible ==="
-          sudo cat /var/www/html/index.html | head -10 || echo "index.html not found or not readable"
-          
-          echo "=== Checking firewall/iptables ==="
-          sudo iptables -L INPUT -n || echo "Cannot check iptables"
+          echo "=== System resources ==="
+          free -h
+          df -h
         EOF
         
         # Clean up SSH key
