@@ -152,9 +152,9 @@ jobs:
         
         # Try health check endpoint multiple times
         for i in {1..6}; do
-          echo "🔍 Health check attempt $i/6 for http://$API_IP:5000/health"
+          echo "🔍 Health check attempt $i/6 for http://$API_IP:5000/api/health"
           
-          RESPONSE=$(curl -f -m 15 -w "\nHTTP_CODE:%{http_code}" http://$API_IP:5000/health 2>&1)
+          RESPONSE=$(curl -f -m 15 -w "\nHTTP_CODE:%{http_code}" http://$API_IP:5000/api/health 2>&1)
           CURL_EXIT=$?
           
           if [ $CURL_EXIT -eq 0 ]; then

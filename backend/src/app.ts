@@ -16,60 +16,7 @@ export const createApp = () => {
   app.set("trust proxy", true);
 
   
-  // Health check with database connectivity verification
-  app.get("/health", async (req, res) => {
-    try {
-      const healthStatus = {
-        status: "OK",
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV || "development",
-        database: {
-          status: "unknown",
-          readyState: mongoose.connection.readyState
-        }
-      };
-
-      // Check MongoDB connection state
-      switch (mongoose.connection.readyState) {
-        case 1: // Connected
-          // Test database with a simple ping
-          await mongoose.connection.db?.admin().ping();
-          healthStatus.database.status = "connected";
-          break;
-        case 2: // Connecting
-          healthStatus.database.status = "connecting";
-          healthStatus.status = "DEGRADED";
-          break;
-        case 0: // Disconnected
-          healthStatus.database.status = "disconnected";
-          healthStatus.status = "UNHEALTHY";
-          break;
-        default:
-          healthStatus.database.status = "unknown";
-          healthStatus.status = "DEGRADED";
-      }
-
-      // Return appropriate HTTP status
-      const statusCode = healthStatus.status === "UNHEALTHY" ? 503 : 200;
-      res.status(statusCode).json(healthStatus);
-      
-    } catch (error) {
-      // Database ping failed or other error
-      res.status(503).json({
-        status: "UNHEALTHY",
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV || "development",
-        database: {
-          status: "error",
-          error: error instanceof Error ? error.message : "Database check failed"
-        }
-      });
-    }
-  });
-
-  // Also serve health check at /api/health for load balancer compatibility
+  // Health check with database connectivity verification at /api/health
   app.get("/api/health", async (req, res) => {
     try {
       const healthStatus = {
