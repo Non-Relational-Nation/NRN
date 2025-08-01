@@ -69,7 +69,7 @@ jobs:
         scp -i team-key -o StrictHostKeyChecking=no backend-deploy.tar.gz ec2-user@$API_IP:/home/ec2-user/
         
         # Deploy on server
-        ssh -i team-key -o StrictHostKeyChecking=no ec2-user@$API_IP << 'EOF'
+        ssh -i team-key -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=3 ec2-user@$API_IP << 'EOF'
           set -e  # Exit on any error
           
           # Stop existing application
@@ -135,6 +135,8 @@ jobs:
           pm2 status
           echo "=== PM2 Logs ==="
           pm2 logs backend --lines 10 || true
+          
+          echo "✅ Backend deployment completed successfully"
         EOF
 
     - name: Health check

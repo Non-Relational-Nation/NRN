@@ -86,7 +86,9 @@ jobs:
         scp -i team-key -o StrictHostKeyChecking=no frontend-deploy.tar.gz ec2-user@$WEB_IP:/home/ec2-user/
         
         # Deploy on server
-        ssh -i team-key -o StrictHostKeyChecking=no ec2-user@$WEB_IP << 'EOF'
+        ssh -i team-key -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=3 ec2-user@$WEB_IP << 'EOF'
+          set -e  # Exit on any error
+          
           # Install Node.js 18 (Amazon Linux 2023 compatible)
           if ! node --version | grep -q "v18"; then
             echo "Installing Node.js 18 on Amazon Linux 2023..."
@@ -129,8 +131,12 @@ jobs:
           sudo pm2 startup systemd -u ec2-user --hp /home/ec2-user || true
           
           # Show PM2 status for debugging
+          echo "=== PM2 Status ==="
           pm2 status
+          echo "=== PM2 Logs ==="
           pm2 logs frontend --lines 5 || true
+          
+          echo "✅ Frontend deployment completed successfully"
         EOF
 
         rm -f team-key frontend-deploy.tar.gz
