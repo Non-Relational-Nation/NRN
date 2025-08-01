@@ -87,15 +87,21 @@ jobs:
         
         # Deploy on server
         ssh -i team-key -o StrictHostKeyChecking=no ec2-user@$WEB_IP << 'EOF'
-          # Install Node.js if not present
+          # Install Node.js 18 (Amazon Linux 2023 compatible)
           if ! node --version | grep -q "v18"; then
-            curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
+            echo "Installing Node.js 18 on Amazon Linux 2023..."
+            curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
             sudo yum install -y nodejs
           fi
+          
+          # Verify Node.js installation
+          echo "Node.js version: $(node --version)"
+          echo "NPM version: $(npm --version)"
           
           # Stop any existing application
           sudo pkill -f "serve" || true
           pm2 stop frontend || true
+          pm2 delete frontend || true
           
           # Deploy frontend files
           rm -rf /home/ec2-user/frontend
@@ -103,11 +109,11 @@ jobs:
           tar -xzf /home/ec2-user/frontend-deploy.tar.gz -C /home/ec2-user/frontend
           cd /home/ec2-user/frontend
           
-          # Install serve globally to serve the static files
-          npm install -g serve pm2
+          # Install serve and PM2 globally
+          sudo npm install -g serve pm2@latest
           
           # Start the frontend on port 3000 using PM2
-          pm2 start --name "frontend" serve -- -s . -l 3000
+          pm2 start --name "frontend" --interpreter none -- serve -s . -l 3000
           pm2 save
           
           # Setup PM2 startup script
@@ -115,7 +121,7 @@ jobs:
           
           # Show PM2 status for debugging
           pm2 status
-          pm2 logs frontend --lines 5
+          pm2 logs frontend --lines 5 || true
         EOF
 
         rm -f team-key frontend-deploy.tar.gz

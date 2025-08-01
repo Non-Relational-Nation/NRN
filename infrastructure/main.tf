@@ -25,7 +25,7 @@ provider "aws" {
 # DATA SOURCES & LOCALS
 # ============================================================================
 
-# Data source to fetch the latest Amazon Linux 2 AMI
+# Data source to fetch the latest Amazon Linux 2023 AMI
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
@@ -408,11 +408,11 @@ resource "aws_instance" "nrn_mongodb_ec2_instance" {
     #!/bin/bash
     yum update -y
     
-    # Install MongoDB
+    # Install MongoDB for Amazon Linux 2023
     cat <<EOT > /etc/yum.repos.d/mongodb-org-7.0.repo
 [mongodb-org-7.0]
 name=MongoDB Repository
-baseurl=https://repo.mongodb.org/yum/amazon/2/mongodb-org/7.0/x86_64/
+baseurl=https://repo.mongodb.org/yum/amazon/2023/mongodb-org/7.0/x86_64/
 gpgcheck=1
 enabled=1
 gpgkey=https://www.mongodb.org/static/pgp/server-7.0.asc

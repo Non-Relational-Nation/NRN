@@ -33,9 +33,9 @@ jobs:
       working-directory: ./backend
       run: npm ci
 
-    - name: Build application
+    - name: Type check application
       working-directory: ./backend
-      run: npm run build
+      run: npx tsc --noEmit
 
     - name: Configure AWS credentials via OIDC
       uses: aws-actions/configure-aws-credentials@v4
@@ -70,39 +70,23 @@ jobs:
         
         # Deploy on server
         ssh -i team-key -o StrictHostKeyChecking=no ec2-user@$API_IP << 'EOF'
+          set -e  # Exit on any error
+          
           # Stop existing application
           sudo pkill -f "node.*app" || true
           pm2 stop backend || true
+          pm2 delete backend || true
           
-          # Update Node.js to version 18 if needed (compatible with Amazon Linux 2)
-          if ! node --version | grep -q "v18"; then
-            echo "Installing Node.js 18 via Node Version Manager (NVM)..."
-            # Install NVM if not present
-            if [ ! -d "$HOME/.nvm" ]; then
-              curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-              export NVM_DIR="$HOME/.nvm"
-              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            else
-              export NVM_DIR="$HOME/.nvm"
-              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            fi
-            
-            # Install and use Node.js 18 (compatible with glibc 2.26)
-            nvm install 18
-            nvm use 18
-            nvm alias default 18
-            
-            # Make sure node and npm are in PATH
-            export PATH="$NVM_DIR/versions/node/$(nvm version)/bin:$PATH"
-            echo "Node.js version after install: $(node --version)"
-          else
-            echo "Node.js 18 already installed: $(node --version)"
-          fi
+          # Install Node.js 18 (Amazon Linux 2023 has compatible GLIBC)
+          echo "Setting up Node.js 18 on Amazon Linux 2023..."
           
-          # Ensure Node.js and npm are available for subsequent commands
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-          export PATH="$NVM_DIR/versions/node/$(nvm version)/bin:$PATH"
+          # Install Node.js 18 from NodeSource (AL2023 compatible)
+          curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+          sudo yum install -y nodejs
+          
+          # Verify installation
+          echo "Node.js version: $(node --version)"
+          echo "NPM version: $(npm --version)"
           
           # Extract new code
           rm -rf /home/ec2-user/backend
@@ -110,48 +94,38 @@ jobs:
           tar -xzf /home/ec2-user/backend-deploy.tar.gz -C /home/ec2-user/backend
           cd /home/ec2-user/backend
           
-          # Install dependencies (including dev dependencies for build)
+          # Install dependencies
           echo "Installing dependencies..."
-          # Ensure we're using the correct Node.js version
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-          export PATH="$NVM_DIR/versions/node/$(nvm version)/bin:$PATH"
+          npm ci || npm install
           
-          npm ci || { echo "npm ci failed"; exit 1; }
+          # Create environment file
+          echo "Creating environment configuration..."
+          echo "NODE_ENV=production" > .env
+          echo "PORT=5000" >> .env
+          echo "HOST=0.0.0.0" >> .env
+          echo "MONGODB_URI=${{ secrets.MONGODB_CONNECTION_STRING }}" >> .env
+          echo "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}" >> .env
+          echo "AWS_REGION=${{ env.AWS_REGION }}" >> .env
+          echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
           
-          # Build the application
-          echo "Building application..."
-          npm run build || { echo "Build failed"; exit 1; }
+          # Install PM2 globally
+          sudo npm install -g pm2@latest
           
-          # Set environment variables
-          cat > .env << EOL
-          NODE_ENV=production
-          PORT=5000
-          HOST=0.0.0.0
-          MONGODB_URI=${{ secrets.MONGODB_CONNECTION_STRING }}
-          S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
-          AWS_REGION=${{ env.AWS_REGION }}
-          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-          EOL
+          # Create logs directory
+          mkdir -p logs
           
-          # Install PM2 globally if not exists
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-          export PATH="$NVM_DIR/versions/node/$(nvm version)/bin:$PATH"
-          
-          npm install -g pm2 || true
-          
-          # Start application with PM2 using the built JS file
-          pm2 start dist/server.js --name "backend" --env production
+          # Start application with PM2 using tsx directly
+          pm2 start --name "backend" --interpreter none --env production -- npx tsx src/server.ts
           pm2 save
           
-          # Setup PM2 startup script (use NVM node path)
-          NODE_PATH="$NVM_DIR/versions/node/$(nvm version)/bin/node"
-          sudo env PATH="$NVM_DIR/versions/node/$(nvm version)/bin:$PATH" pm2 startup systemd -u ec2-user --hp /home/ec2-user || true
+          # Setup PM2 startup script
+          sudo pm2 startup systemd -u ec2-user --hp /home/ec2-user || true
           
           # Show PM2 status and logs for debugging
+          echo "=== PM2 Status ==="
           pm2 status
-          pm2 logs backend --lines 10
+          echo "=== PM2 Logs ==="
+          pm2 logs backend --lines 10 || true
         EOF
 
     - name: Health check
