@@ -72,12 +72,19 @@ jobs:
         ssh -i team-key -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=3 ubuntu@$API_IP << 'EOF'
           set -e  # Exit on any error
           
-          # Stop existing application - more aggressive cleanup
-          sudo pkill -f "node.*app" || true
-          sudo pkill -f "tsx.*server" || true
-          pm2 stop all || true
-          pm2 delete all || true
+          # Stop existing application - nuclear cleanup
+          sudo pkill -9 -f "node" || true
+          sudo pkill -9 -f "tsx" || true
+          sudo pkill -9 -f "pm2" || true
+          sudo killall node || true
+          sudo killall tsx || true
           pm2 kill || true
+          sleep 5
+          
+          # Free up port 5000 specifically
+          sudo fuser -k 5000/tcp || true
+          sudo netstat -tlnp | grep :5000 | awk '{print $7}' | cut -d/ -f1 | xargs -r sudo kill -9 || true
+          sleep 2
           
           # Install Node.js 18 (Ubuntu 22.04)
           echo "Setting up Node.js 18 on Ubuntu 22.04..."
