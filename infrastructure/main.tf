@@ -340,8 +340,8 @@ resource "aws_security_group" "ec2_security_group" {
   }
 
   ingress {
-    from_port       = 3000
-    to_port         = 3000
+    from_port       = 3001
+    to_port         = 3001
     protocol        = "tcp"
     security_groups = [aws_security_group.alb_security_group.id]
   }
@@ -448,6 +448,72 @@ resource "aws_instance" "nrn_api_ec2_instance" {
     # Neo4j - set initial password
     neo4j-admin set-initial-password neo4jpassword || true
     
+    # Create application directory
+    mkdir -p /home/ubuntu/app
+    chown ubuntu:ubuntu /home/ubuntu/app
+    
+    # Create .env file with production environment variables
+    cat > /home/ubuntu/app/.env << 'EOL'
+NODE_ENV=production
+PORT=3001
+HOST=0.0.0.0
+FRONTEND_URL=https://nrn-alb-grad-group01-dev-205573181.af-south-1.elb.amazonaws.com
+MONGODB_HOST=localhost
+MONGODB_PORT=27017
+MONGODB_DATABASE=nrn_db
+MONGODB_USERNAME=
+MONGODB_PASSWORD=
+MONGODB_URI=
+AWS_REGION=af-south-1
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_S3_BUCKET=nrn-media
+FEDERATION_ENABLED=false
+FEDERATION_DOMAIN=nrn-alb-grad-group01-dev-205573181.af-south-1.elb.amazonaws.com
+FEDERATION_PUBLIC_KEY=
+FEDERATION_PRIVATE_KEY=
+FEDERATION_USER_AGENT=NRN/1.0.0
+GOOGLE_CLIENT_ID=${var.google_client_id}
+GOOGLE_CLIENT_SECRET=${var.google_client_secret}
+GOOGLE_REDIRECT_URL=https://nrn-alb-grad-group01-dev-205573181.af-south-1.elb.amazonaws.com/login/callback
+EOL
+    
+    chown ubuntu:ubuntu /home/ubuntu/app/.env
+    
+    # Clone your repository (you'll need to replace with your actual repo)
+    cd /home/ubuntu/app
+    sudo -u ubuntu git clone https://github.com/Non-Relational-Nation/NRN.git .
+    
+    # Install dependencies and build backend
+    cd /home/ubuntu/app/backend
+    sudo -u ubuntu npm install
+    sudo -u ubuntu npm run build || true
+    
+    # Create systemd service for the backend
+    cat > /etc/systemd/system/nrn-backend.service << 'EOL'
+[Unit]
+Description=NRN Backend Service
+After=network.target mongod.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/app/backend
+Environment=NODE_ENV=production
+EnvironmentFile=/home/ubuntu/app/.env
+ExecStart=/usr/bin/node dist/server.js
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOL
+    
+    # Enable and start the service
+    systemctl daemon-reload
+    systemctl enable nrn-backend
+    systemctl start nrn-backend
+    
     echo "All services installed and configured"
   EOF
   )
@@ -486,6 +552,57 @@ resource "aws_instance" "nrn_web_ec2_instance" {
     apt install -y unzip
     unzip awscliv2.zip
     ./aws/install
+    
+    # Install nginx for serving frontend
+    apt install -y nginx
+    
+    # Create application directory
+    mkdir -p /home/ubuntu/app
+    chown ubuntu:ubuntu /home/ubuntu/app
+    
+    # Clone your repository
+    cd /home/ubuntu/app
+    sudo -u ubuntu git clone https://github.com/Non-Relational-Nation/NRN.git .
+    
+    # Build and deploy frontend
+    cd /home/ubuntu/app/frontend
+    sudo -u ubuntu npm install
+    
+    # Create environment file for frontend build
+    cat > /home/ubuntu/app/frontend/.env.production << 'EOL'
+VITE_API_URL=https://nrn-alb-grad-group01-dev-205573181.af-south-1.elb.amazonaws.com/api
+EOL
+    
+    sudo -u ubuntu npm run build
+    
+    # Copy built frontend to nginx directory
+    rm -rf /var/www/html/*
+    cp -r /home/ubuntu/app/frontend/dist/* /var/www/html/
+    
+    # Configure nginx
+    cat > /etc/nginx/sites-available/default << 'EOL'
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    
+    root /var/www/html;
+    index index.html;
+    
+    server_name _;
+    
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+    
+    location /api {
+        return 404;
+    }
+}
+EOL
+    
+    # Start nginx
+    systemctl restart nginx
+    systemctl enable nginx
   EOF
   )
 
@@ -514,7 +631,7 @@ resource "aws_lb" "nrn_alb" {
 
 resource "aws_lb_target_group" "api_tg" {
   name     = "${local.project}-api-tg-${local.team_name}-${local.environment}"
-  port     = 5000
+  port     = 3001
   protocol = "HTTP"
   vpc_id   = aws_vpc.nrn_vpc.id
 
@@ -539,7 +656,7 @@ resource "aws_lb_target_group" "api_tg" {
 
 resource "aws_lb_target_group" "web_tg" {
   name     = "${local.project}-web-tg-${local.team_name}-${local.environment}"
-  port     = 3000
+  port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.nrn_vpc.id
 
@@ -565,13 +682,13 @@ resource "aws_lb_target_group" "web_tg" {
 resource "aws_lb_target_group_attachment" "api_attachment" {
   target_group_arn = aws_lb_target_group.api_tg.arn
   target_id        = aws_instance.nrn_api_ec2_instance.id
-  port             = 5000
+  port             = 3001
 }
 
 resource "aws_lb_target_group_attachment" "web_attachment" {
   target_group_arn = aws_lb_target_group.web_tg.arn
   target_id        = aws_instance.nrn_web_ec2_instance.id
-  port             = 3000
+  port             = 80
 }
 
 # HTTP Listener - Redirect to HTTPS for security
@@ -611,7 +728,6 @@ resource "aws_lb_listener" "https_listener" {
 # SSL CERTIFICATE (Self-signed for immediate use)
 # ============================================================================
 
-# Create a self-signed certificate using local resources
 resource "tls_private_key" "nrn_private_key" {
   algorithm = "RSA"
   rsa_bits  = 2048

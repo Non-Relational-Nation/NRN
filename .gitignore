@@ -37,3 +37,4 @@ infrastructure/.terraform/
 infrastructure/terraform.tfstate*
 infrastructure/.terraform.lock.hcl
 infrastructure/*.zip
+infrastructure/terraform.tfvars
