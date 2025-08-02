@@ -56,20 +56,20 @@ output "summary" {
 
   📝 SAVE THESE DETAILS:
 
-  🌐 APPLICATION URLs (HTTPS with Self-Signed Certificate):
+  🌐 APPLICATION URLs (HTTPS with CloudFront SSL Certificate):
   
-  🚀 WEB APPLICATION (Default):
-  https://${aws_lb.nrn_alb.dns_name}
+  🚀 WEB APPLICATION:
+  https://${aws_cloudfront_distribution.nrn_distribution.domain_name}
   
   🔧 API ENDPOINT:
-  https://${aws_lb.nrn_alb.dns_name}/api
+  https://${aws_cloudfront_distribution.nrn_distribution.domain_name}/api
   
+  📋 CloudFront Domain: ${aws_cloudfront_distribution.nrn_distribution.domain_name}
   📋 ALB DNS Name: ${aws_lb.nrn_alb.dns_name}
 
   🧪 TESTING COMMANDS:
-  Test API: curl -k https://${aws_lb.nrn_alb.dns_name}/api/health
-  Test Web: curl -k https://${aws_lb.nrn_alb.dns_name}
-  (Note: -k flag ignores certificate warnings)
+  Test API: curl https://${aws_cloudfront_distribution.nrn_distribution.domain_name}/api/health
+  Test Web: curl https://${aws_cloudfront_distribution.nrn_distribution.domain_name}
 
   🖥️  Direct Server Access (Development):
   API Server (with co-located DBs): ${aws_instance.nrn_api_ec2_instance.public_dns}
@@ -84,6 +84,10 @@ output "summary" {
   MongoDB: mongodb://localhost:27017/nrn_db
   Redis:   redis://localhost:6379  
   Neo4j:   bolt://localhost:7687
+
+  🔗 GOOGLE OAUTH CALLBACK URL:
+  Add this to your Google Cloud Console:
+  https://${aws_cloudfront_distribution.nrn_distribution.domain_name}/login/callback
 
   EOT
   description = "Summary of deployed infrastructure and access details"
