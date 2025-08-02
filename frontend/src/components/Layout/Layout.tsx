@@ -19,7 +19,9 @@ function Layout({ children, loading = false, error = null }: LayoutProps) {
 
   return (
     <div id="layout">
-      <header id="header" className="fancy-font">Non-Relational Nation</header>
+      <header id="header" className="fancy-font">
+        Non-Relational Nation
+      </header>
       <main id="content">
         {loading ? (
           <Loader />
@@ -31,20 +33,33 @@ function Layout({ children, loading = false, error = null }: LayoutProps) {
       </main>
       <footer id="footer">
         <nav id="navbar">
-          <button className="button nav-button" id="first-button" onClick={() => navigate("/")}>
-            <img src={homeIcon} alt="Home" width={20} height={20}/>
-          </button>
-          <button className="button nav-button" onClick={() => navigate("/search")}>
-            <img src={searchIcon} alt="Search" width={20} height={20}/>
+          <button
+            title="Home"
+            className="button nav-button"
+            onClick={() => navigate("/")}
+          >
+            <img src={homeIcon} alt="Home" width={20} height={20} />
           </button>
           <button
+            title="Search"
+            className="button nav-button"
+            onClick={() => navigate("/search")}
+          >
+            <img src={searchIcon} alt="Search" width={20} height={20} />
+          </button>
+          <button
+            title="Create Post"
             className="button nav-button"
             onClick={() => navigate("/create-post")}
           >
-            <img src={addPostIcon} alt="Add Post" width={20} height={20}/>
+            <img src={addPostIcon} alt="Add Post" width={20} height={20} />
           </button>
-          <button className="button nav-button" onClick={() => navigate("/profile")}>
-            <img src={userIcon} alt="Profile" width={20} height={20}/>
+          <button
+            title="My Profile"
+            className="button nav-button"
+            onClick={() => navigate("/profile")}
+          >
+            <img src={userIcon} alt="Profile" width={20} height={20} />
           </button>
         </nav>
       </footer>

@@ -51,6 +51,7 @@ export default function Profile() {
       error={userFeedError || userError || followError }
     >
       <section id="profile-container">
+        <section id="profile-header-container">
         <header id="profile-header">
           <UserAvatar size={40}></UserAvatar>
           <h3 id="username-text">{userData?.username}</h3>
@@ -64,6 +65,7 @@ export default function Profile() {
             )}
           </section>
         </header>
+        </section>
         <PostList posts={userFeed}></PostList>
       </section>
     </Layout>
