@@ -3,6 +3,8 @@ import Layout from "../../components/Layout/Layout";
 import "./styles.css";
 import { useQuery } from "@tanstack/react-query";
 import { createPost } from "../../api/posts";
+import removeIcon from "../../assets/remove.svg";
+import attachIcon from "../../assets/attachment.svg";
 
 export default function CreatePost() {
   const [content, setContent] = useState("");
@@ -13,7 +15,8 @@ export default function CreatePost() {
     queryKey: ["create-post"],
     queryFn: () => createPost({ content, files }),
     enabled: false,
-    retry: false
+    retry: false,
+    gcTime: 0,
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -22,7 +25,7 @@ export default function CreatePost() {
     setFiles((prev) => [...prev, ...Array.from(fileList)]);
   };
   const handleRemoveFile = (index: number) => {
-    setFiles((prev) => prev.filter((file, i) => i !== index));
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleCreatePost = () => {
@@ -41,40 +44,60 @@ export default function CreatePost() {
           value={content}
           onChange={(e) => setContent(e.target.value)}
         />
-        <div id="file-input-section">
-          <button
-            id="add-files-button"
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            Add Files
-          </button>
-          <input
-            type="file"
-            accept="image/*,video/*"
-            id="file-input-button"
-            multiple
-            ref={fileInputRef}
-            onChange={handleFileChange}
-          />
+
+        <div id="attachment-section">
+          <div id="file-input-section">
+            <button
+              className="button"
+              id="add-files-button"
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Add Attachments
+              <img
+                title="Add attachment"
+                src={attachIcon}
+                width={20}
+                height={20}
+              />
+            </button>
+            <input
+              type="file"
+              accept="image/*,video/*"
+              id="file-input-button"
+              multiple
+              ref={fileInputRef}
+              onChange={handleFileChange}
+            />
+          </div>
+          <div id="file-list">
+            {files.length > 0 ? (
+              files.map((file, index) => (
+                <div key={index} id="file-item">
+                  <span>{file.name}</span>
+                  <img
+                    title="Remove attachment"
+                    className="button"
+                    src={removeIcon}
+                    onClick={() => handleRemoveFile(index)}
+                    width={20}
+                    height={20}
+                  />
+                </div>
+              ))
+            ) : (
+              <span id="no-attachments-text">
+                You have not added any attachments
+              </span>
+            )}
+          </div>
         </div>
 
-        <div id="file-list">
-          <span>Files added:</span>
-          {files.map((file, index) => (
-            <div key={index} id="file-item">
-              <span>{file.name}</span>
-              <button
-                type="button"
-                onClick={() => handleRemoveFile(index)}
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-        </div>
-
-        <button id="create-post-button" onClick={handleCreatePost}>
+        <button
+          id="create-post-button"
+          className="button"
+          onClick={handleCreatePost}
+        >
           Create Post
         </button>
       </section>

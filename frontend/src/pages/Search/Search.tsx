@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import UserCard from "../../components/Users/UserCard";
 import Loader from "../../components/Loader/Loader";
 import ErrorPage from "../ErrorPage/ErrorPage";
+import searchIcon from "../../assets/search.svg";
 
 export default function Search() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -20,10 +21,17 @@ export default function Search() {
     queryKey: ["searchUsers"],
     queryFn: () => searchUsers(searchTerm),
     enabled: false,
+    gcTime: 0,
   });
 
   const handleSearch = () => {
     refetch();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
   };
 
   return (
@@ -35,11 +43,17 @@ export default function Search() {
             type="text"
             placeholder="Search for users"
             value={searchTerm}
+            onKeyDown={(e) => handleKeyDown(e)}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <button id="search-button" onClick={handleSearch}>
-            Search
-          </button>
+          <img
+            src={searchIcon}
+            id="search-icon"
+            alt="Search"
+            onClick={handleSearch}
+            width={20}
+            height={20}
+          />
         </div>
         {isFetching ? (
           <Loader></Loader>

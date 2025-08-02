@@ -4,25 +4,33 @@
   align-items: center;
   gap: 1rem;
   border-radius: 1rem;
-  padding: 0.5rem 3rem;
-  background-color: white;
-  cursor: pointer;
+  padding: 0.25rem 2rem;
+  margin-top: 1rem;
 }
 
 #google-logo {
   height: 1.5rem;
+  background-color: white;
+  border-radius: 50%;
 }
 
-#login-card {
+.login-card {
   display: flex;
-  border: 1px gray solid;
-  margin: auto;
+  margin: 0.5rem;
   max-width: 20rem;
   justify-content: center;
   flex-direction: column;
   padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 3px 6px 1px rgba(0, 0, 0, 0.2);
+  background-color: white;
 }
 
-#login-heading {
+.login-heading {
   text-align: center;
+  margin: 0;
+}
+
+#login-failed-heading {
+  padding-bottom: 0.5rem;
 }

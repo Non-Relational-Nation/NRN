@@ -1,0 +1,5 @@
+#feed-container {
+    max-width: 40rem;
+    width: 100%;
+    align-self: flex-start;
+}

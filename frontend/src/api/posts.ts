@@ -44,6 +44,18 @@ export async function likePost(postId: string): Promise<Post> {
   return data.data;
 }
 
+export async function unlikePost(postId: string): Promise<Post> {
+  const response = await apiFetch({
+    path: `/post/${postId}/unlike`,
+    method: "POST",
+  });
+  if (!response.ok) {
+    throw new Error(`${response.status}`);
+  }
+
+  return await response.json();
+}
+
 // Create a new post
 export async function createPost(post: CreatePost): Promise<Post> {
   const authorId = sessionStorage.getItem("MY_USER_ID");

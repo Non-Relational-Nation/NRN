@@ -10,6 +10,7 @@ export interface User {
   postsCount: number;
   createdAt: Date;
   updatedAt: Date;
+  following: boolean;
 }
 
 export const mockUsers: User[] = [
@@ -25,6 +26,7 @@ export const mockUsers: User[] = [
     postsCount: 34,
     createdAt: new Date("2024-01-15T10:00:00Z"),
     updatedAt: new Date("2025-07-31T10:00:00Z"),
+    following: true,
   },
   {
     id: "2",
@@ -38,6 +40,7 @@ export const mockUsers: User[] = [
     postsCount: 50,
     createdAt: new Date("2024-02-10T09:30:00Z"),
     updatedAt: new Date("2025-07-31T10:00:00Z"),
+    following: false,
   },
   {
     id: "3",
@@ -51,5 +54,6 @@ export const mockUsers: User[] = [
     postsCount: 78,
     createdAt: new Date("2024-03-20T14:45:00Z"),
     updatedAt: new Date("2025-07-31T10:00:00Z"),
+    following: true,
   },
 ];
