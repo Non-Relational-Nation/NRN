@@ -10,14 +10,23 @@
 }
 
 #search-section {
-    display: flex;
-    gap: 0.5rem;
+  position: relative;
+  gap: 0.5rem;
 }
 
 #search-box {
   padding: 0.5rem;
-  font-size: 1rem;
+  padding-right: 2rem;
+  box-sizing: border-box;
   width: 100%;
+}
+
+#search-icon {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
 }
 
 #users-list {
@@ -27,5 +36,5 @@
 }
 
 #search-button {
-    cursor: pointer;
+  cursor: pointer;
 }

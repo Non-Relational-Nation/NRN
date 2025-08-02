@@ -14,8 +14,8 @@ export enum PostVisibility {
 }
 
 export interface CreatePost {
-  files: File[];
   content: string;
+  files?: File[];
 }
 
 export interface MediaItem {
@@ -42,6 +42,7 @@ export interface Post {
   repostComment?: string;
 
   // Engagement counters (stored in MongoDB document)
+  isLiked: boolean;
   likesCount: number;
   commentsCount: number;
   repostsCount: number;
@@ -60,6 +61,9 @@ export interface Post {
   isDeleted: boolean;
   deletedAt?: Date;
   flagged: boolean;
+
+  // Enriched author object (from backend)
+  author?: import("./User").User;
 }
 
 const mockMediaItems: MediaItem[] = [
@@ -96,6 +100,7 @@ export const mockPosts: Post[] = [
     media: mockMediaItems,
     originalPostId: undefined,
     repostComment: undefined,
+    isLiked: false,
     likesCount: 12,
     commentsCount: 3,
     repostsCount: 1,
@@ -117,6 +122,7 @@ export const mockPosts: Post[] = [
     media: [],
     originalPostId: undefined,
     repostComment: undefined,
+    isLiked: true,
     likesCount: 7,
     commentsCount: 2,
     repostsCount: 0,
@@ -138,6 +144,7 @@ export const mockPosts: Post[] = [
     media: [],
     originalPostId: undefined,
     repostComment: undefined,
+    isLiked: true,
     likesCount: 21,
     commentsCount: 5,
     repostsCount: 2,
@@ -159,6 +166,7 @@ export const mockPosts: Post[] = [
     media: [],
     originalPostId: undefined,
     repostComment: undefined,
+    isLiked: true,
     likesCount: 5,
     commentsCount: 1,
     repostsCount: 0,

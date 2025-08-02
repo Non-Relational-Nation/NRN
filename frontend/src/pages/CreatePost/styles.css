@@ -5,8 +5,7 @@
   gap: 1rem;
   max-width: 40rem;
   align-self: flex-start;
-  padding-top: 1rem;
-  padding-bottom: 1rem;
+  padding: 1rem;
   box-sizing: border-box;
 }
 
@@ -27,9 +26,12 @@
 
 #add-files-button {
   box-sizing: border-box;
-  width: 100%;
   cursor: pointer;
   height: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: none;
 }
 
 #create-post-button {
@@ -39,8 +41,30 @@
   height: 2rem;
 }
 
+#attachment-section {
+  background-color: white;
+  box-shadow: 0 3px 6px 1px rgba(0, 0, 0, 0.2);
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+#file-list {
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
 #file-item {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: smaller;
+}
+
+#no-attachments-text {
+  font-size: 0.75rem;
+  line-height: 1rem;
 }

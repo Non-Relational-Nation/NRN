@@ -13,7 +13,7 @@
   justify-content: center;
   text-align: center;
   align-items: center;
-  font-size: larger;
+  font-size: x-large;
   font-weight: bolder;
 }
 
@@ -24,7 +24,8 @@
   justify-content: center;
   align-items: center;
   width: 100%;
-scrollbar-gutter: stable both-edges;}
+  scrollbar-gutter: stable both-edges;
+}
 
 #footer {
   display: flex;
@@ -44,4 +45,10 @@ scrollbar-gutter: stable both-edges;}
 .nav-button {
   width: 100%;
   cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background-color: rgb(245, 245, 245);
 }

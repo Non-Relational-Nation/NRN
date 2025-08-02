@@ -2,6 +2,7 @@
   border-radius: 50%;
   overflow: hidden;
   display: inline-flex;
+  border: 1px gray solid;
 }
 
 #avatar-image {
@@ -15,7 +16,7 @@
     width: 100%;
     align-items: center;
     gap: 1rem;
-    border: 1px gray solid;
+    box-shadow: 0 3px 6px 1px rgba(0, 0, 0, 0.2);
     padding: 0 0.5rem 0 0.5rem;
     cursor: pointer;
     box-sizing: border-box;

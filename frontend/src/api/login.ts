@@ -33,7 +33,12 @@ export async function handleOAuthCallback() {
       })
       .then((data) => {
         sessionStorage.setItem("JWT_TOKEN", data.id_token);
-        sessionStorage.setItem("MY_USER_ID", "1");
+        // Store the real MongoDB user id returned by the backend
+        if (data.user && (data.user._id || data.user.id)) {
+          sessionStorage.setItem("MY_USER_ID", data.user._id || data.user.id);
+        } else {
+          throw new Error("No user id returned from backend");
+        }
       });
   } else {
     throw new Error("Login failed");
