@@ -24,3 +24,16 @@ dist-ssr
 *.sw?
 
 .env
+
+# SSH Keys and Secrets (NEVER commit private keys!)
+team-key
+keys/nrn-key
+*.pem
+*.key
+!*.pub
+
+# Terraform files
+infrastructure/.terraform/
+infrastructure/terraform.tfstate*
+infrastructure/.terraform.lock.hcl
+infrastructure/*.zip

@@ -93,39 +93,20 @@ jobs:
         # Create deployment package
         tar -czf backend-deploy.tar.gz -C backend .
         
-        # Setup SSH
+        # Setup SSH with new clean approach
         echo "${{ secrets.TEAM_SSH_KEY }}" > team-key
         chmod 600 team-key
         
         # Fix potential line ending issues
         sed -i 's/\r$//' team-key
         
-        # Debug: Show key format (first and last few lines)
-        echo "=== SSH Key Debug Info ==="
-        echo "Key file size: $(wc -c < team-key) bytes"
-        echo "First line: $(head -n1 team-key)"
-        echo "Last line: $(tail -n1 team-key)"
-        
-        # Debug: Check instance SSH service
-        echo "=== Testing instance connectivity ==="
-        nc -zv $API_IP 22 || echo "Port 22 not reachable"
-        
-        # Test SSH connection with more verbose output
-        echo "=== Testing SSH connection ==="
-        ssh -i team-key -o StrictHostKeyChecking=no -o ConnectTimeout=10 -vvv ubuntu@$API_IP "echo 'SSH connection successful'" 2>&1 || {
-          echo "SSH connection failed, checking alternative methods..."
-          # Try different key formats/permissions
-          chmod 400 team-key
-          ssh -i team-key -o StrictHostKeyChecking=no -o ConnectTimeout=10 ubuntu@$API_IP "echo 'SSH connection successful'" 2>&1 || echo "Alternative SSH failed too"
-        }
+        # Test connection before proceeding
+        echo "Testing SSH connection..."
+        ssh -i team-key -o StrictHostKeyChecking=no -o ConnectTimeout=10 ubuntu@$API_IP "echo 'Connection successful'"
         
         # Copy files to server
-        echo "Attempting to copy files to server..."
-        scp -i team-key -o StrictHostKeyChecking=no -o ConnectTimeout=30 -v backend-deploy.tar.gz ubuntu@$API_IP:/home/ubuntu/ || {
-          echo "SCP failed, trying alternative approach..."
-          # Try with different SSH options
-          scp -i team-key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=30 backend-deploy.tar.gz ubuntu@$API_IP:/home/ubuntu/
-        }
+        echo "Copying deployment package to server..."
+        scp -i team-key -o StrictHostKeyChecking=no backend-deploy.tar.gz ubuntu@$API_IP:/home/ubuntu/
         
         # Deploy on server
         ssh -i team-key -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -o ServerAliveCountMax=3 ubuntu@$API_IP << 'EOF'
