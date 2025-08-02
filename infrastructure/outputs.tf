@@ -36,13 +36,13 @@ output "s3_bucket_name" {
 }
 
 output "api_url" {
-  value       = "http://${aws_lb.nrn_alb.dns_name}/api"
-  description = "URL to access the API through the load balancer"
+  value       = "https://${aws_lb.nrn_alb.dns_name}/api"
+  description = "URL to access the API through HTTPS (self-signed certificate)"
 }
 
 output "web_url" {
-  value       = "http://${aws_lb.nrn_alb.dns_name}"
-  description = "URL to access the web application through the load balancer"
+  value       = "https://${aws_lb.nrn_alb.dns_name}"
+  description = "URL to access the web application through HTTPS (self-signed certificate)"
 }
 
 output "vpc_id" {
@@ -70,19 +70,23 @@ output "summary" {
 
   📝 SAVE THESE DETAILS:
 
-  🌐 APPLICATION URLs (Free Load Balancer DNS):
+  🌐 APPLICATION URLs (HTTPS with Self-Signed Certificate):
   
   🚀 WEB APPLICATION (Default):
-  http://${aws_lb.nrn_alb.dns_name}
+  https://${aws_lb.nrn_alb.dns_name}
   
   🔧 API ENDPOINT:
-  http://${aws_lb.nrn_alb.dns_name}/api
+  https://${aws_lb.nrn_alb.dns_name}/api
   
   📋 ALB DNS Name: ${aws_lb.nrn_alb.dns_name}
 
+  ⚠️  CERTIFICATE WARNING: Browser will show security warning due to self-signed certificate.
+  Click "Advanced" → "Proceed to site" to continue (safe for development/academic use).
+
   🧪 TESTING COMMANDS:
-  Test API: curl http://${aws_lb.nrn_alb.dns_name}/api/health
-  Test Web: curl http://${aws_lb.nrn_alb.dns_name}
+  Test API: curl -k https://${aws_lb.nrn_alb.dns_name}/api/health
+  Test Web: curl -k https://${aws_lb.nrn_alb.dns_name}
+  (Note: -k flag ignores certificate warnings)
 
   🖥️  Direct Server Access (Development):
   API Server (with co-located DBs): ${aws_instance.nrn_api_ec2_instance.public_dns}
@@ -98,7 +102,7 @@ output "summary" {
   Redis:   redis://localhost:6379  
   Neo4j:   bolt://localhost:7687
 
-  💰 COST-EFFECTIVE: Simplified 2-instance architecture with co-located databases!
+  💰 COST-EFFECTIVE: Simplified 2-instance architecture with co-located databases + HTTPS!
 
   EOT
   description = "Summary of deployed infrastructure and access details"

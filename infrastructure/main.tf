@@ -8,6 +8,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
   }
 
   backend "s3" {
@@ -558,11 +562,31 @@ resource "aws_lb_target_group_attachment" "web_attachment" {
   port             = 3000
 }
 
-# HTTP Listener (Development - Free load balancer DNS only)
+# HTTP Listener - Redirect to HTTPS for security
 resource "aws_lb_listener" "http_listener" {
   load_balancer_arn = aws_lb.nrn_alb.arn
   port              = "80"
   protocol          = "HTTP"
+
+  # Redirect all HTTP traffic to HTTPS
+  default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+# HTTPS Listener with self-signed SSL certificate
+resource "aws_lb_listener" "https_listener" {
+  load_balancer_arn = aws_lb.nrn_alb.arn
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
+  certificate_arn   = aws_acm_certificate.nrn_self_signed_cert.arn
 
   # Default action forwards to web frontend for root paths
   default_action {
@@ -571,9 +595,48 @@ resource "aws_lb_listener" "http_listener" {
   }
 }
 
-# Web app will be accessible at: http://your-alb-dns/web
+# ============================================================================
+# SSL CERTIFICATE (Self-signed for immediate use)
+# ============================================================================
+
+# Create a self-signed certificate using local resources
+resource "tls_private_key" "nrn_private_key" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+resource "tls_self_signed_cert" "nrn_self_signed" {
+  private_key_pem = tls_private_key.nrn_private_key.private_key_pem
+
+  subject {
+    common_name  = "*.elb.amazonaws.com"
+    organization = "NRN Development"
+  }
+
+  validity_period_hours = 8760 # 1 year
+
+  allowed_uses = [
+    "key_encipherment",
+    "digital_signature",
+    "server_auth",
+  ]
+}
+
+# Import the self-signed certificate to ACM
+resource "aws_acm_certificate" "nrn_self_signed_cert" {
+  private_key      = tls_private_key.nrn_private_key.private_key_pem
+  certificate_body = tls_self_signed_cert.nrn_self_signed.cert_pem
+
+  tags = {
+    Name        = "${local.project}-self-signed-cert-${local.team_name}-${local.environment}"
+    Environment = local.environment
+    Team        = local.team_name
+  }
+}
+
+# Web app will be accessible at: https://your-domain.com/web
 resource "aws_lb_listener_rule" "web_path_rule" {
-  listener_arn = aws_lb_listener.http_listener.arn
+  listener_arn = aws_lb_listener.https_listener.arn
   priority     = 100
 
   action {
@@ -588,9 +651,9 @@ resource "aws_lb_listener_rule" "web_path_rule" {
   }
 }
 
-# API will be accessible at: http://your-alb-dns/api
+# API will be accessible at: https://your-domain.com/api
 resource "aws_lb_listener_rule" "api_path_rule" {
-  listener_arn = aws_lb_listener.http_listener.arn
+  listener_arn = aws_lb_listener.https_listener.arn
   priority     = 200
 
   action {
