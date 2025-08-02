@@ -13,7 +13,7 @@ export default function CreatePost() {
     queryKey: ["create-post"],
     queryFn: () => createPost({ files, content }),
     enabled: false,
-    retry: false
+    retry: false,
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,23 +60,29 @@ export default function CreatePost() {
           />
         </div>
 
-        <div id="file-list">
-          <span>Files added:</span>
-          {files.map((file, index) => (
-            <div key={index} id="file-item">
-              <span>{file.name}</span>
-              <button
-              className="button"
-                type="button"
-                onClick={() => handleRemoveFile(index)}
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-        </div>
+        {files.length !== 0 && (
+          <div id="file-list">
+            <span>Attachments:</span>
+            {files.map((file, index) => (
+              <div key={index} id="file-item">
+                <span>{file.name}</span>
+                <button
+                  className="button"
+                  type="button"
+                  onClick={() => handleRemoveFile(index)}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
-        <button id="create-post-button" className="button" onClick={handleCreatePost}>
+        <button
+          id="create-post-button"
+          className="button"
+          onClick={handleCreatePost}
+        >
           Create Post
         </button>
       </section>

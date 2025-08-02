@@ -9,6 +9,7 @@
 
 #profile-header-container {
   padding: 0.5rem;
+  background-color: white;
 }
 
 #profile-header {
@@ -16,7 +17,6 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
   justify-content: center;
   width: 100%;
   align-items: center;
@@ -30,13 +30,22 @@
 }
 
 #follower-container {
-    display: flex;
-    flex-direction: column;
-    text-align: center;
-    gap: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  gap: 0.25rem;
+  padding: 0.5rem;
+}
+
+#follow-counts {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  justify-content: center;
 }
 
 #follow-button {
-    height: 1.5rem;
-    cursor: pointer;
+  height: 1.5rem;
+  cursor: pointer;
 }
