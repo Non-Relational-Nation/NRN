@@ -3,7 +3,7 @@ import { API_URL } from "../config";
 type Props = {
   method: string;
   path: string;
-  body?: string;
+  body?: string | FormData;
 };
 
 export const apiFetch = async ({
@@ -11,12 +11,16 @@ export const apiFetch = async ({
   method,
   body,
 }: Props): Promise<Response> => {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${sessionStorage.getItem("JWT_TOKEN")}`,
+  };
+  // Only set Content-Type if not FormData
+  if (!(body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
   const res = await fetch(API_URL + path, {
     method: method,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${sessionStorage.getItem("JWT_TOKEN")}`,
-    },
+    headers,
     body: body,
   });
   return res;
