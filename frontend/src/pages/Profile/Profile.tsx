@@ -50,6 +50,7 @@ export default function Profile() {
     queryFn: () => followUser(userData?.id),
     enabled: false,
     retry: false,
+    gcTime: 0,
   });
 
   const { refetch: unfollowRefetch, error: unfollowError } = useQuery({
@@ -57,6 +58,7 @@ export default function Profile() {
     queryFn: () => unfollowUser(userData?.id),
     enabled: false,
     retry: false,
+    gcTime: 0,
   });
 
   const handleFollow = async () => {

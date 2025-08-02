@@ -19,6 +19,7 @@ export default function PostCard({ post }: PostCardProps) {
   //   queryFn: () => likePost(post?.id),
   //   enabled: false,
   //   retry: false,
+  //   gcTime: 0
   // });
 
   // const { refetch: unlikePostRefetch } = useQuery({
@@ -26,6 +27,7 @@ export default function PostCard({ post }: PostCardProps) {
   //   queryFn: () => likePost(post?.id),
   //   enabled: false,
   //   retry: false,
+  //   gcTime: 0
   // });
 
   const handleLike = async () => {
