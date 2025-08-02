@@ -66,6 +66,24 @@ jobs:
         fi
         
         echo "Found API server at: $API_IP"
+        
+        # Debug: Check what key pair is assigned to the instance
+        echo "=== Checking instance key pair ==="
+        INSTANCE_ID=$(aws ec2 describe-instances \
+          --region ${{ env.AWS_REGION }} \
+          --filters "Name=tag:Name,Values=nrn-api-grad-group01-dev" "Name=instance-state-name,Values=running" \
+          --query 'Reservations[0].Instances[0].InstanceId' \
+          --output text)
+        
+        KEY_NAME=$(aws ec2 describe-instances \
+          --region ${{ env.AWS_REGION }} \
+          --instance-ids $INSTANCE_ID \
+          --query 'Reservations[0].Instances[0].KeyName' \
+          --output text)
+        
+        echo "Instance ID: $INSTANCE_ID"
+        echo "Key pair name: $KEY_NAME"
+        
         echo "api_ip=$API_IP" >> $GITHUB_OUTPUT
 
     - name: Deploy to API server
@@ -82,8 +100,24 @@ jobs:
         # Fix potential line ending issues
         sed -i 's/\r$//' team-key
         
-        # Test SSH connection first
-        ssh -i team-key -o StrictHostKeyChecking=no -o ConnectTimeout=10 ubuntu@$API_IP "echo 'SSH connection successful'"
+        # Debug: Show key format (first and last few lines)
+        echo "=== SSH Key Debug Info ==="
+        echo "Key file size: $(wc -c < team-key) bytes"
+        echo "First line: $(head -n1 team-key)"
+        echo "Last line: $(tail -n1 team-key)"
+        
+        # Debug: Check instance SSH service
+        echo "=== Testing instance connectivity ==="
+        nc -zv $API_IP 22 || echo "Port 22 not reachable"
+        
+        # Test SSH connection with more verbose output
+        echo "=== Testing SSH connection ==="
+        ssh -i team-key -o StrictHostKeyChecking=no -o ConnectTimeout=10 -vvv ubuntu@$API_IP "echo 'SSH connection successful'" 2>&1 || {
+          echo "SSH connection failed, checking alternative methods..."
+          # Try different key formats/permissions
+          chmod 400 team-key
+          ssh -i team-key -o StrictHostKeyChecking=no -o ConnectTimeout=10 ubuntu@$API_IP "echo 'SSH connection successful'" 2>&1 || echo "Alternative SSH failed too"
+        }
         
         # Copy files to server
         echo "Attempting to copy files to server..."
