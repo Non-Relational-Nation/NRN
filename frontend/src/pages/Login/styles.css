@@ -14,7 +14,7 @@
   border-radius: 50%;
 }
 
-#login-card {
+.login-card {
   display: flex;
   margin: 0.5rem;
   max-width: 20rem;
@@ -26,7 +26,11 @@
   background-color: white;
 }
 
-#login-heading {
+.login-heading {
   text-align: center;
   margin: 0;
+}
+
+#login-failed-heading {
+  padding-bottom: 0.5rem;
 }

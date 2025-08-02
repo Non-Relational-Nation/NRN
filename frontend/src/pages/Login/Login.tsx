@@ -4,8 +4,8 @@ import { initiateGoogleLogin } from "../../api/login";
 
 function Login() {
   return (
-    <main id="login-card">
-      <h1 id="login-heading" className="fancy-font">Welcome to NRN</h1>
+    <main className="login-card">
+      <h1 className="fancy-font login-heading">Welcome to NRN</h1>
       <hr />
       <button
         id="google-login-button"
