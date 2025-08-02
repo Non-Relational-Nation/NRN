@@ -43,9 +43,15 @@ jobs:
           terraform show || echo "No state to show"
 
       - name: Show Terraform Plan (what will be destroyed)
+        env:
+          TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
+          TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: terraform plan -destroy
 
       - name: Terraform Destroy
+        env:
+          TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
+          TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: terraform destroy -auto-approve
 
       - name: Verify destruction
