@@ -17,7 +17,7 @@ federation.setActorDispatcher(
     return new Person({
       id: ctx.getActorUri(identifier),
       preferredUsername: identifier,
-      name: user.name,
+      name: user.displayName,
       inbox: ctx.getInboxUri(identifier),
       endpoints: new Endpoints({
         sharedInbox: ctx.getInboxUri(),
