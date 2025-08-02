@@ -1,5 +1,3 @@
-# Terraform Output Values
-
 output "alb_dns_name" {
   value       = aws_lb.nrn_alb.dns_name
   description = "The DNS name of the Application Load Balancer"
@@ -45,23 +43,6 @@ output "web_url" {
   description = "URL to access the web application through HTTPS (self-signed certificate)"
 }
 
-output "vpc_id" {
-  value       = aws_vpc.nrn_vpc.id
-  description = "ID of the VPC"
-}
-
-output "public_subnet_ids" {
-  value       = [aws_subnet.subnet_az1.id, aws_subnet.subnet_az2.id]
-  description = "IDs of the public subnets"
-}
-
-output "security_group_ids" {
-  value = {
-    alb = aws_security_group.alb_security_group.id
-    ec2 = aws_security_group.ec2_security_group.id
-  }
-  description = "IDs of the security groups"
-}
 
 output "summary" {
   value       = <<-EOT
@@ -79,9 +60,6 @@ output "summary" {
   https://${aws_lb.nrn_alb.dns_name}/api
   
   📋 ALB DNS Name: ${aws_lb.nrn_alb.dns_name}
-
-  ⚠️  CERTIFICATE WARNING: Browser will show security warning due to self-signed certificate.
-  Click "Advanced" → "Proceed to site" to continue (safe for development/academic use).
 
   🧪 TESTING COMMANDS:
   Test API: curl -k https://${aws_lb.nrn_alb.dns_name}/api/health
@@ -101,8 +79,6 @@ output "summary" {
   MongoDB: mongodb://localhost:27017/nrn_db
   Redis:   redis://localhost:6379  
   Neo4j:   bolt://localhost:7687
-
-  💰 COST-EFFECTIVE: Simplified 2-instance architecture with co-located databases + HTTPS!
 
   EOT
   description = "Summary of deployed infrastructure and access details"

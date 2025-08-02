@@ -29,10 +29,9 @@ provider "aws" {
 # DATA SOURCES & LOCALS
 # ============================================================================
 
-# Data source to fetch the latest Ubuntu 22.04 LTS AMI
 data "aws_ami" "ubuntu" {
   most_recent = true
-  owners      = ["099720109477"] # Canonical
+  owners      = ["099720109477"] 
 
   filter {
     name   = "name"
@@ -49,7 +48,6 @@ data "aws_availability_zones" "available_zones" {
   state = "available"
 }
 
-# Team-specific naming
 locals {
   team_name   = "grad-group01"
   environment = "dev"
@@ -60,7 +58,6 @@ locals {
 # SSH KEY PAIRS
 # ============================================================================
 
-# Key pairs for EC2 instances
 resource "aws_key_pair" "api_key" {
   key_name   = "${local.team_name}-api-key"
   public_key = file("./team-key.pub")
@@ -99,7 +96,6 @@ resource "aws_vpc" "nrn_vpc" {
   }
 }
 
-# Internet Gateway
 resource "aws_internet_gateway" "nrn_igw" {
   vpc_id = aws_vpc.nrn_vpc.id
 
@@ -110,7 +106,6 @@ resource "aws_internet_gateway" "nrn_igw" {
   }
 }
 
-# Route Table
 resource "aws_route_table" "nrn_public_rt" {
   vpc_id = aws_vpc.nrn_vpc.id
 
@@ -126,7 +121,6 @@ resource "aws_route_table" "nrn_public_rt" {
   }
 }
 
-# Create subnets in different AZs
 resource "aws_subnet" "subnet_az1" {
   vpc_id                  = aws_vpc.nrn_vpc.id
   cidr_block              = "10.0.1.0/24"
@@ -168,7 +162,6 @@ resource "aws_route_table_association" "public_rta_az2" {
 # STORAGE (S3 Bucket Configuration)
 # ============================================================================
 
-# S3 Bucket for object storage
 resource "aws_s3_bucket" "nrn_object_storage" {
   bucket = "${local.project}-${local.team_name}-${local.environment}-${random_string.bucket_suffix.result}"
 
@@ -216,7 +209,6 @@ resource "aws_s3_bucket_public_access_block" "nrn_bucket_pab" {
 # IAM (Roles, Policies, Instance Profiles)
 # ============================================================================
 
-# IAM role for EC2 instances to access S3
 resource "aws_iam_role" "ec2_s3_role" {
   name = "nrn_ec2_s3_role"
 
@@ -272,20 +264,10 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 # SECURITY GROUPS
 # ============================================================================
 
-# Security group for external API servers/partners
 resource "aws_security_group" "external_api_sg" {
   name_prefix = "nrn_external_api_sg"
   vpc_id      = aws_vpc.nrn_vpc.id
   description = "Allow trusted external servers to communicate with our API"
-
-  # No ingress rules by default - add specific IPs/ranges as needed
-  # Example for allowing specific external server:
-  # ingress {
-  #   from_port   = 5000
-  #   to_port     = 5000
-  #   protocol    = "tcp"
-  #   cidr_blocks = ["203.0.113.0/24"] # Replace with actual external server IP/range
-  # }
 
   egress {
     from_port   = 0
@@ -299,7 +281,6 @@ resource "aws_security_group" "external_api_sg" {
   }
 }
 
-# Security group for Application Load Balancer
 resource "aws_security_group" "alb_security_group" {
   name_prefix = "nrn_alb_sg"
   vpc_id      = aws_vpc.nrn_vpc.id
@@ -415,7 +396,7 @@ resource "aws_security_group" "ec2_security_group" {
 # Main API instance with co-located databases
 resource "aws_instance" "nrn_api_ec2_instance" {
   ami                    = data.aws_ami.ubuntu.id
-  instance_type          = "t3.small" # Upgraded for multiple services
+  instance_type          = "t3.small" 
   key_name               = aws_key_pair.api_key.key_name
   subnet_id              = aws_subnet.subnet_az1.id
   vpc_security_group_ids = [aws_security_group.ec2_security_group.id]
@@ -515,7 +496,6 @@ resource "aws_instance" "nrn_web_ec2_instance" {
   }
 }
 
-# Application Load Balancer
 resource "aws_lb" "nrn_alb" {
   name               = "${local.project}-alb-${local.team_name}-${local.environment}"
   internal           = false
@@ -532,7 +512,6 @@ resource "aws_lb" "nrn_alb" {
   }
 }
 
-# Target Group for API
 resource "aws_lb_target_group" "api_tg" {
   name     = "${local.project}-api-tg-${local.team_name}-${local.environment}"
   port     = 5000
@@ -558,7 +537,6 @@ resource "aws_lb_target_group" "api_tg" {
   }
 }
 
-# Target Group for Web
 resource "aws_lb_target_group" "web_tg" {
   name     = "${local.project}-web-tg-${local.team_name}-${local.environment}"
   port     = 3000
@@ -584,7 +562,6 @@ resource "aws_lb_target_group" "web_tg" {
   }
 }
 
-# Target Group Attachments
 resource "aws_lb_target_group_attachment" "api_attachment" {
   target_group_arn = aws_lb_target_group.api_tg.arn
   target_id        = aws_instance.nrn_api_ec2_instance.id
