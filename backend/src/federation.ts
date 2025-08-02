@@ -10,6 +10,8 @@ import {
   getActorHandle,
   Accept,
   Undo,
+  isActor,
+  type Actor as APActor,
   type Recipient,
 } from "@fedify/fedify";
 import { MemoryKvStore, InProcessMessageQueue } from "@fedify/fedify";
@@ -26,6 +28,30 @@ const federation = createFederation({
   queue: new InProcessMessageQueue(), // to be changed to Redis
 });
 
+async function persistActor(actor: APActor) {
+  if (!actor.id || !actor.inboxId) {
+    console.log("Actor is missing required fields");
+    return null;
+  }
+
+  const updated = await ActorModel.findOneAndUpdate(
+    { uri: actor.id.href },
+    {
+      handle: await getActorHandle(actor),
+      name: actor.name?.toString(),
+      inbox_url: actor.inboxId.href,
+      shared_inbox_url: actor.endpoints?.sharedInbox?.href ?? null,
+      url: actor.url?.href ?? null,
+    },
+    {
+      new: true,
+      upsert: true,
+    }
+  );
+
+  return updated ?? null;
+}
+
 federation
   .setActorDispatcher(
     "/users/{identifier}",
@@ -38,7 +64,7 @@ federation
       return new Person({
         id: ctx.getActorUri(identifier),
         preferredUsername: identifier,
-        name: user.name,
+        name: user.displayName,
         inbox: ctx.getInboxUri(identifier),
         endpoints: new Endpoints({
           sharedInbox: ctx.getInboxUri(),
@@ -120,22 +146,7 @@ federation
 
     if (!followingId) return;
 
-    const followerId = (
-      await ActorModel.findOneAndUpdate(
-        { uri: follower.id.href },
-        {
-          handle: await getActorHandle(follower),
-          name: follower.name?.toString(),
-          inbox_url: follower.inboxId.href,
-          shared_inbox_url: follower.endpoints?.sharedInbox?.href,
-          url: follower.url?.href,
-        },
-        {
-          new: true,
-          upsert: true,
-        }
-      )
-    )?._id;
+    const followerId = (await persistActor(follower))?.id;
 
     await FollowModel.create({
       following_id: followingId,
@@ -172,7 +183,42 @@ federation
       following_id: followingActor._id,
       follower_id: followerActor._id,
     });
-  });
+  }).on(Accept, async (ctx, accept) => {
+  const follow = await accept.getObject();
+  if (!(follow instanceof Follow)) return;
+
+  const following = await accept.getActor();
+  if (!isActor(following)) return;
+
+  const follower = follow.actorId;
+  if (follower == null) return;
+
+  const parsed = ctx.parseUri(follower);
+  if (parsed == null || parsed.type !== "actor") return;
+
+  const followingActor = await persistActor(following);
+  if (!followingActor) return;
+
+  const user = await UserModel.findOne({ username: parsed.identifier });
+  if (!user) return;
+
+  const followerActor = await ActorModel.findOne({ user_id: user._id });
+  if (!followerActor) return;
+
+  try {
+    await FollowModel.create({
+      following_id: followingActor._id,
+      follower_id: followerActor._id,
+    });
+  } catch (err: any) {
+    if (err.code === 11000) {
+      // Duplicate follow; ignore
+    } else {
+      throw err;
+    }
+  }
+});
+
 
 federation
   .setFollowersDispatcher(

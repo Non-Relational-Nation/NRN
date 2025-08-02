@@ -110,4 +110,20 @@ export const userRepository = {
 
     return follows.map((f) => f.follower_id);
   },
+
+  async findUserFollowing(
+    username: string
+  ): Promise<mongoose.Types.ObjectId[]> {
+    const user = await UserModel.findOne({ username: username });
+    if (!user) throw new Error("User not found");
+
+    const followingActor = await ActorModel.findOne({ user_id: user._id });
+    if (!followingActor) throw new Error("Actor not found");
+
+    const follows = await FollowModel.find({ follower_id: followingActor._id })
+      .sort({ created: -1 })
+      .populate("following_id");
+
+    return follows.map((f) => f.following_id);
+  },
 };

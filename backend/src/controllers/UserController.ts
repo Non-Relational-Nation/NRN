@@ -1,5 +1,6 @@
 import { createFederationContextFromExpressReq } from "@/federation/federationContext.ts";
 import userService from "@/services/userService.ts";
+import { Follow, isActor } from "@fedify/fedify";
 import { Request, Response, type NextFunction } from "express";
 
 export class UserController {
@@ -16,7 +17,7 @@ export class UserController {
         displayName,
         bio: bio || "",
         avatar: avatar || null,
-        context
+        context,
       });
       return res.status(201).json({ message: "User registered successfully" });
     } catch (err) {
@@ -55,6 +56,48 @@ export class UserController {
         req.params.username
       );
       res.json({ followers: userFollowers });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async sendFollowRequest(req: Request, res: Response, next: NextFunction) {
+    try {
+      const username = req.params.username;
+      const handle = req.body.actor;
+      if (typeof handle !== "string") {
+        return res.status(400).send("Invalid actor handle or URL");
+      }
+      const ctx = createFederationContextFromExpressReq(req);
+
+      const actor = await ctx.lookupObject(handle.trim());
+      if (!isActor(actor)) {
+        return res.status(400).send("Invalid actor handle or URL");
+      }
+
+      await ctx.sendActivity(
+        { identifier: username },
+        actor,
+        new Follow({
+          actor: ctx.getActorUri(username),
+          object: actor.id,
+          to: actor.id,
+        })
+      );
+      return res
+        .status(201)
+        .json({ message: "Follow request sent successfully" });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getUserFollowing(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userFollowing = await userService.getUserFollowing(
+        req.params.username
+      );
+      res.json({ following: userFollowing });
     } catch (err) {
       next(err);
     }

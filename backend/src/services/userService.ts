@@ -55,6 +55,10 @@ export class UserService {
   async getUserFollowers(username: string){
     return userRepository.findUserFollowers(username)
   }
+
+  async getUserFollowing(username: string){
+    return userRepository.findUserFollowing(username)
+  }
 }
 
 const userService = new UserService(userRepository);
