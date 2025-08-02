@@ -11,7 +11,7 @@ export default function CreatePost() {
 
   const { refetch, isFetching, error } = useQuery({
     queryKey: ["create-post"],
-    queryFn: () => createPost({ files, content }),
+    queryFn: () => createPost({ content, files }),
     enabled: false,
     retry: false
   });

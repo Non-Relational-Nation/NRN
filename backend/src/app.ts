@@ -5,6 +5,7 @@ import cors from "cors";
 import { authMiddleware } from "./middleware/auth.ts";
 import federation from "./federation.ts";
 import { integrateFederation } from "@fedify/express";
+import { postRoutes } from "./routes/posts.ts";
 
 export const createApp = () => {
   const app = express();
@@ -26,7 +27,8 @@ export const createApp = () => {
   
   // API routes
   app.use("/api/auth", authRoutes);
-  app.use("/", userRoutes);
+  app.use("/api/posts", postRoutes);
+  app.use("/api/users", userRoutes);
   // ActivityPub routes
   app.use(integrateFederation(federation, (req: express.Request) => undefined));
   // 404 handler
