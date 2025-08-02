@@ -250,9 +250,42 @@ resource "aws_iam_policy" "s3_access_policy" {
   })
 }
 
+resource "aws_iam_policy" "ssm_access_policy" {
+  name        = "nrn_ssm_access_policy"
+  description = "Policy for EC2 instances to use SSM"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:UpdateInstanceInformation",
+          "ssm:SendCommand",
+          "ssm:ListCommandInvocations",
+          "ssm:DescribeInstanceInformation",
+          "ssm:GetCommandInvocation",
+          "ec2messages:*"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role_policy_attachment" "attach_s3_policy" {
   role       = aws_iam_role.ec2_s3_role.name
   policy_arn = aws_iam_policy.s3_access_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "attach_ssm_policy" {
+  role       = aws_iam_role.ec2_s3_role.name
+  policy_arn = aws_iam_policy.ssm_access_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "attach_ssm_managed_policy" {
+  role       = aws_iam_role.ec2_s3_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 resource "aws_iam_instance_profile" "ec2_profile" {
@@ -285,18 +318,10 @@ resource "aws_security_group" "alb_security_group" {
   name_prefix = "nrn_alb_sg"
   vpc_id      = aws_vpc.nrn_vpc.id
 
-  # HTTP access
+  # HTTP access (from CloudFront)
   ingress {
     from_port   = 80
     to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # HTTPS access
-  ingress {
-    from_port   = 443
-    to_port     = 443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -457,7 +482,7 @@ resource "aws_instance" "nrn_api_ec2_instance" {
 NODE_ENV=production
 PORT=3001
 HOST=0.0.0.0
-FRONTEND_URL=https://nrn-alb-grad-group01-dev-205573181.af-south-1.elb.amazonaws.com
+FRONTEND_URL=https://CLOUDFRONT_DOMAIN_PLACEHOLDER
 MONGODB_HOST=localhost
 MONGODB_PORT=27017
 MONGODB_DATABASE=nrn_db
@@ -469,13 +494,13 @@ AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 AWS_S3_BUCKET=nrn-media
 FEDERATION_ENABLED=false
-FEDERATION_DOMAIN=nrn-alb-grad-group01-dev-205573181.af-south-1.elb.amazonaws.com
+FEDERATION_DOMAIN=CLOUDFRONT_DOMAIN_PLACEHOLDER
 FEDERATION_PUBLIC_KEY=
 FEDERATION_PRIVATE_KEY=
 FEDERATION_USER_AGENT=NRN/1.0.0
 GOOGLE_CLIENT_ID=${var.google_client_id}
 GOOGLE_CLIENT_SECRET=${var.google_client_secret}
-GOOGLE_REDIRECT_URL=https://nrn-alb-grad-group01-dev-205573181.af-south-1.elb.amazonaws.com/login/callback
+GOOGLE_REDIRECT_URL=https://CLOUDFRONT_DOMAIN_PLACEHOLDER/login/callback
 EOL
     
     chown ubuntu:ubuntu /home/ubuntu/app/.env
@@ -512,9 +537,11 @@ EOL
     # Enable and start the service
     systemctl daemon-reload
     systemctl enable nrn-backend
-    systemctl start nrn-backend
     
-    echo "All services installed and configured"
+    # Wait for CloudFront distribution to be created and get domain name
+    # This will be updated by a post-deployment script
+    
+    echo "Backend service configured - waiting for CloudFront domain update"
   EOF
   )
 
@@ -570,7 +597,7 @@ resource "aws_instance" "nrn_web_ec2_instance" {
     
     # Create environment file for frontend build
     cat > /home/ubuntu/app/frontend/.env.production << 'EOL'
-VITE_API_URL=https://nrn-alb-grad-group01-dev-205573181.af-south-1.elb.amazonaws.com/api
+VITE_API_URL=https://CLOUDFRONT_DOMAIN_PLACEHOLDER/api
 EOL
     
     sudo -u ubuntu npm run build
@@ -691,31 +718,11 @@ resource "aws_lb_target_group_attachment" "web_attachment" {
   port             = 80
 }
 
-# HTTP Listener - Redirect to HTTPS for security
+# HTTP Listener - Direct traffic routing
 resource "aws_lb_listener" "http_listener" {
   load_balancer_arn = aws_lb.nrn_alb.arn
   port              = "80"
   protocol          = "HTTP"
-
-  # Redirect all HTTP traffic to HTTPS
-  default_action {
-    type = "redirect"
-
-    redirect {
-      port        = "443"
-      protocol    = "HTTPS"
-      status_code = "HTTP_301"
-    }
-  }
-}
-
-# HTTPS Listener with self-signed SSL certificate
-resource "aws_lb_listener" "https_listener" {
-  load_balancer_arn = aws_lb.nrn_alb.arn
-  port              = "443"
-  protocol          = "HTTPS"
-  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
-  certificate_arn   = aws_acm_certificate.nrn_self_signed_cert.arn
 
   # Default action forwards to web frontend for root paths
   default_action {
@@ -728,47 +735,9 @@ resource "aws_lb_listener" "https_listener" {
   }
 }
 
-# ============================================================================
-# SSL CERTIFICATE (Self-signed for immediate use)
-# ============================================================================
-
-resource "tls_private_key" "nrn_private_key" {
-  algorithm = "RSA"
-  rsa_bits  = 2048
-}
-
-resource "tls_self_signed_cert" "nrn_self_signed" {
-  private_key_pem = tls_private_key.nrn_private_key.private_key_pem
-
-  subject {
-    common_name  = "*.elb.amazonaws.com"
-    organization = "NRN Development"
-  }
-
-  validity_period_hours = 8760 # 1 year
-
-  allowed_uses = [
-    "key_encipherment",
-    "digital_signature",
-    "server_auth",
-  ]
-}
-
-# Import the self-signed certificate to ACM
-resource "aws_acm_certificate" "nrn_self_signed_cert" {
-  private_key      = tls_private_key.nrn_private_key.private_key_pem
-  certificate_body = tls_self_signed_cert.nrn_self_signed.cert_pem
-
-  tags = {
-    Name        = "${local.project}-self-signed-cert-${local.team_name}-${local.environment}"
-    Environment = local.environment
-    Team        = local.team_name
-  }
-}
-
-# Web app will be accessible at: https://your-domain.com/web
+# Web app will be accessible at: http://your-domain.com/web
 resource "aws_lb_listener_rule" "web_path_rule" {
-  listener_arn = aws_lb_listener.https_listener.arn
+  listener_arn = aws_lb_listener.http_listener.arn
   priority     = 100
 
   action {
@@ -787,9 +756,9 @@ resource "aws_lb_listener_rule" "web_path_rule" {
   }
 }
 
-# API will be accessible at: https://your-domain.com/api
+# API will be accessible at: http://your-domain.com/api
 resource "aws_lb_listener_rule" "api_path_rule" {
-  listener_arn = aws_lb_listener.https_listener.arn
+  listener_arn = aws_lb_listener.http_listener.arn
   priority     = 200
 
   action {
@@ -805,5 +774,108 @@ resource "aws_lb_listener_rule" "api_path_rule" {
     path_pattern {
       values = ["/api*"]
     }
+  }
+}
+
+# ============================================================================
+# CLOUDFRONT (HTTPS with automatic SSL certificate)
+# ============================================================================
+
+resource "aws_cloudfront_distribution" "nrn_distribution" {
+  origin {
+    domain_name = aws_lb.nrn_alb.dns_name
+    origin_id   = "ALB-${aws_lb.nrn_alb.name}"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "http-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  enabled             = true
+  is_ipv6_enabled     = true
+  default_root_object = "index.html"
+
+  # Default cache behavior for web content
+  default_cache_behavior {
+    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "ALB-${aws_lb.nrn_alb.name}"
+    compress               = true
+    viewer_protocol_policy = "redirect-to-https"
+
+    forwarded_values {
+      query_string = true
+      headers      = ["*"]
+      cookies {
+        forward = "all"
+      }
+    }
+
+    min_ttl     = 0
+    default_ttl = 0
+    max_ttl     = 0
+  }
+
+  # API cache behavior - no caching for API calls
+  ordered_cache_behavior {
+    path_pattern           = "/api/*"
+    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "ALB-${aws_lb.nrn_alb.name}"
+    compress               = false
+    viewer_protocol_policy = "redirect-to-https"
+
+    forwarded_values {
+      query_string = true
+      headers      = ["*"]
+      cookies {
+        forward = "all"
+      }
+    }
+
+    min_ttl     = 0
+    default_ttl = 0
+    max_ttl     = 0
+  }
+
+  price_class = "PriceClass_100"
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  # CloudFront automatically provides SSL certificate
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+
+  tags = {
+    Name        = "${local.project}-cloudfront-${local.team_name}-${local.environment}"
+    Environment = local.environment
+    Team        = local.team_name
+  }
+
+  # Update environment variables on EC2 instances after CloudFront is created
+  provisioner "local-exec" {
+    command = <<-EOT
+      # Update API server environment
+      aws ssm send-command \
+        --document-name "AWS-RunShellScript" \
+        --parameters 'commands=["sudo sed -i \"s/CLOUDFRONT_DOMAIN_PLACEHOLDER/${self.domain_name}/g\" /home/ubuntu/app/.env && sudo systemctl restart nrn-backend"]' \
+        --targets "Key=instanceids,Values=${aws_instance.nrn_api_ec2_instance.id}" \
+        --region ${var.region_name}
+      
+      # Update web server environment  
+      aws ssm send-command \
+        --document-name "AWS-RunShellScript" \
+        --parameters 'commands=["sudo sed -i \"s/CLOUDFRONT_DOMAIN_PLACEHOLDER/${self.domain_name}/g\" /home/ubuntu/app/frontend/.env.production && cd /home/ubuntu/app/frontend && sudo -u ubuntu npm run build && sudo cp -r dist/* /var/www/html/ && sudo systemctl restart nginx"]' \
+        --targets "Key=instanceids,Values=${aws_instance.nrn_web_ec2_instance.id}" \
+        --region ${var.region_name}
+    EOT
   }
 }

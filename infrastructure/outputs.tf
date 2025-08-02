@@ -3,6 +3,11 @@ output "alb_dns_name" {
   description = "The DNS name of the Application Load Balancer"
 }
 
+output "cloudfront_domain_name" {
+  value       = aws_cloudfront_distribution.nrn_distribution.domain_name
+  description = "The domain name of the CloudFront distribution"
+}
+
 output "api_ec2_ip" {
   value       = aws_instance.nrn_api_ec2_instance.public_ip
   description = "Public IP of API server"
@@ -34,13 +39,13 @@ output "s3_bucket_name" {
 }
 
 output "api_url" {
-  value       = "https://${aws_lb.nrn_alb.dns_name}/api"
-  description = "URL to access the API through HTTPS (self-signed certificate)"
+  value       = "https://${aws_cloudfront_distribution.nrn_distribution.domain_name}/api"
+  description = "URL to access the API through HTTPS via CloudFront"
 }
 
 output "web_url" {
-  value       = "https://${aws_lb.nrn_alb.dns_name}"
-  description = "URL to access the web application through HTTPS (self-signed certificate)"
+  value       = "https://${aws_cloudfront_distribution.nrn_distribution.domain_name}"
+  description = "URL to access the web application through HTTPS via CloudFront"
 }
 
 
