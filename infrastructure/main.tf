@@ -272,6 +272,33 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 # SECURITY GROUPS
 # ============================================================================
 
+# Security group for external API servers/partners
+resource "aws_security_group" "external_api_sg" {
+  name_prefix = "nrn_external_api_sg"
+  vpc_id      = aws_vpc.nrn_vpc.id
+  description = "Allow trusted external servers to communicate with our API"
+
+  # No ingress rules by default - add specific IPs/ranges as needed
+  # Example for allowing specific external server:
+  # ingress {
+  #   from_port   = 5000
+  #   to_port     = 5000
+  #   protocol    = "tcp"
+  #   cidr_blocks = ["203.0.113.0/24"] # Replace with actual external server IP/range
+  # }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "nrn_external_api_security_group"
+  }
+}
+
 # Security group for Application Load Balancer
 resource "aws_security_group" "alb_security_group" {
   name_prefix = "nrn_alb_sg"
@@ -345,20 +372,28 @@ resource "aws_security_group" "ec2_security_group" {
     security_groups = [aws_security_group.alb_security_group.id]
   }
 
-  # Neo4j HTTP interface (for admin - restrict as needed)
+  # Neo4j HTTP interface (restricted to ALB only for admin access via web)
   ingress {
-    from_port   = 7474
-    to_port     = 7474
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Consider restricting this
+    from_port       = 7474
+    to_port         = 7474
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb_security_group.id]
   }
 
-  # Neo4j Bolt protocol (for applications)
+  # Neo4j Bolt protocol (restricted to ALB for secure application connections)
   ingress {
-    from_port   = 7687
-    to_port     = 7687
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Consider restricting this
+    from_port       = 7687
+    to_port         = 7687
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb_security_group.id]
+  }
+
+  # Allow API servers to communicate with each other within the same security group
+  ingress {
+    from_port = 0
+    to_port   = 65535
+    protocol  = "tcp"
+    self      = true
   }
 
   egress {
