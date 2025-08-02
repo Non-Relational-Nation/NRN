@@ -65,7 +65,7 @@ export const config: AppConfig = {
     primary: {
       host: process.env.MONGODB_HOST || "localhost",
       port: parseInt(process.env.MONGODB_PORT || "27017"),
-      name: process.env.MONGODB_DATABASE || "nrn_social",
+      name: process.env.MONGODB_DATABASE || "nrn_db",
       username: process.env.MONGODB_USERNAME,
       password: process.env.MONGODB_PASSWORD,
       uri: process.env.MONGODB_URI, // For MongoDB Atlas connection string

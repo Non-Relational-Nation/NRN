@@ -512,7 +512,13 @@ EOL
     # Install dependencies and build backend
     cd /home/ubuntu/app/backend
     sudo -u ubuntu npm install
-    sudo -u ubuntu npm run build || true
+    sudo -u ubuntu npm run build
+    
+    # Check if build was successful
+    if [ ! -f "dist/server.js" ]; then
+        echo "Backend build failed - dist/server.js not found"
+        exit 1
+    fi
     
     # Create systemd service for the backend
     cat > /etc/systemd/system/nrn-backend.service << 'EOL'
@@ -537,6 +543,15 @@ EOL
     # Enable and start the service
     systemctl daemon-reload
     systemctl enable nrn-backend
+    systemctl start nrn-backend
+    
+    # Wait a moment and check if service started successfully
+    sleep 5
+    if ! systemctl is-active --quiet nrn-backend; then
+        echo "Backend service failed to start"
+        journalctl -u nrn-backend --no-pager
+        exit 1
+    fi
     
     # Wait for CloudFront distribution to be created and get domain name
     # This will be updated by a post-deployment script
