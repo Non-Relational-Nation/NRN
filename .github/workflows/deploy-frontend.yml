@@ -36,7 +36,7 @@ jobs:
         role-session-name: github-actions-frontend-deploy
         aws-region: ${{ env.AWS_REGION }}
 
-    - name: Get server IPs and ALB DNS
+    - name: Get server IPs and CloudFront DNS
       id: get-endpoints
       run: |
         API_IP=$(aws ec2 describe-instances \
@@ -51,15 +51,24 @@ jobs:
           --query 'Reservations[0].Instances[0].PublicIpAddress' \
           --output text)
         
-        ALB_DNS=$(aws elbv2 describe-load-balancers \
+        CLOUDFRONT_DOMAIN=$(aws cloudfront list-distributions \
           --region ${{ env.AWS_REGION }} \
-          --names "nrn-alb-grad-group01-dev" \
-          --query 'LoadBalancers[0].DNSName' \
-          --output text)
+          --query 'DistributionList.Items[?contains(Comment, `nrn-cloudfront-grad-group01-dev`) || contains(Tags.Items[?Key==`Name`].Value, `nrn-cloudfront-grad-group01-dev`)].DomainName' \
+          --output text | head -1)
+        
+        if [ -z "$CLOUDFRONT_DOMAIN" ]; then
+          echo "Warning: CloudFront domain not found, falling back to ALB"
+          ALB_DNS=$(aws elbv2 describe-load-balancers \
+            --region ${{ env.AWS_REGION }} \
+            --names "nrn-alb-grad-group01-dev" \
+            --query 'LoadBalancers[0].DNSName' \
+            --output text)
+          CLOUDFRONT_DOMAIN="$ALB_DNS"
+        fi
         
         echo "api_ip=$API_IP" >> $GITHUB_OUTPUT
         echo "web_ip=$WEB_IP" >> $GITHUB_OUTPUT
-        echo "alb_dns=$ALB_DNS" >> $GITHUB_OUTPUT
+        echo "cloudfront_domain=$CLOUDFRONT_DOMAIN" >> $GITHUB_OUTPUT
 
     - name: Install dependencies
       working-directory: ./frontend
@@ -68,7 +77,7 @@ jobs:
     - name: Build application
       working-directory: ./frontend
       env:
-        VITE_API_URL: https://${{ steps.get-endpoints.outputs.alb_dns }}/api
+        VITE_API_URL: https://${{ steps.get-endpoints.outputs.cloudfront_domain }}/api
       run: npm run build
 
     - name: Deploy to Web server
@@ -110,23 +119,18 @@ jobs:
           rm -rf /home/ubuntu/frontend
           mkdir -p /home/ubuntu/frontend
           tar -xzf /home/ubuntu/frontend-deploy.tar.gz -C /home/ubuntu/frontend
-          cd /home/ubuntu/frontend
           
-          # Install serve and PM2 globally
-          sudo npm install -g serve pm2@latest
+          # Install nginx if not already installed
+          sudo apt-get update
+          sudo apt-get install -y nginx
           
-          # Start the frontend on port 3000 using PM2 - single reliable approach
-          timeout 30 pm2 start "serve -s . -l 3000 -n" --name "frontend" --force || echo "PM2 start completed"
-          timeout 10 pm2 save || echo "PM2 save completed"
+          # Deploy files to nginx directory
+          sudo rm -rf /var/www/html/*
+          sudo cp -r /home/ubuntu/frontend/* /var/www/html/
           
-          # Setup PM2 startup script
-          sudo pm2 startup systemd -u ubuntu --hp /home/ubuntu || echo "PM2 startup configured"
-          
-          # Show PM2 status for debugging
-          echo "=== PM2 Status ==="
-          timeout 10 pm2 status || echo "PM2 status completed"
-          echo "=== PM2 Logs (last 5 lines) ==="
-          timeout 5 pm2 logs frontend --lines 5 --no-stream || echo "Log check completed"
+          # Restart nginx to serve the files
+          sudo systemctl restart nginx
+          sudo systemctl enable nginx
           
           echo "✅ Frontend deployment completed successfully"
           echo "🎯 Workflow finishing now..."

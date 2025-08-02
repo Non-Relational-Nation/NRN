@@ -121,9 +121,9 @@ jobs:
           pm2 kill || echo "PM2 already clean"
           sleep 5
           
-          # Free up port 5000 specifically
-          sudo fuser -k 5000/tcp || echo "Port 5000 already free"
-          sudo netstat -tlnp | grep :5000 | awk '{print $7}' | cut -d/ -f1 | xargs -r sudo kill -9 || echo "No processes on port 5000"
+          # Free up port 3001 specifically
+          sudo fuser -k 3001/tcp || echo "Port 3001 already free"
+          sudo netstat -tlnp | grep :3001 | awk '{print $7}' | cut -d/ -f1 | xargs -r sudo kill -9 || echo "No processes on port 3001"
           sleep 2
           
           # Install Node.js 18 (Ubuntu 22.04)
@@ -150,15 +150,18 @@ jobs:
           # Create environment file
           echo "Creating environment configuration..."
           echo "NODE_ENV=production" > .env
-          echo "PORT=5000" >> .env
+          echo "PORT=3001" >> .env
           echo "HOST=0.0.0.0" >> .env
-          echo "MONGODB_URI=mongodb://localhost:27017/nrn_db" >> .env
+          echo "MONGODB_HOST=localhost" >> .env
+          echo "MONGODB_PORT=27017" >> .env
+          echo "MONGODB_DATABASE=nrn_db" >> .env
           echo "REDIS_HOST=localhost" >> .env
           echo "REDIS_PORT=6379" >> .env
           echo "NEO4J_URI=bolt://localhost:7687" >> .env
           echo "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}" >> .env
-          echo "AWS_REGION=${{ env.AWS_REGION }}" >> .env
+          echo "AWS_REGION=${{ env.AWS_REGION }}" >> .env 
           echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
+          echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
           
           # Install PM2 globally
           sudo npm install -g pm2@latest
