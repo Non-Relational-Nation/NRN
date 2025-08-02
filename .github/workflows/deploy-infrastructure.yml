@@ -48,10 +48,16 @@ jobs:
 
     - name: Terraform Plan
       working-directory: ./infrastructure
+      env:
+        TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
+        TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
       run: terraform plan -out=tfplan
 
     - name: Terraform Apply
       working-directory: ./infrastructure
+      env:
+        TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
+        TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
       run: terraform apply -auto-approve tfplan
 
     - name: Save Infrastructure Outputs
