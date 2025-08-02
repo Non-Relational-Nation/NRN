@@ -1,6 +1,7 @@
 import type mongoose from "mongoose";
 import { ActorModel } from "../models/actorModel.ts";
 import { UserModel } from "../models/userModel.ts";
+import { FollowModel } from "@/models/followSchema.ts";
 export const findUserByUsername = async (username: string) => {
   return UserModel.findOne({ username });
 };
@@ -44,4 +45,18 @@ export async function upsertActor(
     },
     { upsert: true }
   );
+}
+
+export async function findUserFollowers(username: string) {
+  const user = await UserModel.findOne({ username: username });
+  if (!user) throw new Error("User not found");
+
+  const followingActor = await ActorModel.findOne({ user_id: user._id });
+  if (!followingActor) throw new Error("Actor not found");
+
+  const follows = await FollowModel.find({ following_id: followingActor._id })
+    .sort({ created: -1 })
+    .populate("follower_id");
+
+  return follows.map((f) => f.follower_id);
 }

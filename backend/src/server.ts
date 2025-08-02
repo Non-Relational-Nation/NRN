@@ -7,7 +7,7 @@ const HOST = process.env.HOST || "localhost";
 const app = createApp();
 
 connectDB().then(() => {
-  app.listen(Number(PORT), HOST, () => {
+  app.listen(Number(PORT), "0.0.0.0", () => {
     console.log(`🚀 Server running on http://${HOST}:${PORT}`);
     console.log(`📊 Health check available at http://${HOST}:${PORT}/health`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);

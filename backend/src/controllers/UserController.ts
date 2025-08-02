@@ -13,6 +13,7 @@ export class UserController {
       const context = createFederationContextFromExpressReq(req);
       const userId = existingUser?._id ?? new mongoose.Types.ObjectId();
 
+      //This should be a transaction
       await userRepo.upsertUser(userId, username);
       await userRepo.upsertActor(userId, {
         username,
@@ -21,6 +22,17 @@ export class UserController {
       });
 
       res.status(201).json({ message: "User registered successfully" });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async getUserFollowers(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userFollowers = await userRepo.findUserFollowers(
+        req.params.username
+      );
+      res.json({ followers: userFollowers });
     } catch (err) {
       next(err);
     }
