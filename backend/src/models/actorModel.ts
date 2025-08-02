@@ -24,8 +24,22 @@ const actorSchema = new mongoose.Schema({
       message: 'Handle must not be empty'
     }
   },
-  name: {
-    type: String
+  preferredUsername: { type: String },
+  name: { type: String },
+  summary: { type: String },
+  icon: {
+    type: {
+      type: String,
+      default: 'Image'
+    },
+    url: String
+  },
+  image: {
+    type: {
+      type: String,
+      default: 'Image'
+    },
+    url: String
   },
   inbox_url: {
     type: String,
@@ -35,6 +49,14 @@ const actorSchema = new mongoose.Schema({
       validator: (v: string) => /^https?:\/\//.test(v),
       message: 'Inbox URL must start with http:// or https://'
     }
+  },
+  outbox: { type: String },
+  following: { type: String },
+  followers: { type: String },
+  publicKey: {
+    id: String,
+    owner: String,
+    publicKeyPem: String
   },
   shared_inbox_url: {
     type: String,

@@ -1,0 +1,51 @@
+#profile-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  max-width: 40rem;
+  box-sizing: border-box;
+}
+
+#profile-header-container {
+  padding: 0.5rem;
+}
+
+#profile-header {
+  margin-top: 0.5rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  align-items: center;
+  padding: 0.5rem;
+  box-shadow: 0 3px 6px 1px rgba(0, 0, 0, 0.2);
+  background-color: white;
+}
+
+.info-text {
+  margin: 0;
+  text-align: center;
+}
+
+#follower-container {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  gap: 0.25rem;
+  padding: 0.5rem;
+}
+
+#follow-counts {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  justify-content: center;
+}
+
+#follow-button {
+  height: 1.5rem;
+  cursor: pointer;
+}

@@ -3,8 +3,7 @@ import mongoose from "mongoose";
 export const connectDB = async () => {
   try {
     // Use MONGODB_URI (for production), otherwise use individual env vars (for development)
-    const mongoUri = process.env.MONGODB_URI || 
-      `mongodb://${process.env.MONGODB_HOST}:${process.env.MONGODB_PORT}/${process.env.MONGODB_DATABASE}`;
+    const mongoUri =`mongodb://${process.env.MONGODB_HOST}:${process.env.MONGODB_PORT}/${process.env.MONGODB_DATABASE}`;
     
     console.log(`Attempting to connect to MongoDB...`);
     await mongoose.connect(mongoUri);

@@ -4,10 +4,18 @@ import { initiateGoogleLogin } from "../../api/login";
 
 function Login() {
   return (
-    <button id="google-login-button" onClick={initiateGoogleLogin}>
-      <img src={googleLogo} alt="Google logo" id="google-logo" />
-      Login with Google
-    </button>
+    <main className="login-card">
+      <h1 className="fancy-font login-heading">Welcome to NRN</h1>
+      <hr />
+      <button
+        id="google-login-button"
+        className="button"
+        onClick={initiateGoogleLogin}
+      >
+        <img src={googleLogo} alt="Google logo" id="google-logo" />
+        Login with Google
+      </button>
+    </main>
   );
 }
 

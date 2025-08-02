@@ -1,3 +1,4 @@
+import "./styles.css"
 import { handleOAuthCallback } from "../../api/login";
 import Loader from "../../components/Loader/Loader";
 import { useNavigate } from "react-router-dom";
@@ -20,9 +21,9 @@ function Callback() {
 
   if (error) {
     return (
-      <div>
-        <h2>Login failed</h2>
-        <button onClick={() => navigate("/login")}>Return to Login</button>
+      <div className="login-card">
+        <h2 className="login-heading" id="login-failed-heading">Login failed</h2>
+        <button className="button" onClick={() => navigate("/login")}>Return to Login</button>
       </div>
     );
   } else {

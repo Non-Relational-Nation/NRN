@@ -5,121 +5,30 @@ import cors from "cors";
 import { authMiddleware } from "./middleware/auth.ts";
 import federation from "./federation.ts";
 import { integrateFederation } from "@fedify/express";
-import mongoose from "mongoose";
+import { postRoutes } from "./routes/posts.ts";
 
 export const createApp = () => {
   const app = express();
   // Basic middleware
   app.use(express.json());
   app.use(cors());
-  //app.use(authMiddleware);
+  app.use(authMiddleware);
   app.set("trust proxy", true);
 
   
-  // Health check with database connectivity verification at /api/health endpoint
-  app.get("/api/health", async (req, res) => {
-    try {
-      const healthStatus = {
-        status: "OK",
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV || "development",
-        database: {
-          status: "unknown",
-          readyState: mongoose.connection.readyState
-        }
-      };
-
-      // Check MongoDB connection state
-      switch (mongoose.connection.readyState) {
-        case 1: // Connected
-          await mongoose.connection.db?.admin().ping();
-          healthStatus.database.status = "connected";
-          break;
-        case 2: // Connecting
-          healthStatus.database.status = "connecting";
-          healthStatus.status = "DEGRADED";
-          break;
-        case 0: // Disconnected
-          healthStatus.database.status = "disconnected";
-          healthStatus.status = "UNHEALTHY";
-          break;
-        default:
-          healthStatus.database.status = "unknown";
-          healthStatus.status = "DEGRADED";
-      }
-
-      const statusCode = healthStatus.status === "UNHEALTHY" ? 503 : 200;
-      res.status(statusCode).json(healthStatus);
-      
-    } catch (error) {
-      res.status(503).json({
-        status: "UNHEALTHY",
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV || "development",
-        database: {
-          status: "error",
-          error: error instanceof Error ? error.message : "Database check failed"
-        }
-      });
-    }
-  });
-  
-  // Legacy health check endpoint for backward compatibility
-  app.get("/health", async (req, res) => {
-    // Redirect to the new API health endpoint logic
-    try {
-      const healthStatus = {
-        status: "OK",
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV || "development",
-        database: {
-          status: "unknown",
-          readyState: mongoose.connection.readyState
-        }
-      };
-
-      // Check MongoDB connection state
-      switch (mongoose.connection.readyState) {
-        case 1: // Connected
-          await mongoose.connection.db?.admin().ping();
-          healthStatus.database.status = "connected";
-          break;
-        case 2: // Connecting
-          healthStatus.database.status = "connecting";
-          healthStatus.status = "DEGRADED";
-          break;
-        case 0: // Disconnected
-          healthStatus.database.status = "disconnected";
-          healthStatus.status = "UNHEALTHY";
-          break;
-        default:
-          healthStatus.database.status = "unknown";
-          healthStatus.status = "DEGRADED";
-      }
-
-      const statusCode = healthStatus.status === "UNHEALTHY" ? 503 : 200;
-      res.status(statusCode).json(healthStatus);
-      
-    } catch (error) {
-      res.status(503).json({
-        status: "UNHEALTHY",
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV || "development",
-        database: {
-          status: "error",
-          error: error instanceof Error ? error.message : "Database check failed"
-        }
-      });
-    }
+  // Health check
+  app.get("api/health", (req, res) => {
+    res.status(200).json({
+      status: "OK",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+    });
   });
   
   // API routes
   app.use("/api/auth", authRoutes);
-  app.use("/", userRoutes);
+  app.use("/api/posts", postRoutes);
+  app.use("/api/users", userRoutes);
   // ActivityPub routes
   app.use(integrateFederation(federation, (req: express.Request) => undefined));
   // 404 handler
