@@ -89,9 +89,9 @@ export default function PostCard({ post }: PostCardProps) {
       <hr />
       <footer id="post-footer">
         {isLiked ? (
-          <img className="like-button" title="Unlike post" src={redHeart} onClick={handleUnlike} width={25} height={25} />
+          <img className="like-button" title="Unlike post" src={redHeart} onClick={handleUnlike} width={20} height={20} />
         ) : (
-          <img className="like-button" title="Like post" src={heart} onClick={handleLike} width={25} height={25} />
+          <img className="like-button" title="Like post" src={heart} onClick={handleLike} width={20} height={20} />
         )}
 
         <span>{likesCount}</span>

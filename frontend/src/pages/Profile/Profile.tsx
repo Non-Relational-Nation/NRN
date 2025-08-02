@@ -59,7 +59,7 @@ export default function Profile() {
             <span>Followers: {userData?.followersCount}</span>
             <span>Following: {userData?.followingCount}</span>
             {!isMyProfile && (
-              <button id="follow-button" onClick={handleFollow}>
+              <button className="button" id="follow-button" onClick={handleFollow}>
                 Follow
               </button>
             )}

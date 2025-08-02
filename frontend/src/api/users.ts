@@ -2,6 +2,7 @@ import { mockUsers, type User } from "../models/User";
 import { apiFetch } from "../util/api";
 
 export async function searchUsers(searchTerm: string): Promise<User[]> {
+  console.log("SEARCH USERS")
   return mockUsers.filter(
     (user) => user?.username?.toUpperCase() === searchTerm.toUpperCase()
   );

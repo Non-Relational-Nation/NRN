@@ -22,7 +22,7 @@ export default function CreatePost() {
     setFiles((prev) => [...prev, ...Array.from(fileList)]);
   };
   const handleRemoveFile = (index: number) => {
-    setFiles((prev) => prev.filter((file, i) => i !== index));
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleCreatePost = () => {
@@ -43,6 +43,7 @@ export default function CreatePost() {
         />
         <div id="file-input-section">
           <button
+            className="button"
             id="add-files-button"
             type="button"
             onClick={() => fileInputRef.current?.click()}
@@ -65,6 +66,7 @@ export default function CreatePost() {
             <div key={index} id="file-item">
               <span>{file.name}</span>
               <button
+              className="button"
                 type="button"
                 onClick={() => handleRemoveFile(index)}
               >
@@ -74,7 +76,7 @@ export default function CreatePost() {
           ))}
         </div>
 
-        <button id="create-post-button" onClick={handleCreatePost}>
+        <button id="create-post-button" className="button" onClick={handleCreatePost}>
           Create Post
         </button>
       </section>

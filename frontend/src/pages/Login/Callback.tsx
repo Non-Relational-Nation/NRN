@@ -23,7 +23,7 @@ function Callback() {
     return (
       <div>
         <h2>Login failed</h2>
-        <button onClick={() => navigate("/login")}>Return to Login</button>
+        <button className="button" onClick={() => navigate("/login")}>Return to Login</button>
       </div>
     );
   } else {
