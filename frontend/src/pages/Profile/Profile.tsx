@@ -52,15 +52,22 @@ export default function Profile() {
     >
       <section id="profile-container">
         <header id="profile-header">
-          <UserAvatar size={40}></UserAvatar>
-          <h3 id="username-text">{userData?.username}</h3>
+          <UserAvatar size={40} imageUrl={userData?.avatar} />
+          <h2>{userData?.displayName}</h2>
+          <h3 id="username-text">@{userData?.username}</h3>
+          {userData?.bio && <p>{userData.bio}</p>}
+          {userData?.email && <p style={{ fontSize: '0.9em', color: '#888' }}>{userData.email}</p>}
           <section id="follower-container">
             <span>Followers: {userData?.followersCount}</span>
             <span>Following: {userData?.followingCount}</span>
+            <span>Posts: {userData?.postsCount}</span>
             {!isMyProfile && (
               <button id="follow-button" onClick={handleFollow}>
                 Follow
               </button>
+            )}
+            {isMyProfile && (
+              <button id="edit-profile-button" onClick={() => alert('Edit profile coming soon!')}>Edit Profile</button>
             )}
           </section>
         </header>
