@@ -45,7 +45,12 @@ export default function PostCard({ post }: PostCardProps) {
   return (
     <article id="post">
       <header id="post-header">
-        <span>Posted by {post?.authorId}</span>
+        <span>
+          Posted by{" "}
+          {post?.author?.displayName ||
+            post?.author?.username ||
+            post?.authorId}
+        </span>
         <span>
           {new Date(post?.createdAt).toLocaleTimeString([], {
             hour: "2-digit",
@@ -91,9 +96,23 @@ export default function PostCard({ post }: PostCardProps) {
       <hr />
       <footer id="post-footer">
         {isLiked ? (
-          <img className="like-button" title="Unlike post" src={redHeart} onClick={handleUnlike} width={20} height={20} />
+          <img
+            className="like-button"
+            title="Unlike post"
+            src={redHeart}
+            onClick={handleUnlike}
+            width={20}
+            height={20}
+          />
         ) : (
-          <img className="like-button" title="Like post" src={heart} onClick={handleLike} width={20} height={20} />
+          <img
+            className="like-button"
+            title="Like post"
+            src={heart}
+            onClick={handleLike}
+            width={20}
+            height={20}
+          />
         )}
 
         <span>{likesCount}</span>

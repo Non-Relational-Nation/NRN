@@ -81,8 +81,18 @@ export default function Profile() {
       <section id="profile-container">
         <section id="profile-header-container">
           <header id="profile-header">
-            <UserAvatar size={40}></UserAvatar>
-            <h3 id="username-text">{userData?.username}</h3>
+            <UserAvatar size={40} imageUrl={userData?.avatar} />
+            <h3 className="info-text">{userData?.displayName}</h3>
+            <p className="info-text">@{userData?.username}</p>
+            {userData?.email && (
+              <p
+                className="info-text"
+                style={{ fontSize: "0.9em", color: "#888" }}
+              >
+                {userData.email}
+              </p>
+            )}
+            {userData?.bio && <p className="info-text">{userData.bio}</p>}
             <section id="follower-container">
               <section id="follow-counts">
                 <span>
@@ -90,6 +100,9 @@ export default function Profile() {
                 </span>
                 <span>
                   Following: <b>{userData?.followingCount}</b>
+                </span>
+                <span>
+                  Posts: <b>{userData?.postsCount}</b>
                 </span>
               </section>
               {!isMyProfile &&
@@ -110,6 +123,15 @@ export default function Profile() {
                     Follow
                   </button>
                 ))}
+              {isMyProfile && (
+                <button
+                  className="button"
+                  id="edit-profile-button"
+                  onClick={() => alert("Edit profile coming soon!")}
+                >
+                  Edit Profile
+                </button>
+              )}
             </section>
           </header>
         </section>

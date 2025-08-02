@@ -56,7 +56,7 @@ export interface Post {
 }
 
 export interface CreatePostData {
-  type: PostType;
+  type?: PostType;
   content?: string;
   media?: Omit<MediaItem, 'id'>[];
   visibility: PostVisibility;
@@ -64,9 +64,13 @@ export interface CreatePostData {
   repostComment?: string; // Comment when reposting
   hashtags?: string[]; // Extracted from content
   mentions?: string[]; // Extracted from content
+  authorId: string;
+  title?:string
 }
 
 export interface UpdatePostData {
+  title?: string;
   content?: string;
   visibility?: PostVisibility;
+  likesCount?: number;
 }
