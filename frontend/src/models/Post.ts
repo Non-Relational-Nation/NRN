@@ -14,8 +14,8 @@ export enum PostVisibility {
 }
 
 export interface CreatePost {
-  files: File[];
   content: string;
+  files?: File[];
 }
 
 export interface MediaItem {
@@ -60,6 +60,9 @@ export interface Post {
   isDeleted: boolean;
   deletedAt?: Date;
   flagged: boolean;
+
+  // Enriched author object (from backend)
+  author?: import("./User").User;
 }
 
 const mockMediaItems: MediaItem[] = [
