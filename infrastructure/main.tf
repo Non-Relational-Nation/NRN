@@ -719,8 +719,12 @@ resource "aws_lb_listener" "https_listener" {
 
   # Default action forwards to web frontend for root paths
   default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.web_tg.arn
+    type = "forward"
+    forward {
+      target_group {
+        arn = aws_lb_target_group.web_tg.arn
+      }
+    }
   }
 }
 
@@ -768,8 +772,12 @@ resource "aws_lb_listener_rule" "web_path_rule" {
   priority     = 100
 
   action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.web_tg.arn
+    type = "forward"
+    forward {
+      target_group {
+        arn = aws_lb_target_group.web_tg.arn
+      }
+    }
   }
 
   condition {
@@ -785,8 +793,12 @@ resource "aws_lb_listener_rule" "api_path_rule" {
   priority     = 200
 
   action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.api_tg.arn
+    type = "forward"
+    forward {
+      target_group {
+        arn = aws_lb_target_group.api_tg.arn
+      }
+    }
   }
 
   condition {
