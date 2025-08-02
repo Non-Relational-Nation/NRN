@@ -22,7 +22,7 @@ export default function PostCard({ post }: PostCardProps) {
   return (
     <article id="post">
       <header id="post-header">
-        <span>Posted by {post?.authorId}</span>
+        <span>Posted by {post?.author?.displayName || post?.author?.username || post?.authorId}</span>
         <span>{new Date(post?.createdAt)?.toLocaleString()}</span>
       </header>
       <section id="post-content">
