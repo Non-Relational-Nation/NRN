@@ -3,6 +3,10 @@ import { type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import Loader from "../Loader/Loader";
 import ErrorPage from "../../pages/ErrorPage/ErrorPage";
+import homeIcon from "../../assets/home.svg";
+import searchIcon from "../../assets/search.svg";
+import addPostIcon from "../../assets/add-post.svg";
+import userIcon from "../../assets/user.svg";
 
 interface LayoutProps {
   children?: ReactNode;
@@ -15,8 +19,7 @@ function Layout({ children, loading = false, error = null }: LayoutProps) {
 
   return (
     <div id="layout">
-      {/* TODO style the heading better */}
-      <header id="header">Non-Relational Nation</header>
+      <header id="header" className="fancy-font">Non-Relational Nation</header>
       <main id="content">
         {loading ? (
           <Loader />
@@ -27,22 +30,21 @@ function Layout({ children, loading = false, error = null }: LayoutProps) {
         )}
       </main>
       <footer id="footer">
-        {/* TODO style the buttons properly */}
         <nav id="navbar">
-          <button className="nav-button" onClick={() => navigate("/")}>
-            Feed
+          <button className="button nav-button" id="first-button" onClick={() => navigate("/")}>
+            <img src={homeIcon} alt="Home" width={20} height={20}/>
           </button>
-          <button className="nav-button" onClick={() => navigate("/search")}>
-            Search
+          <button className="button nav-button" onClick={() => navigate("/search")}>
+            <img src={searchIcon} alt="Search" width={20} height={20}/>
           </button>
           <button
-            className="nav-button"
+            className="button nav-button"
             onClick={() => navigate("/create-post")}
           >
-            Create post
+            <img src={addPostIcon} alt="Add Post" width={20} height={20}/>
           </button>
-          <button className="nav-button" onClick={() => navigate("/profile")}>
-            Profile
+          <button className="button nav-button" onClick={() => navigate("/profile")}>
+            <img src={userIcon} alt="Profile" width={20} height={20}/>
           </button>
         </nav>
       </footer>

@@ -20,7 +20,9 @@ export default function Feed() {
 
   return (
     <Layout loading={isFeedLoading} error={feedError}>
-      <PostList posts={feedPosts ?? []}></PostList>
+      <section id="feed-container">
+      <PostList posts={feedPosts ?? []}/>
+      </section>
     </Layout>
   );
 }

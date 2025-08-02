@@ -25,6 +25,7 @@ export default function PostCard({ post }: PostCardProps) {
         <span>Posted by {post?.authorId}</span>
         <span>{new Date(post?.createdAt)?.toLocaleString()}</span>
       </header>
+      <hr/>
       <section id="post-content">
         <p>{post?.content}</p>
 
@@ -57,6 +58,7 @@ export default function PostCard({ post }: PostCardProps) {
           </div>
         ) : null}
       </section>
+      <hr/>
       <footer id="post-footer">
         <button onClick={handleLike}>Like</button>
         <span>{post?.likesCount} Likes</span>
