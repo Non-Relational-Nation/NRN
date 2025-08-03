@@ -61,18 +61,20 @@ export class UserController {
     }
   }
 
-  async sendFollowRequest(req: Request, res: Response, next: NextFunction) {
+  async sendFollowRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const username = req.params.username;
       const handle = req.body.actor;
       if (typeof handle !== "string") {
-        return res.status(400).send("Invalid actor handle or URL");
+        res.status(400).send("Invalid actor handle or URL");
+        return;
       }
       const ctx = createFederationContextFromExpressReq(req);
 
       const actor = await ctx.lookupObject(handle.trim());
       if (!isActor(actor)) {
-        return res.status(400).send("Invalid actor handle or URL");
+        res.status(400).send("Invalid actor handle or URL");
+        return;
       }
 
       await ctx.sendActivity(
@@ -84,7 +86,7 @@ export class UserController {
           to: actor.id,
         })
       );
-      return res
+      res
         .status(201)
         .json({ message: "Follow request sent successfully" });
     } catch (err) {
