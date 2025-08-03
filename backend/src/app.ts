@@ -12,7 +12,7 @@ export const createApp = () => {
   // Basic middleware
   app.use(express.json());
   app.use(cors());
-  app.use(authMiddleware);
+  // app.use(authMiddleware);
   app.set("trust proxy", true);
 
   
@@ -26,12 +26,12 @@ export const createApp = () => {
   });
   
   // API routes
-  // ActivityPub routes
-  app.use(integrateFederation(federation, (req: express.Request) => undefined));
   app.use("/api/auth", authRoutes);
   app.use("/api/posts", postRoutes);
   app.use("/api/users", userRoutes);
   // 404 handler
+  // ActivityPub routes
+  app.use(integrateFederation(federation, (req: express.Request) => undefined));
   app.use("*", (req, res) => {
     res.status(404).json({
       success: false,
