@@ -4,7 +4,7 @@ import { Follow, isActor } from "@fedify/fedify";
 import { Request, Response, type NextFunction } from "express";
 
 export class UserController {
-  async registerUser(req: Request, res: Response, next: NextFunction) {
+  async registerUser(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
     try {
       const { username, email, displayName, bio, avatar } = req.body;
       if (!username || !email || !displayName) {
@@ -22,11 +22,10 @@ export class UserController {
       return res.status(201).json({ message: "User registered successfully" });
     } catch (err) {
       next(err);
-      return;
     }
   }
 
-  async getUserById(req: Request, res: Response, next: NextFunction) {
+  async getUserById(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
     try {
       const requestedId = req.params.id;
       const user = await userService.getUserById(requestedId);
@@ -36,26 +35,25 @@ export class UserController {
       return res.json(user);
     } catch (err) {
       next(err);
-      return;
     }
   }
 
-  async searchUsers(req: Request, res: Response, next: NextFunction) {
+  async searchUsers(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
     try {
       const search = req.query.search as string;
       const users = await userService.searchUsers(search);
-      res.json(users);
+      return res.json(users);
     } catch (err) {
       next(err);
     }
   }
 
-  async getUserFollowers(req: Request, res: Response, next: NextFunction) {
+  async getUserFollowers(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
     try {
       const userFollowers = await userService.getUserFollowers(
         req.params.username
       );
-      res.json({ followers: userFollowers });
+      return res.json({ followers: userFollowers });
     } catch (err) {
       next(err);
     }
@@ -92,12 +90,12 @@ export class UserController {
     }
   }
 
-  async getUserFollowing(req: Request, res: Response, next: NextFunction) {
+  async getUserFollowing(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
     try {
       const userFollowing = await userService.getUserFollowing(
         req.params.username
       );
-      res.json({ following: userFollowing });
+      return res.json({ following: userFollowing });
     } catch (err) {
       next(err);
     }
