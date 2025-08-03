@@ -24,7 +24,7 @@ export default function Profile() {
     isLoading: isUserLoading,
     error: userError,
   } = useQuery<User>({
-    queryKey: ["feed", user],
+    queryKey: ["user", user],
     queryFn: () => getUser(user || "1"),
     retry: false,
     enabled: !!user,
@@ -45,7 +45,7 @@ export default function Profile() {
     isLoading: isUserFeedLoading,
     error: userFeedError,
   } = useQuery<Post[]>({
-    queryKey: ["user", user],
+    queryKey: ["feed", user],
     queryFn: () => getUsersFeed(user || "1"),
     retry: false,
   });
