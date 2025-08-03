@@ -699,9 +699,7 @@ server {
         try_files $uri $uri/ /index.html;
     }
     
-    location /api {
-        return 404;
-    }
+    # Remove the /api block since ALB should handle API routing
 }
 EOL
     
