@@ -37,6 +37,11 @@ export interface MediaItem {
   altText?: string;
 }
 
+export interface PostsPage {
+  items: Post[];
+  nextOffset?: number;
+}
+
 export interface Post {
   id: string;
   authorId: string;
