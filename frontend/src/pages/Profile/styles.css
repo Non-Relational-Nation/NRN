@@ -29,6 +29,11 @@
   text-align: center;
 }
 
+#email-text {
+  font-size: 0.9rem;
+  color: #888;
+}
+
 #follower-container {
   display: flex;
   flex-direction: column;

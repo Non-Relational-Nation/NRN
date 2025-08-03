@@ -21,6 +21,7 @@ export default function Search() {
     queryKey: ["searchUsers"],
     queryFn: () => searchUsers(searchTerm),
     enabled: false,
+    retry: false,
     gcTime: 0,
   });
 

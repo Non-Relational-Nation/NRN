@@ -1,57 +1,63 @@
-// import { useQuery } from "@tanstack/react-query";
 import type { Post } from "../../models/Post";
 import "./styles.css";
-// import { likePost } from "../../api/posts";
 import heart from "../../assets/heart.svg";
 import redHeart from "../../assets/red-heart.svg";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import UserAvatar from "../Users/UserAvatar";
+import { useMutation } from "@tanstack/react-query";
+import { likePost, unlikePost } from "../../api/posts";
+import ErrorDialog from "../Dialogs/ErrorDialog";
 
 interface PostCardProps {
   post: Post;
 }
 
 export default function PostCard({ post }: PostCardProps) {
+  const navigate = useNavigate();
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [likesCount, setLikesCount] = useState(post.likesCount);
+  const [errorDialogMessage, setErrorDialogMessage] = useState("");
 
-  // const { refetch: likePostRefetch } = useQuery({
-  //   queryKey: ["like-post"],
-  //   queryFn: () => likePost(post?.id),
-  //   enabled: false,
-  //   retry: false,
-  //   gcTime: 0
-  // });
+  const likeMutation = useMutation({
+    mutationFn: () => likePost(post.id),
+    onSuccess: () => {
+      setIsLiked(true);
+      setLikesCount((prev) => prev + 1);
+    },
+    onError: (error: Error) => {
+      setErrorDialogMessage(error.message);
+    },
+  });
 
-  // const { refetch: unlikePostRefetch } = useQuery({
-  //   queryKey: ["unlike-post"],
-  //   queryFn: () => likePost(post?.id),
-  //   enabled: false,
-  //   retry: false,
-  //   gcTime: 0
-  // });
+  const unlikeMutation = useMutation({
+    mutationFn: () => unlikePost(post.id),
+    onSuccess: () => {
+      setIsLiked(false);
+      setLikesCount((prev) => prev - 1);
+    },
+    onError: (error: Error) => {
+      setErrorDialogMessage(error.message);
+    },
+  });
 
-  const handleLike = async () => {
-    // await likePostRefetch();
-    setIsLiked(true);
-    setLikesCount(likesCount + 1);
-  };
-
-  const handleUnlike = async () => {
-    // await unlikePostRefetch();
-    setIsLiked(false);
-    setLikesCount(likesCount - 1);
-  };
+  const handleLike = () => likeMutation.mutate();
+  const handleUnlike = () => unlikeMutation.mutate();
 
   return (
     <article id="post">
       <header id="post-header">
-        <span>
-          Posted by{" "}
+        <button
+          className="button"
+          id="profile-button"
+          onClick={() => navigate(`/profile/${post.author?.id}`)}
+        >
+          <UserAvatar imageUrl={post.author?.avatar} size={20} />
           {post?.author?.displayName ||
             post?.author?.username ||
             post?.authorId}
-        </span>
-        <span>
+        </button>
+        <span id="time-text">
           {new Date(post?.createdAt).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
@@ -117,6 +123,11 @@ export default function PostCard({ post }: PostCardProps) {
 
         <span>{likesCount}</span>
       </footer>
+      <ErrorDialog
+        isOpen={!!errorDialogMessage}
+        onClose={() => setErrorDialogMessage("")}
+        errorMessage={errorDialogMessage}
+      ></ErrorDialog>
     </article>
   );
 }

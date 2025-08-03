@@ -1,4 +1,5 @@
 import "./styles.css";
+import defaultAvatar from "../../assets/default-avatar.svg"
 
 interface UserAvatarProps {
   imageUrl?: string;
@@ -6,13 +7,13 @@ interface UserAvatarProps {
 }
 
 export default function UserAvatar({
-  imageUrl = "https://www.gravatar.com/avatar/?d=identicon",
+  imageUrl,
   size = 40,
 }: UserAvatarProps) {
   return (
     <div id="user-avatar" style={{ width: size, height: size }}>
       <img
-        src={imageUrl}
+        src={imageUrl ?? defaultAvatar}
         id="avatar-image"
         style={{ width: size, height: size }}
       />

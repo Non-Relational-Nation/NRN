@@ -1,5 +1,5 @@
 import type { CreatePost, Post } from "../models/Post";
-import { apiFetch } from "../util/api";
+import { apiFetch, handleError } from "../util/api";
 
 // Get the public feed (all public posts)
 export async function getFeed(): Promise<Post[]> {
@@ -7,9 +7,8 @@ export async function getFeed(): Promise<Post[]> {
     path: `/api/posts`,
     method: "GET",
   });
-  if (!response.ok) {
-    throw new Error(`${response.status}`);
-  }
+  await handleError(response);
+
   const data = await response.json();
   // Backend returns { success, data: { posts, pagination } }
   return data.data?.posts || [];
@@ -21,9 +20,8 @@ export async function getUsersFeed(userId: string): Promise<Post[]> {
     path: `/api/posts/author/${userId}`,
     method: "GET",
   });
-  if (!response.ok) {
-    throw new Error(`${response.status}`);
-  }
+  await handleError(response);
+
   const data = await response.json();
   return data.data?.posts || [];
 }
@@ -32,14 +30,14 @@ export async function getUsersFeed(userId: string): Promise<Post[]> {
 export async function likePost(postId: string): Promise<Post> {
   const userId = sessionStorage.getItem("MY_USER_ID");
   if (!userId) throw new Error("Not authenticated");
+
   const response = await apiFetch({
     path: `/api/posts/${postId}/like`,
     method: "POST",
     body: JSON.stringify({ authorId: userId }),
   });
-  if (!response.ok) {
-    throw new Error(`${response.status}`);
-  }
+  await handleError(response);
+
   const data = await response.json();
   return data.data;
 }
@@ -49,9 +47,7 @@ export async function unlikePost(postId: string): Promise<Post> {
     path: `/post/${postId}/unlike`,
     method: "POST",
   });
-  if (!response.ok) {
-    throw new Error(`${response.status}`);
-  }
+  await handleError(response);
 
   return await response.json();
 }
@@ -75,9 +71,9 @@ export async function createPost(post: CreatePost): Promise<Post> {
     method: "POST",
     body: formData,
   });
-  if (!response.ok) {
-    throw new Error(`${response.status}`);
-  }
+
+  await handleError(response);
+
   const data = await response.json();
   return data.data;
 }
