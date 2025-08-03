@@ -10,7 +10,6 @@ import Profile from "./pages/Profile/Profile";
 import CreatePost from "./pages/CreatePost/CreatePost";
 import EditProfile from "./pages/EditProfile/EditProfile";
 
-// NRN Social Media App
 function App() {
   const navigate = useNavigate();
   const location = useLocation();

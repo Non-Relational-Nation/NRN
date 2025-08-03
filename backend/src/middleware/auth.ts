@@ -17,14 +17,7 @@ export const authMiddleware: RequestHandler  = (
   res: Response,
   next: NextFunction
 ) => {
-  // Check both req.path and req.url to handle ALB routing
-  const path = req.path || req.url;
-  console.log('[AuthMiddleware] Checking path:', path, 'against unauthed endpoints:', unauthedEndpoints);
-  
-  if (unauthedEndpoints.some(endpoint => path.includes(endpoint))) {
-    console.log('[AuthMiddleware] Path is unauthed, skipping auth');
-    return next();
-  }
+  if (unauthedEndpoints.includes(req.path)) return next();
 
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
