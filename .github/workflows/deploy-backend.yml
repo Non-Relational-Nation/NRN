@@ -129,6 +129,12 @@ jobs:
           # Install Node.js 22 (Ubuntu 22.04)
           echo "Setting up Node.js 22 on Ubuntu 22.04..."
           
+          # Fix any broken package installations first
+          echo "🔧 Fixing package manager state..."
+          sudo dpkg --configure -a || echo "dpkg configure completed"
+          sudo apt-get update --fix-missing || echo "apt update completed"
+          sudo apt-get install -f -y || echo "apt install fix completed"
+          
           # Install Node.js 22 from NodeSource (Ubuntu compatible)
           curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
           sudo apt-get install -y nodejs

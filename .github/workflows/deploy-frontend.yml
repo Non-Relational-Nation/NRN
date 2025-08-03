@@ -101,6 +101,12 @@ jobs:
           
           echo "🚀 Starting frontend deployment..."
           
+          # Fix any broken package installations first
+          echo "🔧 Fixing package manager state..."
+          sudo dpkg --configure -a || echo "dpkg configure completed"
+          sudo apt-get update --fix-missing || echo "apt update completed"
+          sudo apt-get install -f -y || echo "apt install fix completed"
+          
           # Install Node.js 22 (Ubuntu 22.04 compatible)
           if ! node --version 2>/dev/null | grep -q "v22"; then
             echo "📦 Installing Node.js 22 on Ubuntu 22.04..."
