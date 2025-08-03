@@ -9,13 +9,13 @@ output "cloudfront_domain_name" {
 }
 
 output "api_ec2_ip" {
-  value       = aws_instance.nrn_api_ec2_instance.public_ip
-  description = "Public IP of API server"
+  value       = module.backend.instance_private_ip
+  description = "Private IP of API server"
 }
 
 output "web_ec2_ip" {
-  value       = aws_instance.nrn_web_ec2_instance.public_ip
-  description = "Public IP of Web server"
+  value       = module.frontend.instance_private_ip
+  description = "Private IP of Web server"
 }
 
 output "mongodb_connection_string" {
@@ -67,27 +67,20 @@ output "summary" {
   📋 CloudFront Domain: ${aws_cloudfront_distribution.nrn_distribution.domain_name}
   📋 ALB DNS Name: ${aws_lb.nrn_alb.dns_name}
 
-  🧪 TESTING COMMANDS:
-  Test API: curl https://${aws_cloudfront_distribution.nrn_distribution.domain_name}/api/health
-  Test Web: curl https://${aws_cloudfront_distribution.nrn_distribution.domain_name}
 
   🖥️  Direct Server Access (Development):
-  API Server (with co-located DBs): ${aws_instance.nrn_api_ec2_instance.public_dns}
-  Web Server:                       ${aws_instance.nrn_web_ec2_instance.public_dns}
+  API Server (with co-located DBs): ${module.backend.instance_id}
+  Web Server:                       ${module.frontend.instance_id}
   S3 Bucket:                        ${aws_s3_bucket.nrn_object_storage.bucket}
 
   🔐 SSH Commands (Ubuntu):
-  ssh -i team-key ubuntu@${aws_instance.nrn_api_ec2_instance.public_ip}
-  ssh -i team-key ubuntu@${aws_instance.nrn_web_ec2_instance.public_ip}
+  ssh -i team-key ubuntu@${module.backend.instance_private_ip}
+  ssh -i team-key ubuntu@${module.frontend.instance_private_ip}
 
   💾 Database Connections (Co-located on API server):
   MongoDB: mongodb://localhost:27017/nrn_db
   Redis:   redis://localhost:6379  
   Neo4j:   bolt://localhost:7687
-
-  🔗 GOOGLE OAUTH CALLBACK URL:
-  Add this to your Google Cloud Console:
-  https://${aws_cloudfront_distribution.nrn_distribution.domain_name}/login/callback
 
   EOT
   description = "Summary of deployed infrastructure and access details"
