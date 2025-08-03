@@ -446,32 +446,71 @@ resource "aws_instance" "nrn_api_ec2_instance" {
     unzip awscliv2.zip
     ./aws/install
     
-    # Install MongoDB
+    # Install MongoDB with better error handling
+    echo "Installing MongoDB..."
     wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
     echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
     apt update -y
     apt install -y mongodb-org
-    systemctl start mongod
+    
+    # Start and enable MongoDB with verification
+    systemctl daemon-reload
     systemctl enable mongod
+    systemctl start mongod
     
-    # Install Redis
+    # Wait for MongoDB to start and verify it's running
+    sleep 10
+    if ! systemctl is-active --quiet mongod; then
+        echo "MongoDB failed to start, trying alternative approach..."
+        systemctl restart mongod
+        sleep 10
+    fi
+    
+    # Final verification
+    if systemctl is-active --quiet mongod; then
+        echo "MongoDB is running successfully"
+    else
+        echo "MongoDB installation failed"
+        journalctl -u mongod --no-pager -n 20
+    fi
+    
+    # Install Redis with verification
+    echo "Installing Redis..."
     apt install -y redis-server
-    systemctl start redis-server
     systemctl enable redis-server
+    systemctl start redis-server
     
-    # Install Neo4j
+    # Verify Redis is running
+    sleep 5
+    if systemctl is-active --quiet redis-server; then
+        echo "Redis is running successfully"
+    else
+        echo "Redis installation failed"
+        journalctl -u redis-server --no-pager -n 20
+    fi
+    
+    # Install Neo4j with verification
+    echo "Installing Neo4j..."
     wget -O - https://debian.neo4j.com/neotechnology.gpg.key | sudo apt-key add -
     echo 'deb https://debian.neo4j.com stable latest' | sudo tee -a /etc/apt/sources.list.d/neo4j.list
     apt update -y
     apt install -y neo4j
-    systemctl start neo4j
-    systemctl enable neo4j
     
-    # Configure services for localhost access
-    # MongoDB already configured for localhost by default
-    # Redis already configured for localhost by default
-    # Neo4j - set initial password
+    # Configure Neo4j initial password
     neo4j-admin set-initial-password neo4jpassword || true
+    
+    # Start and enable Neo4j
+    systemctl enable neo4j
+    systemctl start neo4j
+    
+    # Verify Neo4j is running
+    sleep 10
+    if systemctl is-active --quiet neo4j; then
+        echo "Neo4j is running successfully"
+    else
+        echo "Neo4j installation failed"
+        journalctl -u neo4j --no-pager -n 20
+    fi
     
     # Create application directory
     mkdir -p /home/ubuntu/app
@@ -520,11 +559,12 @@ EOL
         exit 1
     fi
     
-    # Create systemd service for the backend
+    # Create systemd service for the backend with better error handling
     cat > /etc/systemd/system/nrn-backend.service << 'EOL'
 [Unit]
 Description=NRN Backend Service
-After=network.target mongod.service
+After=network.target mongod.service redis-server.service neo4j.service
+Wants=mongod.service redis-server.service neo4j.service
 
 [Service]
 Type=simple
@@ -535,14 +575,37 @@ EnvironmentFile=/home/ubuntu/app/.env
 ExecStart=/usr/bin/node dist/server.js
 Restart=always
 RestartSec=10
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
 EOL
     
-    # Enable and start the service
+    # Enable and start the service with database connectivity check
     systemctl daemon-reload
     systemctl enable nrn-backend
+    
+    # Test database connectivity before starting the service
+    echo "Testing database connectivity..."
+    
+    # Test MongoDB
+    if mongosh --eval "db.runCommand('ping')" >/dev/null 2>&1; then
+        echo "MongoDB connection successful"
+    else
+        echo "MongoDB connection failed - checking status..."
+        systemctl status mongod --no-pager
+    fi
+    
+    # Test Redis
+    if redis-cli ping >/dev/null 2>&1; then
+        echo "Redis connection successful"  
+    else
+        echo "Redis connection failed - checking status..."
+        systemctl status redis-server --no-pager
+    fi
+    
+    # Start the backend service
     systemctl start nrn-backend
     
     # Wait a moment and check if service started successfully
