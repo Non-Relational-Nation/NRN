@@ -26,11 +26,11 @@ export const createApp = () => {
   });
   
   // API routes
+  // ActivityPub routes
+  app.use(integrateFederation(federation, (req: express.Request) => undefined));
   app.use("/api/auth", authRoutes);
   app.use("/api/posts", postRoutes);
   app.use("/api/users", userRoutes);
-  // ActivityPub routes
-  app.use(integrateFederation(federation, (req: express.Request) => undefined));
   // 404 handler
   app.use("*", (req, res) => {
     res.status(404).json({
