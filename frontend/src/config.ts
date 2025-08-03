@@ -11,6 +11,6 @@ export const GOOGLE_REDIRECT_URL = window.location.hostname === "localhost"
 
 const LOCAL_API_URL = "http://localhost:3001";
 // Use environment variable set during build process
-const HOSTED_API_URL = (import.meta as any).env?.VITE_API_URL || "https://d1ljjnuczrdc3q.cloudfront.net";
+const HOSTED_API_URL = (import.meta as any).env?.VITE_API_URL || "https://dmu78d3smdb0c.cloudfront.net";
 
 export const API_URL = window.location.hostname === "localhost" ? LOCAL_API_URL : HOSTED_API_URL;
