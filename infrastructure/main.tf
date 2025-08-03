@@ -431,8 +431,8 @@ resource "aws_instance" "nrn_api_ec2_instance" {
     #!/bin/bash
     apt update -y
     
-    # Install Node.js 18
-    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    # Install Node.js 20 (fixes crypto/jose compatibility issues)
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
     apt install -y nodejs git unzip
     
     # Install Docker
@@ -642,8 +642,8 @@ resource "aws_instance" "nrn_web_ec2_instance" {
     #!/bin/bash
     apt update -y
     
-    # Install Node.js 18
-    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    # Install Node.js 20 (fixes crypto/jose compatibility issues)
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
     apt install -y nodejs
     
     # Install Docker
