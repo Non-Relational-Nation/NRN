@@ -1,0 +1,51 @@
+#error-section {
+  margin-bottom: 1rem;
+}
+
+#error-button-section {
+  display: flex;
+  justify-content: flex-end;
+}
+
+#dialog {
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  width: 100%;
+  max-width: 24rem;
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+  margin: auto;
+  backdrop-filter: blur(2px);
+  background: white;
+  box-sizing: border-box;
+}
+
+#dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+#dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+#dialog-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+#dialog-close {
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 2rem;
+  font-weight: bold;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+#dialog-close:hover {
+  color: #111827;
+}

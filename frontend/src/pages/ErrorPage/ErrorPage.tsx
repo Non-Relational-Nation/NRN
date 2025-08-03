@@ -9,8 +9,8 @@ export default function ErrorPage({
 }: ErrorPageProps) {
   return (
     <section id="error-container">
-      <h1>An error has occurred</h1>
-      <h2>{errorMessage}</h2>
+      <h2>An error has occurred</h2>
+      <h4>{errorMessage}</h4>
     </section>
   );
 }
