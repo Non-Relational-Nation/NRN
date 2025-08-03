@@ -12,7 +12,16 @@ export const createApp = () => {
   const app = express();
   // Basic middleware
   app.use(express.json());
-  app.use(cors());
+  app.use(cors({
+    origin: [
+      "http://localhost:5173",
+      "https://dikiudmyn4guv.cloudfront.net",
+      "http://nrn-alb-grad-group01-dev-1538977457.af-south-1.elb.amazonaws.com"
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  }));
   //app.use(authMiddleware); 
   app.set("trust proxy", true);
 

@@ -5,7 +5,8 @@ const FE_URL =
   window.location.hostname === "localhost" ? LOCAL_FE_URL : HOSTED_FE_URL;
 
 const LOCAL_API_URL = "http://localhost:3001";
-const HOSTED_API_URL = "https://dikiudmyn4guv.cloudfront.net";
+// API should go through the Application Load Balancer
+const HOSTED_API_URL = "http://nrn-alb-grad-group01-dev-1538977457.af-south-1.elb.amazonaws.com";
 
 export const API_URL =
   window.location.hostname === "localhost" ? LOCAL_API_URL : HOSTED_API_URL;

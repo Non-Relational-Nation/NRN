@@ -11,10 +11,12 @@ export class AuthController {
   async login(req: Request, res: Response): Promise<Response> {
     console.log('[AuthController] Login attempt started');
     console.log('[AuthController] Request body:', req.body);
+    console.log('[AuthController] Request headers:', req.headers);
     console.log('[AuthController] Config check:', {
       clientId: config?.google?.clientId ? 'SET' : 'MISSING',
       clientSecret: config?.google?.clientSecret ? 'SET' : 'MISSING', 
-      redirectUrl: config?.google?.redirectUrl
+      redirectUrl: config?.google?.redirectUrl,
+      actualClientId: config?.google?.clientId?.substring(0, 20) + '...'
     });
     
     try {
