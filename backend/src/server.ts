@@ -12,7 +12,6 @@ app.listen(Number(PORT), HOST, () => {
   console.log(`📊 Health check available at http://${HOST}:${PORT}/api/health`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
   
-  // Attempt database connection after server is running
   connectDB().catch((err) => {
     console.error("⚠️ Failed to connect to database on startup:", err);
     console.log("🔄 Server will continue running. Database connectivity will be reported in health checks.");
