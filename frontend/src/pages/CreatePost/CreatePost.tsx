@@ -31,7 +31,11 @@ export default function CreatePost() {
   };
 
   const handleCreatePost = async () => {
-    createPostMutation.mutate({ content, files });
+    if (!content && !files.length) {
+      setErrorDialogMessage("Either content or attachments are required");
+    } else {
+      createPostMutation.mutate({ content, files });
+    }
   };
 
   return (

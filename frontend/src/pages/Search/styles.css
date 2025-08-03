@@ -38,3 +38,10 @@
 #search-button {
   cursor: pointer;
 }
+
+#no-users-section {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
