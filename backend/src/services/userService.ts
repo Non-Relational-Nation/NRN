@@ -51,6 +51,14 @@ export class UserService {
   async searchUsers(query?: string) {
     return this.userRepository.searchUsers(query || "");
   }
+
+  async getUserFollowers(username: string){
+    return userRepository.findUserFollowers(username)
+  }
+
+  async getUserFollowing(username: string){
+    return userRepository.findUserFollowing(username)
+  }
 }
 
 const userService = new UserService(userRepository);
