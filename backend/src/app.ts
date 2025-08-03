@@ -12,7 +12,7 @@ export const createApp = () => {
   // Basic middleware
   app.use(express.json());
   app.use(cors());
-  // app.use(authMiddleware);
+  app.use(authMiddleware);
   app.set("trust proxy", true);
 
   
