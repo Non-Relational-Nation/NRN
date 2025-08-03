@@ -13,5 +13,5 @@ export const API_URL =
 
 // For development, use env var. For production, we'll use the build-time injected value
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 
-  (window.location.hostname === "localhost" ? "" : "306784938856-ubm5kgvrportt1lr4trebsbv8crd0rga.apps.googleusercontent.com");
+  (window.location.hostname === "localhost" ? "" : "580658106738-v39pbtsogta6rk3icthq2k97m30j935b.apps.googleusercontent.com");
 export const GOOGLE_REDIRECT_URL = `${FE_URL}/login/callback`;
