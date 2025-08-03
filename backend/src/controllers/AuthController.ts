@@ -9,6 +9,14 @@ export class AuthController {
     this.userService = userServiceInstance;
   }
   async login(req: Request, res: Response): Promise<Response> {
+    console.log('[AuthController] Login attempt started');
+    console.log('[AuthController] Request body:', req.body);
+    console.log('[AuthController] Config check:', {
+      clientId: config?.google?.clientId ? 'SET' : 'MISSING',
+      clientSecret: config?.google?.clientSecret ? 'SET' : 'MISSING', 
+      redirectUrl: config?.google?.redirectUrl
+    });
+    
     try {
       const { code } = req.body as { code?: string };
 
@@ -17,6 +25,7 @@ export class AuthController {
         return res.status(400).json({ error: "Missing authorization code" });
       }
 
+      console.log('[AuthController] Exchanging code for token...');
       const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",
         headers: {
