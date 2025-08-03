@@ -25,7 +25,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '22'
         cache: 'npm'
         cache-dependency-path: backend/package-lock.json
 
@@ -126,11 +126,11 @@ jobs:
           sudo netstat -tlnp | grep :3001 | awk '{print $7}' | cut -d/ -f1 | xargs -r sudo kill -9 || echo "No processes on port 3001"
           sleep 2
           
-          # Install Node.js 20 (Ubuntu 22.04)
-          echo "Setting up Node.js 20 on Ubuntu 22.04..."
+          # Install Node.js 22 (Ubuntu 22.04)
+          echo "Setting up Node.js 22 on Ubuntu 22.04..."
           
-          # Install Node.js 20 from NodeSource (Ubuntu compatible)
-          curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+          # Install Node.js 22 from NodeSource (Ubuntu compatible)
+          curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
           sudo apt-get install -y nodejs
           
           # Verify installation
