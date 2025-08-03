@@ -54,20 +54,18 @@ export const createApp = () => {
   app.use("/api/auth", authRoutes);
   app.use("/api/posts", postRoutes);
   app.use("/api/users", userRoutes);
-  // 404 handler
+  
   // ActivityPub routes
-app.use(integrateFederation(federation, (req: express.Request) => undefined));
+  app.use(integrateFederation(federation, (req: express.Request) => undefined));
+  app.use("*", (req, res) => {
+    res.status(404).json({
+      success: false,
+      error: "Route not found",
+    });
 
-// Error handler middleware (must be last)
-app.use(errorHandler);
-
-// 404 handler
-app.use("*", (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: "Route not found",
+  // Error handler middleware
+  app.use(errorHandler);
   });
-});
 
-  return app;
+    return app;
 };
