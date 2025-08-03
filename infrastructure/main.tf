@@ -684,7 +684,7 @@ EOL
     rm -rf /var/www/html/*
     cp -r /home/ubuntu/app/frontend/dist/* /var/www/html/
     
-    # Configure nginx
+    # Configure nginx for SPA routing
     cat > /etc/nginx/sites-available/default << 'EOL'
 server {
     listen 80 default_server;
@@ -695,11 +695,17 @@ server {
     
     server_name _;
     
+    # Handle SPA routing - serve index.html for all non-file requests
     location / {
         try_files $uri $uri/ /index.html;
     }
     
-    # Remove the /api block since ALB should handle API routing
+    # Optional: Add caching for static assets
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
 }
 EOL
     
