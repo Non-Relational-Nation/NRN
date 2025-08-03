@@ -82,6 +82,6 @@ export const config: AppConfig = {
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || "",
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-    redirectUrl: process.env.GOOGLE_REDIRECT_URL || "",
+    redirectUrl: process.env.GOOGLE_REDIRECT_URL || "http://localhost:5173/login/callback",
   },
 };

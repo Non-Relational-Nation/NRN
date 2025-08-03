@@ -11,6 +11,5 @@ const HOSTED_API_URL = "https://dikiudmyn4guv.cloudfront.net";
 export const API_URL =
   window.location.hostname === "localhost" ? LOCAL_API_URL : HOSTED_API_URL;
 
-export const GOOGLE_CLIENT_ID =
-  "580658106738-v39pbtsogta6rk3icthq2k97m30j935b.apps.googleusercontent.com";
+export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 export const GOOGLE_REDIRECT_URL = `${FE_URL}/login/callback`;
