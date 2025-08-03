@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Layout from "../../components/Layout/Layout";
 import "./styles.css";
 import PostList from "../../components/Posts/PostList";
@@ -13,6 +13,7 @@ import { logout } from "../../util/logout";
 import ErrorDialog from "../../components/Dialogs/ErrorDialog";
 
 export default function Profile() {
+  const navigate = useNavigate();
   const { user = sessionStorage.getItem("MY_USER_ID") } = useParams();
   const isMyProfile = user === sessionStorage.getItem("MY_USER_ID");
 
@@ -82,10 +83,7 @@ export default function Profile() {
             <h3 className="info-text">{userData?.displayName}</h3>
             <p className="info-text">@{userData?.username}</p>
             {userData?.email && (
-              <p
-                className="info-text"
-                id="email-text"
-              >
+              <p className="info-text" id="email-text">
                 {userData.email}
               </p>
             )}
@@ -125,7 +123,7 @@ export default function Profile() {
                   <button
                     className="button"
                     id="edit-profile-button"
-                    onClick={() => alert("Edit profile coming soon!")}
+                    onClick={() => navigate("/profile/edit")}
                   >
                     Edit Profile
                   </button>

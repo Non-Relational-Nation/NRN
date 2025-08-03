@@ -7,7 +7,7 @@
 
 #header {
   display: flex;
-  height: 3rem;
+  min-height: 3rem;
   background-color: rgb(245, 245, 245);
   border-bottom: 1px rgb(165, 165, 165) solid;
   justify-content: center;

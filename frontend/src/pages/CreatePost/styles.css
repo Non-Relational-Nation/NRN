@@ -22,6 +22,7 @@
   resize: none;
   width: 100%;
   min-height: 6rem;
+  padding: 0.5rem;
 }
 
 #add-files-button {
