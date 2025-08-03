@@ -8,6 +8,7 @@ import Feed from "./pages/Feed/Feed";
 import Search from "./pages/Search/Search";
 import Profile from "./pages/Profile/Profile";
 import CreatePost from "./pages/CreatePost/CreatePost";
+import EditProfile from "./pages/EditProfile/EditProfile";
 
 // NRN Social Media App
 function App() {
@@ -30,6 +31,7 @@ function App() {
       <Route path="/" element={<Feed />} />
       <Route path="/login/callback" element={<Callback />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/profile/edit" element={<EditProfile />} />
       <Route path="/profile/:user?" element={<Profile />} />
       <Route path="/search" element={<Search />} />
       <Route path="/create-post" element={<CreatePost />} />

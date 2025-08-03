@@ -1,22 +1,24 @@
 import { useState, useRef } from "react";
 import Layout from "../../components/Layout/Layout";
 import "./styles.css";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { createPost } from "../../api/posts";
 import removeIcon from "../../assets/remove.svg";
 import attachIcon from "../../assets/attachment.svg";
+import { useNavigate } from "react-router-dom";
+import ErrorDialog from "../../components/Dialogs/ErrorDialog";
 
 export default function CreatePost() {
+  const navigate = useNavigate();
+  const [errorDialogMessage, setErrorDialogMessage] = useState("");
   const [content, setContent] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { refetch, isFetching, error } = useQuery({
-    queryKey: ["create-post"],
-    queryFn: () => createPost({ content, files }),
-    enabled: false,
-    retry: false,
-    gcTime: 0,
+  const createPostMutation = useMutation({
+    mutationFn: createPost,
+    onSuccess: () => navigate("/profile"),
+    onError: (err: Error) => setErrorDialogMessage(err.message),
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,14 +30,16 @@ export default function CreatePost() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleCreatePost = () => {
-    console.log("Post content:", content);
-    console.log("Files:", files);
-    refetch();
+  const handleCreatePost = async () => {
+    if (!content && !files.length) {
+      setErrorDialogMessage("Either content or attachments are required");
+    } else {
+      createPostMutation.mutate({ content, files });
+    }
   };
 
   return (
-    <Layout loading={isFetching} error={error}>
+    <Layout>
       <section id="create-post-container">
         <h2 id="create-post-title">Create Post</h2>
         <textarea
@@ -101,6 +105,11 @@ export default function CreatePost() {
           Create Post
         </button>
       </section>
+      <ErrorDialog
+        isOpen={!!errorDialogMessage}
+        onClose={() => setErrorDialogMessage("")}
+        errorMessage={errorDialogMessage}
+      ></ErrorDialog>
     </Layout>
   );
 }

@@ -1,4 +1,5 @@
 import { API_URL } from "../config";
+import { logout } from "./logout";
 
 type Props = {
   method: string;
@@ -25,3 +26,17 @@ export const apiFetch = async ({
   });
   return res;
 };
+
+export async function handleError(response: Response): Promise<void> {
+  if (!response.ok) {
+    if (response.status === 401) {
+      logout();
+    }
+    const data = await response.json().catch(() => ({}));
+    throw new Error(
+      data?.error
+        ? `${response.status}: ${data?.error}`
+        : `Request failed with status ${response.status}`
+    );
+  }
+}

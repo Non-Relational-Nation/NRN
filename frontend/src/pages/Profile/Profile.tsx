@@ -1,25 +1,30 @@
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Layout from "../../components/Layout/Layout";
 import "./styles.css";
 import PostList from "../../components/Posts/PostList";
 import type { Post } from "../../models/Post";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { getUsersFeed } from "../../api/posts";
 import type { User } from "../../models/User";
 import { followUser, getUser, unfollowUser } from "../../api/users";
 import UserAvatar from "../../components/Users/UserAvatar";
 import { useEffect, useState } from "react";
+import { logout } from "../../util/logout";
+import ErrorDialog from "../../components/Dialogs/ErrorDialog";
 
 export default function Profile() {
+  const navigate = useNavigate();
   const { user = sessionStorage.getItem("MY_USER_ID") } = useParams();
   const isMyProfile = user === sessionStorage.getItem("MY_USER_ID");
+
+  const [errorDialogMessage, setErrorDialogMessage] = useState("");
 
   const {
     data: userData,
     isLoading: isUserLoading,
     error: userError,
   } = useQuery<User>({
-    queryKey: ["feed", user],
+    queryKey: ["user", user],
     queryFn: () => getUser(user || "1"),
     retry: false,
     enabled: !!user,
@@ -40,43 +45,36 @@ export default function Profile() {
     isLoading: isUserFeedLoading,
     error: userFeedError,
   } = useQuery<Post[]>({
-    queryKey: ["user", user],
+    queryKey: ["feed", user],
     queryFn: () => getUsersFeed(user || "1"),
     retry: false,
   });
 
-  const { refetch: followRefetch, error: followError } = useQuery({
-    queryKey: [`follow-user-${user}`],
-    queryFn: () => followUser(userData?.id),
-    enabled: false,
-    retry: false,
-    gcTime: 0,
+  const followMutation = useMutation({
+    mutationFn: () => followUser(userData?.id),
+    onSuccess: () => {
+      setFollowing(true);
+      setFollowerCount((prev) => (prev ?? 0) + 1);
+    },
+    onError: (error: Error) => setErrorDialogMessage(error.message),
   });
 
-  const { refetch: unfollowRefetch, error: unfollowError } = useQuery({
-    queryKey: [`unfollow-user-${user}`],
-    queryFn: () => unfollowUser(userData?.id),
-    enabled: false,
-    retry: false,
-    gcTime: 0,
+  const unfollowMutation = useMutation({
+    mutationFn: () => unfollowUser(userData?.id),
+    onSuccess: () => {
+      setFollowing(false);
+      setFollowerCount((prev) => (prev ?? 0) - 1);
+    },
+    onError: (error: Error) => setErrorDialogMessage(error.message),
   });
 
-  const handleFollow = async () => {
-    await followRefetch();
-    setFollowing(true);
-    setFollowerCount((followerCount ?? 0) + 1);
-  };
-
-  const handleUnfollow = async () => {
-    await unfollowRefetch();
-    setFollowing(false);
-    setFollowerCount((followerCount ?? 0) - 1);
-  };
+  const handleFollow = () => followMutation.mutate();
+  const handleUnfollow = () => unfollowMutation.mutate();
 
   return (
     <Layout
       loading={isUserFeedLoading || isUserLoading}
-      error={userFeedError || userError || followError || unfollowError}
+      error={userFeedError || userError}
     >
       <section id="profile-container">
         <section id="profile-header-container">
@@ -85,10 +83,7 @@ export default function Profile() {
             <h3 className="info-text">{userData?.displayName}</h3>
             <p className="info-text">@{userData?.username}</p>
             {userData?.email && (
-              <p
-                className="info-text"
-                style={{ fontSize: "0.9em", color: "#888" }}
-              >
+              <p className="info-text" id="email-text">
                 {userData.email}
               </p>
             )}
@@ -124,19 +119,33 @@ export default function Profile() {
                   </button>
                 ))}
               {isMyProfile && (
-                <button
-                  className="button"
-                  id="edit-profile-button"
-                  onClick={() => alert("Edit profile coming soon!")}
-                >
-                  Edit Profile
-                </button>
+                <>
+                  <button
+                    className="button"
+                    id="edit-profile-button"
+                    onClick={() => navigate("/profile/edit")}
+                  >
+                    Edit Profile
+                  </button>
+                  <button
+                    className="button"
+                    id="logout-button"
+                    onClick={() => logout()}
+                  >
+                    Logout
+                  </button>
+                </>
               )}
             </section>
           </header>
         </section>
         <PostList posts={userFeed}></PostList>
       </section>
+      <ErrorDialog
+        isOpen={!!errorDialogMessage}
+        onClose={() => setErrorDialogMessage("")}
+        errorMessage={errorDialogMessage}
+      ></ErrorDialog>
     </Layout>
   );
 }

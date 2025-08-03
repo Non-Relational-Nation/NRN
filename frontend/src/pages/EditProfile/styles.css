@@ -1,4 +1,4 @@
-#create-post-container {
+#edit-profile-container {
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -9,7 +9,7 @@
   box-sizing: border-box;
 }
 
-#create-post-title {
+#edit-profile-title {
   text-align: center;
 }
 
@@ -17,7 +17,7 @@
   display: none;
 }
 
-#create-post-textarea {
+#bio-textarea {
   box-sizing: border-box;
   resize: none;
   width: 100%;
@@ -33,39 +33,37 @@
   align-items: center;
   gap: 0.25rem;
   border: none;
+  background-color: rgb(250, 250, 250);
+  font-size: 0.9rem;
+  color: rgb(50, 50, 50);
 }
 
-#create-post-button {
+#add-files-button:hover {
+  background-color: rgb(230, 230, 230);
+}
+
+#confirm-edit-profile-button {
   box-sizing: border-box;
   width: 100%;
   cursor: pointer;
   height: 2rem;
 }
 
-#attachment-section {
-  background-color: white;
-  box-shadow: 0 3px 6px 1px rgba(0, 0, 0, 0.2);
-  padding: 0.5rem;
+.input-section {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
 }
 
-#file-list {
+.input-label {
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+  padding-left: 0.5rem;
+  font-size: 0.9rem;
+  color: rgb(50, 50, 50);
+  font-weight: normal;
+}
+
+.input {
   padding: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-#file-item {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  font-size: smaller;
-}
-
-#no-attachments-text {
-  font-size: 0.75rem;
-  line-height: 1rem;
+  border: 1px black solid
 }

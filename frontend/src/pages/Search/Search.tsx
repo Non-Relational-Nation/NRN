@@ -11,6 +11,7 @@ import searchIcon from "../../assets/search.svg";
 
 export default function Search() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [hasSearched, setHasSearched] = useState(false);
 
   const {
     data: users = [],
@@ -21,11 +22,15 @@ export default function Search() {
     queryKey: ["searchUsers"],
     queryFn: () => searchUsers(searchTerm),
     enabled: false,
+    retry: false,
     gcTime: 0,
   });
 
   const handleSearch = () => {
-    refetch();
+    if (searchTerm) {
+      refetch();
+      setHasSearched(true);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -45,6 +50,7 @@ export default function Search() {
             value={searchTerm}
             onKeyDown={(e) => handleKeyDown(e)}
             onChange={(e) => setSearchTerm(e.target.value)}
+            required
           />
           <img
             src={searchIcon}
@@ -59,6 +65,10 @@ export default function Search() {
           <Loader></Loader>
         ) : error ? (
           <ErrorPage errorMessage={error.message} />
+        ) : hasSearched && !users.length ? (
+          <section id="no-users-section">
+            No users matching your search were found
+          </section>
         ) : (
           <div id="users-list">
             {users.map((user, index) => (

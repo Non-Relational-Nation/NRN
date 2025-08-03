@@ -58,3 +58,17 @@
   justify-content: center;
   align-items: center;
 }
+
+#profile-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  border-radius: 1rem;
+  padding-left: 0;
+}
+
+#time-text {
+  font-size: 0.75rem;
+  align-self: center;
+}

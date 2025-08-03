@@ -1,6 +1,7 @@
 import type mongoose from "mongoose";
 import { ActorModel } from "../models/actorModel.ts";
 import { UserModel } from "../models/userModel.ts";
+import { FollowModel } from "@/models/followSchema.ts";
 import { User, CreateUserData, UpdateUserData } from "../types/user.js";
 
 function toUser(obj: any): User {
@@ -93,5 +94,36 @@ export const userRepository = {
       },
       { upsert: true }
     );
+  },
+  async findUserFollowers(
+    username: string
+  ): Promise<mongoose.Types.ObjectId[]> {
+    const user = await UserModel.findOne({ username: username });
+    if (!user) throw new Error("User not found");
+
+    const followingActor = await ActorModel.findOne({ user_id: user._id });
+    if (!followingActor) throw new Error("Actor not found");
+
+    const follows = await FollowModel.find({ following_id: followingActor._id })
+      .sort({ created: -1 })
+      .populate("follower_id");
+
+    return follows.map((f) => f.follower_id);
+  },
+
+  async findUserFollowing(
+    username: string
+  ): Promise<mongoose.Types.ObjectId[]> {
+    const user = await UserModel.findOne({ username: username });
+    if (!user) throw new Error("User not found");
+
+    const followingActor = await ActorModel.findOne({ user_id: user._id });
+    if (!followingActor) throw new Error("Actor not found");
+
+    const follows = await FollowModel.find({ follower_id: followingActor._id })
+      .sort({ created: -1 })
+      .populate("following_id");
+
+    return follows.map((f) => f.following_id);
   },
 };

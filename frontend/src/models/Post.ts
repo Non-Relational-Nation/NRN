@@ -18,6 +18,13 @@ export interface CreatePost {
   files?: File[];
 }
 
+export interface EditProfile {
+  displayName: string;
+  username: string;
+  bio: string;
+  avatar?: File;
+}
+
 export interface MediaItem {
   id: string;
   type: "image" | "video";
@@ -28,6 +35,11 @@ export interface MediaItem {
   height?: number;
   size?: number; // file size in bytes
   altText?: string;
+}
+
+export interface PostsPage {
+  items: Post[];
+  nextOffset?: number;
 }
 
 export interface Post {
