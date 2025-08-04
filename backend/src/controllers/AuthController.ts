@@ -2,6 +2,7 @@ import { config } from "../config/index.ts";
 import { Request, Response } from "express";
 import { jwtVerify, createRemoteJWKSet } from "jose";
 import userService from "@/services/userService.ts";
+import { createFederationContextFromExpressReq } from "@/federation/federationContext.ts";
 
 export class AuthController {
   private userService;
@@ -39,13 +40,10 @@ export class AuthController {
       }
 
       const tokenJson = await tokenResponse.json();
-      console.log('[AuthController] Google token response:', tokenJson);
       const { id_token } = tokenJson as { id_token: string };
       if (!id_token) {
-        console.error('[AuthController] No id_token in Google response', tokenJson);
         return res.status(400).json({ error: 'No id_token in Google response', details: tokenJson });
       }
-      // Verify Google id_token using Google's JWKS
       let decoded;
       try {
         const JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
@@ -54,22 +52,18 @@ export class AuthController {
           audience: config?.google.clientId ?? '',
         });
         decoded = payload;
-        console.log('[AuthController] Google id_token verified:', decoded);
       } catch (err) {
-        console.error('[AuthController] Google id_token verification failed:', err);
         return res.status(400).json({ error: 'Invalid Google id_token', details: err instanceof Error ? err.message : String(err) });
       }
 
-      const username = (decoded.username || decoded.email || decoded.sub || "").toString();
       const email = (decoded.email || "").toString();
+      const username = email.split('@')[0] || (decoded.username || decoded.sub || "").toString();
       const displayName = (decoded.name || username).toString();
-      console.log("[AuthController] Registering user:", { username, email, displayName });
+
       if (!username || !email) {
-        console.error("[AuthController] No username or email found in token", { username, email });
         return res.status(400).json({ error: "No username or email found in token" });
       }
-      const context = { hostname: req.hostname, getActorUri: () => ({ href: "" }), getInboxUri: () => ({ href: "" }) };
-      // You should replace the above context with your actual federation context logic
+      const context = createFederationContextFromExpressReq(req);
 
       const existingUser = await this.userService.getUserByUsername(username);
       let user = existingUser;
@@ -85,7 +79,6 @@ export class AuthController {
           });
           user = await this.userService.getUserByUsername(username);
         } catch (err) {
-          console.error("[AuthController] Error in registerUser", err);
           return res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
         }
       }
@@ -95,7 +88,6 @@ export class AuthController {
         user,
       });
     } catch (err) {
-      console.error("Login handler error:", err);
       return res.status(500).json({ error: "Login failed" });
     }
   }
