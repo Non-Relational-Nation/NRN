@@ -39,6 +39,11 @@ export async function handleOAuthCallback() {
         } else {
           throw new Error("No user id returned from backend");
         }
+        if (data?.user?.username) {
+          sessionStorage.setItem("MY_USERNAME", data.user.username);
+        } else {
+          throw new Error("No username returned from backend");
+        }
       });
   } else {
     throw new Error("Login failed");

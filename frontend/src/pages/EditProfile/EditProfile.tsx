@@ -41,7 +41,10 @@ export default function EditProfile() {
 
   const editProfileMutation = useMutation({
     mutationFn: editProfile,
-    onSuccess: () => navigate("/profile"),
+    onSuccess: () => {
+      sessionStorage.setItem("MY_USERNAME", username);
+      navigate("/profile");
+    },
     onError: (err: Error) => setErrorDialogMessage(err.message),
   });
 

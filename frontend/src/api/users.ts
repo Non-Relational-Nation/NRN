@@ -69,31 +69,33 @@ export async function editProfile(userDetails: EditProfile): Promise<void> {
 }
 
 export async function getUserFollowers(): Promise<User[]> {
-  const userId = sessionStorage.getItem("MY_USER_ID");
-  if (!userId) {
-    throw new Error(`No user Id provided`);
+  const username = sessionStorage.getItem("MY_USERNAME");
+  if (!username) {
+    throw new Error(`No username provided`);
   }
 
   const response = await apiFetch({
-    path: `/api/users/${userId}/followers`,
+    path: `/api/users/${username}/followers`,
     method: "GET",
   });
   await handleError(response);
 
-  return await response.json();
+  const data = await response.json()
+  return data?.followers;
 }
 
 export async function getUserFollowing(): Promise<User[]> {
-  const userId = sessionStorage.getItem("MY_USER_ID");
-  if (!userId) {
-    throw new Error(`No user Id provided`);
+  const username = sessionStorage.getItem("MY_USERNAME");
+  if (!username) {
+    throw new Error(`No username provided`);
   }
 
   const response = await apiFetch({
-    path: `/api/users/${userId}/following`,
+    path: `/api/users/${username}/following`,
     method: "GET",
   });
   await handleError(response);
 
-  return await response.json();
+  const data = await response.json()
+  return data?.following;
 }
