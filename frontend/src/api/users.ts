@@ -28,7 +28,7 @@ export async function followUser(userId?: string): Promise<void> {
   }
 
   const response = await apiFetch({
-    path: `/users/${userId}/follow`,
+    path: `/api/users/${userId}/following`,
     method: "POST",
   });
   await handleError(response);
@@ -41,8 +41,8 @@ export async function unfollowUser(userId?: string): Promise<void> {
     throw new Error(`No user Id provided`);
   }
   const response = await apiFetch({
-    path: `/users/${userId}/follow`,
-    method: "POST",
+    path: `/api/users/${userId}/following`,
+    method: "DELETE",
   });
   await handleError(response);
 
