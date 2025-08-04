@@ -6,10 +6,14 @@ const HOST = process.env.HOST || "localhost";
 
 const app = createApp();
 
-connectDB().then(() => {
-  app.listen(Number(PORT), "0.0.0.0", () => {
-    console.log(`🚀 Server running on http://${HOST}:${PORT}`);
-    console.log(`📊 Health check available at http://${HOST}:${PORT}/health`);
-    console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
+// Start server first, then attempt database connection
+app.listen(Number(PORT), HOST, () => {
+  console.log(`🚀 Server running on http://${HOST}:${PORT}`);
+  console.log(`📊 Health check available at http://${HOST}:${PORT}/api/health`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
+  
+  connectDB().catch((err) => {
+    console.error("⚠️ Failed to connect to database on startup:", err);
+    console.log("🔄 Server will continue running. Database connectivity will be reported in health checks.");
   });
 });

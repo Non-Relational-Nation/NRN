@@ -13,6 +13,10 @@ jobs:
       id-token: write
       contents: read
 
+    defaults:
+      run:
+        working-directory: ./infrastructure
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -31,7 +35,23 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
+      - name: Check Terraform State
+        run: |
+          echo "=== Terraform State List ==="
+          terraform state list || echo "No state found"
+          echo "=== Terraform State Show ==="
+          terraform show || echo "No state to show"
+
+      - name: Show Terraform Plan (what will be destroyed)
+        env:
+          TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
+          TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        run: terraform plan -destroy
+
       - name: Terraform Destroy
+        env:
+          TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
+          TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: terraform destroy -auto-approve
 
       - name: Verify destruction

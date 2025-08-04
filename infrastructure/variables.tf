@@ -9,3 +9,15 @@ variable "budget_notification_emails" {
   type        = list(string)
   default     = ["dev-grad-group01-aws@bbd.co.za"]
 }
+
+variable "google_client_id" {
+  description = "Google OAuth Client ID"
+  type        = string
+  sensitive   = true
+}
+
+variable "google_client_secret" {
+  description = "Google OAuth Client Secret"
+  type        = string
+  sensitive   = true
+}

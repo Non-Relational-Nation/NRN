@@ -9,6 +9,7 @@ export class AuthController {
     this.userService = userServiceInstance;
   }
   async login(req: Request, res: Response): Promise<Response> {
+    console.log('[AuthController] Login attempt started');
     try {
       const { code } = req.body as { code?: string };
 

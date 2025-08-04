@@ -23,13 +23,15 @@
     "@dotenvx/dotenvx": "^1.48.4",
     "@fedify/express": "^0.2.1",
     "@fedify/fedify": "^1.7.7",
+    "@types/uuid": "^10.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^4.18.2",
     "jose": "^6.0.12",
     "mongoose": "^8.17.0",
     "multer": "^2.0.2",
-    "tsx": "^4.20.3"
+    "tsx": "^4.20.3",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
@@ -40,6 +42,6 @@
     "typescript": "^5.3.3"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   }
 }
