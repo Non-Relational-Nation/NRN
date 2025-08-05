@@ -102,10 +102,29 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "nrn_bucket_encryp
 resource "aws_s3_bucket_public_access_block" "nrn_bucket_pab" {
   bucket = aws_s3_bucket.nrn_object_storage.id
 
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+# S3 bucket policy to allow public read access
+resource "aws_s3_bucket_policy" "nrn_bucket_policy" {
+  bucket = aws_s3_bucket.nrn_object_storage.id
+  depends_on = [aws_s3_bucket_public_access_block.nrn_bucket_pab]
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "PublicReadGetObject"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.nrn_object_storage.arn}/*"
+      }
+    ]
+  })
 }
 
 # CORS configuration for S3 bucket
