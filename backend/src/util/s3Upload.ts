@@ -22,6 +22,13 @@ export async function uploadFileToS3(file: Express.Multer.File): Promise<string>
   const ext = file.originalname.split('.').pop();
   const key = `media/${uuidv4()}.${ext}`;
   
+  console.log(`=== S3 Upload Debug ===`);
+  console.log(`Bucket: ${BUCKET}`);
+  console.log(`Region: ${REGION}`);
+  console.log(`Key: ${key}`);
+  console.log(`File size: ${file.size}`);
+  console.log(`File type: ${file.mimetype}`);
+  
   const command = new PutObjectCommand({
     Bucket: BUCKET,
     Key: key,
@@ -31,6 +38,23 @@ export async function uploadFileToS3(file: Express.Multer.File): Promise<string>
   
   try {
     console.log(`Attempting to upload to bucket: ${BUCKET}, key: ${key}`);
+    
+    // Try to list bucket first to test connection
+    console.log('Testing S3 connection...');
+    const { S3Client, ListObjectsV2Command } = await import("@aws-sdk/client-s3");
+    const listCommand = new ListObjectsV2Command({
+      Bucket: BUCKET,
+      MaxKeys: 1
+    });
+    
+    try {
+      await s3.send(listCommand);
+      console.log('S3 connection test successful');
+    } catch (listError) {
+      console.error('S3 connection test failed:', listError);
+      throw new Error(`S3 connection failed: ${(listError as any)?.message || 'Unknown error'}`);
+    }
+    
     await s3.send(command);
     console.log(`Successfully uploaded to S3: ${key}`);
     
@@ -41,7 +65,10 @@ export async function uploadFileToS3(file: Express.Multer.File): Promise<string>
       bucketName: BUCKET,
       region: REGION,
       key: key,
-      error: error
+      errorCode: (error as any)?.Code,
+      errorMessage: (error as any)?.message,
+      errorName: (error as any)?.name,
+      fullError: error
     });
     throw error;
   }
