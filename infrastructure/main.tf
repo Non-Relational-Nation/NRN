@@ -98,14 +98,58 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "nrn_bucket_encryp
   }
 }
 
-# Block public access to S3 bucket
+resource "aws_s3_bucket_ownership_controls" "nrn_bucket_ownership_controls" {
+  bucket = aws_s3_bucket.nrn_object_storage.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
 resource "aws_s3_bucket_public_access_block" "nrn_bucket_pab" {
   bucket = aws_s3_bucket.nrn_object_storage.id
 
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+resource "aws_s3_bucket_policy" "nrn_bucket_policy" {
+  bucket = aws_s3_bucket.nrn_object_storage.id
+  depends_on = [
+    aws_s3_bucket_public_access_block.nrn_bucket_pab,
+    aws_s3_bucket_ownership_controls.nrn_bucket_ownership_controls
+  ]
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "PublicReadGetObject"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.nrn_object_storage.arn}/*"
+      }
+    ]
+  })
+}
+
+# CORS configuration for S3 bucket
+resource "aws_s3_bucket_cors_configuration" "nrn_bucket_cors" {
+  bucket = aws_s3_bucket.nrn_object_storage.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "PUT", "POST", "DELETE", "HEAD"]
+    allowed_origins = [
+      "https://dikiudmyn4guv.cloudfront.net",
+      "http://localhost:5173",
+      "http://localhost:3000"
+    ]
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3000
+  }
 }
 
 # ============================================================================
@@ -141,6 +185,7 @@ resource "aws_iam_policy" "s3_access_policy" {
         Action = [
           "s3:GetObject",
           "s3:PutObject",
+          "s3:PutObjectAcl",
           "s3:DeleteObject",
           "s3:ListBucket"
         ]
@@ -223,6 +268,7 @@ module "backend" {
   google_client_id       = var.google_client_id
   google_client_secret   = var.google_client_secret
   aws_region            = var.region_name
+  s3_bucket_name        = aws_s3_bucket.nrn_object_storage.bucket
   project               = local.project
   team_name             = local.team_name
   environment           = local.environment
