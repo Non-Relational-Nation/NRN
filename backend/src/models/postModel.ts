@@ -39,6 +39,7 @@ export interface PostDocument extends Document {
   actor_id: Types.ObjectId;
   content: string;
   url?: string;
+  likes: string[],
   create_at: Date;
 }
 
@@ -71,6 +72,7 @@ const activityPubPostSchema = new Schema<PostDocument>({
       message: "URL must start with http:// or https://",
     },
   },
+  likes: [{ type: Types.ObjectId, ref: "Actor" }], 
   create_at: {
     type: Date,
     default: Date.now,
