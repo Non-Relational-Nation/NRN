@@ -7,7 +7,7 @@
 .terraform.lock.hcl
 
 # SSH Keys - Keep private key secure but track public key
-team-key
+#team-key
 # team-key.pub is tracked so teammates can see the public key
 
 # OS
