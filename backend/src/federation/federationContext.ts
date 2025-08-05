@@ -2,7 +2,8 @@ import type { Request as ExpressRequest } from "express";
 import federation from "../federation.ts";
 
 export function createFederationContextFromExpressReq(req: ExpressRequest) {
-  const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+  const protocol = req.get("X-Forwarded-Proto") || req.protocol;
+  const fullUrl = `${protocol}://${req.get("host")}${req.originalUrl}`;
   const url = new URL(fullUrl);
 
   const headers: HeadersInit = Object.entries(req.headers).reduce(
