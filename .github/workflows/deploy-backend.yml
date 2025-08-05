@@ -186,7 +186,7 @@ jobs:
           
           # Update systemd service to use tsx
           echo "Updating systemd service configuration..."
-          cat > nrn-backend.service << 'EOF'
+          cat > nrn-backend.service << 'SERVICEEOF'
 [Unit]
 Description=NRN Backend Service
 After=network.target
@@ -203,7 +203,7 @@ RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
-EOF
+SERVICEEOF
           sudo mv nrn-backend.service /etc/systemd/system/
           
           # Reload systemd daemon to pick up service changes
