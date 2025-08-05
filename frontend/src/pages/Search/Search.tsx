@@ -4,10 +4,10 @@ import "./styles.css";
 import type { User } from "../../models/User";
 import { searchUsers } from "../../api/users";
 import { useQuery } from "@tanstack/react-query";
-import UserCard from "../../components/Users/UserCard";
 import Loader from "../../components/Loader/Loader";
 import ErrorPage from "../ErrorPage/ErrorPage";
 import searchIcon from "../../assets/search.svg";
+import UserList from "../../components/Users/UsersList";
 
 export default function Search() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -65,16 +65,8 @@ export default function Search() {
           <Loader></Loader>
         ) : error ? (
           <ErrorPage errorMessage={error.message} />
-        ) : hasSearched && !users.length ? (
-          <section id="no-users-section">
-            No users matching your search were found
-          </section>
         ) : (
-          <div id="users-list">
-            {users.map((user, index) => (
-              <UserCard user={user} key={index}></UserCard>
-            ))}
-          </div>
+          hasSearched && <UserList users={users} />
         )}
       </div>
     </Layout>
