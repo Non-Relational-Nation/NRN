@@ -22,7 +22,6 @@ import { UserModel } from "./models/userModel.ts";
 import { KeyModel } from "./models/keySchema.ts";
 import { ActorModel } from "./models/actorModel.ts";
 import { FollowModel } from "./models/followSchema.ts";
-import type { Actor } from "./types/actor.ts";
 import { ActivityPubPostModel } from "./models/postModel.ts";
 import mongoose from "mongoose";
 
@@ -211,20 +210,41 @@ federation
     const followerActor = await ActorModel.findOne({ user_id: user._id });
     if (!followerActor) return;
 
-  try {
-    await FollowModel.create({
-      following_id: followingActor._id,
-      follower_id: followerActor._id,
-    });
-  } catch (err: any) {
-    if (err.code === 11000) {
-      // Duplicate follow; ignore
-    } else {
-      throw err;
+    try {
+      await FollowModel.create({
+        following_id: followingActor._id,
+        follower_id: followerActor._id,
+      });
+    } catch (err: any) {
+      if (err.code === 11000) {
+        // Duplicate follow; ignore
+      } else {
+        throw err;
+      }
     }
-  }
-});
+  })
+  .on(Create, async (ctx, create) => {
+    const object = await create.getObject();
+    if (!(object instanceof Note)) return;
 
+    const actor = create.actorId;
+    if (!actor) return;
+
+    const author = await object.getAttribution();
+    if (!isActor(author) || author.id?.href !== actor.href) return;
+
+    const actorId = (await persistActor(author))?.id;
+    if (!actorId || !object.id) return;
+
+    const content = object.content?.toString();
+
+    await ActivityPubPostModel.create({
+      uri: object.id.href,
+      actor_id: actorId,
+      content: content,
+      url: object.url?.href,
+    });
+  });
 
 federation
   .setFollowersDispatcher(
