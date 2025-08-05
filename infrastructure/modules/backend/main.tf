@@ -30,6 +30,7 @@ resource "aws_instance" "nrn_api_ec2_instance" {
     google_client_id     = var.google_client_id
     google_client_secret = var.google_client_secret
     aws_region          = var.aws_region
+    s3_bucket_name      = var.s3_bucket_name
   }))
 
   tags = {

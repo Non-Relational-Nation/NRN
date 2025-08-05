@@ -108,6 +108,19 @@ resource "aws_s3_bucket_public_access_block" "nrn_bucket_pab" {
   restrict_public_buckets = true
 }
 
+# CORS configuration for S3 bucket
+resource "aws_s3_bucket_cors_configuration" "nrn_bucket_cors" {
+  bucket = aws_s3_bucket.nrn_object_storage.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "PUT", "POST", "DELETE", "HEAD"]
+    allowed_origins = ["*"]
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3000
+  }
+}
+
 # ============================================================================
 # IAM (Roles, Policies, Instance Profiles)
 # ============================================================================
@@ -223,6 +236,7 @@ module "backend" {
   google_client_id       = var.google_client_id
   google_client_secret   = var.google_client_secret
   aws_region            = var.region_name
+  s3_bucket_name        = aws_s3_bucket.nrn_object_storage.bucket
   project               = local.project
   team_name             = local.team_name
   environment           = local.environment
