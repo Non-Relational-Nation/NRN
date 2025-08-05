@@ -4,15 +4,6 @@ import { v4 as uuidv4 } from "uuid";
 const REGION = process.env.AWS_REGION || "af-south-1";
 const BUCKET = process.env.AWS_S3_BUCKET || process.env.S3_BUCKET_NAME || "nrn-grad-group01-dev-wso0bw6b";
 
-// Debug logging - remove this after fixing
-console.log('S3 Configuration:', {
-  AWS_REGION: process.env.AWS_REGION,
-  AWS_S3_BUCKET: process.env.AWS_S3_BUCKET,
-  S3_BUCKET_NAME: process.env.S3_BUCKET_NAME,
-  BUCKET: BUCKET,
-  REGION: REGION
-});
-
 export const s3 = new S3Client({ 
   region: REGION,
   forcePathStyle: false
@@ -22,13 +13,6 @@ export async function uploadFileToS3(file: Express.Multer.File): Promise<string>
   const ext = file.originalname.split('.').pop();
   const key = `media/${uuidv4()}.${ext}`;
   
-  console.log(`=== S3 Upload Debug ===`);
-  console.log(`Bucket: ${BUCKET}`);
-  console.log(`Region: ${REGION}`);
-  console.log(`Key: ${key}`);
-  console.log(`File size: ${file.size}`);
-  console.log(`File type: ${file.mimetype}`);
-  
   const command = new PutObjectCommand({
     Bucket: BUCKET,
     Key: key,
@@ -37,39 +21,11 @@ export async function uploadFileToS3(file: Express.Multer.File): Promise<string>
   });
   
   try {
-    console.log(`Attempting to upload to bucket: ${BUCKET}, key: ${key}`);
-    
-    // Try to list bucket first to test connection
-    console.log('Testing S3 connection...');
-    const { S3Client, ListObjectsV2Command } = await import("@aws-sdk/client-s3");
-    const listCommand = new ListObjectsV2Command({
-      Bucket: BUCKET,
-      MaxKeys: 1
-    });
-    
-    try {
-      await s3.send(listCommand);
-      console.log('S3 connection test successful');
-    } catch (listError) {
-      console.error('S3 connection test failed:', listError);
-      throw new Error(`S3 connection failed: ${(listError as any)?.message || 'Unknown error'}`);
-    }
-    
     await s3.send(command);
-    console.log(`Successfully uploaded to S3: ${key}`);
     
-    // Return a public URL
     return `https://${BUCKET}.s3.${REGION}.amazonaws.com/${key}`;
   } catch (error) {
-    console.error('S3 upload error details:', {
-      bucketName: BUCKET,
-      region: REGION,
-      key: key,
-      errorCode: (error as any)?.Code,
-      errorMessage: (error as any)?.message,
-      errorName: (error as any)?.name,
-      fullError: error
-    });
+    console.error('S3 upload failed:', error);
     throw error;
   }
 }

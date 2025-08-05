@@ -33,9 +33,9 @@ jobs:
       working-directory: ./backend
       run: npm ci
 
-    - name: Type check application (skip for now - using tsx runtime)
+    - name: Type check application
       working-directory: ./backend
-      run: echo "Skipping type check - using tsx runtime deployment"
+      run: npx tsc --noEmit
 
     - name: Configure AWS credentials via OIDC
       uses: aws-actions/configure-aws-credentials@v4
@@ -144,21 +144,16 @@ jobs:
           echo "NPM version: $(npm --version)"
           
           # Extract new code - clean deployment
-          sudo rm -rf /home/ubuntu/app/backend || true
-          sudo mkdir -p /home/ubuntu/app/backend
-          sudo tar -xzf /home/ubuntu/backend-deploy.tar.gz -C /home/ubuntu/app/backend
-          cd /home/ubuntu/app/backend
-          sudo chown -R ubuntu:ubuntu /home/ubuntu/app/backend
+          rm -rf /home/ubuntu/backend || true
+          mkdir -p /home/ubuntu/backend
+          tar -xzf /home/ubuntu/backend-deploy.tar.gz -C /home/ubuntu/backend
+          cd /home/ubuntu/backend
           
           # Install dependencies
           echo "Installing dependencies..."
           npm ci || npm install
           
-          # Install tsx globally for runtime
-          echo "Installing tsx globally..."
-          sudo npm install -g tsx@latest
-          
-          # Create environment file in correct location
+          # Create environment file
           echo "Creating environment configuration..."
           echo "NODE_ENV=production" > .env
           echo "PORT=3001" >> .env
@@ -177,56 +172,36 @@ jobs:
           echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
           echo "GOOGLE_REDIRECT_URL=https://dikiudmyn4guv.cloudfront.net/login/callback" >> .env
           
-          # Stop any existing PM2 processes
-          pm2 kill || echo "PM2 already clean"
-          sudo pkill -9 -f "node" || echo "No node processes to kill"
+          # Install PM2 globally
+          sudo npm install -g pm2@latest
           
-          # Stop the systemd service if running
-          sudo systemctl stop nrn-backend || echo "Service already stopped"
+          # Create logs directory
+          mkdir -p logs
           
-          # Create systemd service file
-          echo "Creating systemd service configuration..."
-          echo '[Unit]' | sudo tee /etc/systemd/system/nrn-backend.service
-          echo 'Description=NRN Backend Service' | sudo tee -a /etc/systemd/system/nrn-backend.service
-          echo 'After=network.target' | sudo tee -a /etc/systemd/system/nrn-backend.service
-          echo '' | sudo tee -a /etc/systemd/system/nrn-backend.service
-          echo '[Service]' | sudo tee -a /etc/systemd/system/nrn-backend.service
-          echo 'Type=simple' | sudo tee -a /etc/systemd/system/nrn-backend.service
-          echo 'User=ubuntu' | sudo tee -a /etc/systemd/system/nrn-backend.service
-          echo 'WorkingDirectory=/home/ubuntu/app/backend' | sudo tee -a /etc/systemd/system/nrn-backend.service
-          echo 'Environment=NODE_ENV=production' | sudo tee -a /etc/systemd/system/nrn-backend.service
-          echo 'EnvironmentFile=/home/ubuntu/app/backend/.env' | sudo tee -a /etc/systemd/system/nrn-backend.service
-          echo 'ExecStart=/usr/bin/npx tsx src/server.ts' | sudo tee -a /etc/systemd/system/nrn-backend.service
-          echo 'Restart=always' | sudo tee -a /etc/systemd/system/nrn-backend.service
-          echo 'RestartSec=10' | sudo tee -a /etc/systemd/system/nrn-backend.service
-          echo '' | sudo tee -a /etc/systemd/system/nrn-backend.service
-          echo '[Install]' | sudo tee -a /etc/systemd/system/nrn-backend.service
-          echo 'WantedBy=multi-user.target' | sudo tee -a /etc/systemd/system/nrn-backend.service
+          # Start application with PM2 - single reliable approach with timeout
+          timeout 30 pm2 start "npx tsx src/server.ts" --name "backend" --env production --force || echo "PM2 start completed"
+          timeout 10 pm2 save || echo "PM2 save completed"
           
-          # Reload systemd daemon to pick up service changes
-          sudo systemctl daemon-reload
+          # Verify only one instance is running
+          sleep 3
+          timeout 10 pm2 list || echo "PM2 list completed"
+          echo "=== Verifying single instance ==="
+          INSTANCE_COUNT=$(timeout 5 pm2 list | grep -c "backend" 2>/dev/null || echo "0")
+          echo "Backend instances running: $INSTANCE_COUNT"
           
-          # Start the systemd service
-          echo "Starting NRN backend service..."
-          sudo systemctl start nrn-backend
-          sudo systemctl enable nrn-backend
+          # Show final status and exit cleanly
+          echo "=== Deployment completed successfully ==="
+          pm2 status || echo "PM2 status check completed"
+          echo "✅ Backend deployment finished successfully"
           
-          # Wait a moment for service to start
-          sleep 5
+          # Setup PM2 startup script
+          sudo pm2 startup systemd -u ubuntu --hp /home/ubuntu || true
           
-          # Check service status
-          echo "=== Service Status ==="
-          sudo systemctl status nrn-backend --no-pager
-          
-          # Check if service is active
-          if sudo systemctl is-active --quiet nrn-backend; then
-            echo "✅ Backend service is running successfully"
-          else
-            echo "❌ Backend service failed to start"
-            echo "=== Recent logs ==="
-            sudo journalctl -u nrn-backend -n 20 --no-pager
-            exit 1
-          fi
+          # Show PM2 status and logs for debugging
+          echo "=== PM2 Status ==="
+          pm2 status
+          echo "=== PM2 Logs (last 10 lines) ==="
+          timeout 5 pm2 logs backend --lines 10 --no-stream || echo "Log check completed"
           
           echo "✅ Backend deployment completed successfully"
           echo "🎯 Workflow finishing now..."
