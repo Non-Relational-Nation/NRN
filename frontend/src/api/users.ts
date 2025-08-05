@@ -28,7 +28,7 @@ export async function followUser(username?: string): Promise<void> {
   }
 
   const response = await apiFetch({
-    path: `/api/users/${userId}/following`,
+    path: `/api/users/${username}/following`,
     method: "POST",
   });
   await handleError(response);
