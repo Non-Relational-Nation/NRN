@@ -6,6 +6,7 @@ const router = Router();
 router.post("/setup", UserController.registerUser);
 
 router.get("/", UserController.searchUsers);
+router.get("/:id", UserController.getUserById);
 router.post("/:username/following", UserController.sendFollowRequest)
 router.get("/:username/followers", UserController.getUserFollowers)
 router.get("/:username/following", UserController.getUserFollowing)
