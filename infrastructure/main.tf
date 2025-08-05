@@ -98,6 +98,14 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "nrn_bucket_encryp
   }
 }
 
+# S3 bucket ownership controls - REQUIRED for public access
+resource "aws_s3_bucket_ownership_controls" "nrn_bucket_ownership_controls" {
+  bucket = aws_s3_bucket.nrn_object_storage.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
 # Block public access to S3 bucket
 resource "aws_s3_bucket_public_access_block" "nrn_bucket_pab" {
   bucket = aws_s3_bucket.nrn_object_storage.id
@@ -111,7 +119,10 @@ resource "aws_s3_bucket_public_access_block" "nrn_bucket_pab" {
 # S3 bucket policy to allow public read access
 resource "aws_s3_bucket_policy" "nrn_bucket_policy" {
   bucket = aws_s3_bucket.nrn_object_storage.id
-  depends_on = [aws_s3_bucket_public_access_block.nrn_bucket_pab]
+  depends_on = [
+    aws_s3_bucket_public_access_block.nrn_bucket_pab,
+    aws_s3_bucket_ownership_controls.nrn_bucket_ownership_controls
+  ]
 
   policy = jsonencode({
     Version = "2012-10-17"
