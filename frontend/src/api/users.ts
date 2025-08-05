@@ -22,13 +22,13 @@ export async function getUser(userId: string): Promise<User> {
   return await response.json();
 }
 
-export async function followUser(userId?: string): Promise<void> {
-  if (!userId) {
+export async function followUser(username?: string): Promise<void> {
+  if (!username) {
     throw new Error(`User not found`);
   }
 
   const response = await apiFetch({
-    path: `/users/${userId}/follow`,
+    path: `/users/${username}/follow`,
     method: "POST",
   });
   await handleError(response);

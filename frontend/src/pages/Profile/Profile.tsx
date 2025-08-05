@@ -51,7 +51,7 @@ export default function Profile() {
   });
 
   const followMutation = useMutation({
-    mutationFn: () => followUser(userData?.id),
+    mutationFn: () => followUser(userData?.username),
     onSuccess: () => {
       setFollowing(true);
       setFollowerCount((prev) => (prev ?? 0) + 1);

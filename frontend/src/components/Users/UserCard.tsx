@@ -17,7 +17,7 @@ export default function UserCard({ user }: UserCardProps) {
   const [following, setFollowing] = useState(user?.following);
 
   const followMutation = useMutation({
-    mutationFn: () => followUser(user?.id),
+    mutationFn: () => followUser(user?.username),
     onSuccess: () => {
       setFollowing(true);
     },
