@@ -13,6 +13,9 @@ import {
   isActor,
   type Actor as APActor,
   type Recipient,
+  Note,
+  PUBLIC_COLLECTION,
+  Create,
 } from "@fedify/fedify";
 import { MemoryKvStore, InProcessMessageQueue } from "@fedify/fedify";
 import { UserModel } from "./models/userModel.ts";
@@ -20,6 +23,8 @@ import { KeyModel } from "./models/keySchema.ts";
 import { ActorModel } from "./models/actorModel.ts";
 import { FollowModel } from "./models/followSchema.ts";
 import type { Actor } from "./types/actor.ts";
+import { ActivityPubPostModel } from "./models/postModel.ts";
+import mongoose from "mongoose";
 
 type KeyType = "RSASSA-PKCS1-v1_5" | "Ed25519";
 
@@ -183,27 +188,28 @@ federation
       following_id: followingActor._id,
       follower_id: followerActor._id,
     });
-  }).on(Accept, async (ctx, accept) => {
-  const follow = await accept.getObject();
-  if (!(follow instanceof Follow)) return;
+  })
+  .on(Accept, async (ctx, accept) => {
+    const follow = await accept.getObject();
+    if (!(follow instanceof Follow)) return;
 
-  const following = await accept.getActor();
-  if (!isActor(following)) return;
+    const following = await accept.getActor();
+    if (!isActor(following)) return;
 
-  const follower = follow.actorId;
-  if (follower == null) return;
+    const follower = follow.actorId;
+    if (follower == null) return;
 
-  const parsed = ctx.parseUri(follower);
-  if (parsed == null || parsed.type !== "actor") return;
+    const parsed = ctx.parseUri(follower);
+    if (parsed == null || parsed.type !== "actor") return;
 
-  const followingActor = await persistActor(following);
-  if (!followingActor) return;
+    const followingActor = await persistActor(following);
+    if (!followingActor) return;
 
-  const user = await UserModel.findOne({ username: parsed.identifier });
-  if (!user) return;
+    const user = await UserModel.findOne({ username: parsed.identifier });
+    if (!user) return;
 
-  const followerActor = await ActorModel.findOne({ user_id: user._id });
-  if (!followerActor) return;
+    const followerActor = await ActorModel.findOne({ user_id: user._id });
+    if (!followerActor) return;
 
   try {
     await FollowModel.create({
@@ -230,12 +236,17 @@ federation
       const actor = await ActorModel.findOne({ user_id: user._id });
       if (!actor) return { items: [] };
 
-      const follows = await FollowModel.find({ following_id: actor.user_id })
-        .sort({ created: -1 })
-        .populate("follower_id");
+      const follows = await FollowModel.find({ following_id: actor._id }).sort({
+        created: -1,
+      });
 
-      const items: Recipient[] = follows.map((f) => {
-        const follower = f as unknown as Actor;
+      const followerIds = follows.map((f) => f.follower_id);
+
+      const followerActors = await ActorModel.find({
+        _id: { $in: followerIds },
+      });
+
+      const items: Recipient[] = followerActors.map((follower) => {
         return {
           id: new URL(follower.uri),
           inboxId: new URL(follower.inbox_url),
