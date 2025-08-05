@@ -349,6 +349,27 @@ resource "aws_lb_listener_rule" "well_known_path_rule" {
   }
 }
 
+# ActivityPub user profiles - route to backend API
+resource "aws_lb_listener_rule" "users_path_rule" {
+  listener_arn = aws_lb_listener.http_listener.arn
+  priority     = 60  # Higher priority than other rules
+
+  action {
+    type = "forward"
+    forward {
+      target_group {
+        arn = module.backend.target_group_arn
+      }
+    }
+  }
+
+  condition {
+    path_pattern {
+      values = ["/users*"]
+    }
+  }
+}
+
 # Web app will be accessible at: http://your-domain.com/web
 resource "aws_lb_listener_rule" "web_path_rule" {
   listener_arn = aws_lb_listener.http_listener.arn
@@ -436,6 +457,28 @@ resource "aws_cloudfront_distribution" "nrn_distribution" {
   # WebFinger and ActivityPub well-known endpoints - route to API without /api prefix
   ordered_cache_behavior {
     path_pattern           = "/.well-known/*"
+    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "ALB-${aws_lb.nrn_alb.name}"
+    compress               = false
+    viewer_protocol_policy = "redirect-to-https"
+
+    forwarded_values {
+      query_string = true
+      headers      = ["*"]
+      cookies {
+        forward = "all"
+      }
+    }
+
+    min_ttl     = 0
+    default_ttl = 0
+    max_ttl     = 0
+  }
+
+  # WebFinger and ActivityPub well-known endpoints - route to API without /api prefix
+  ordered_cache_behavior {
+    path_pattern           = "/users/*"
     allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods         = ["GET", "HEAD"]
     target_origin_id       = "ALB-${aws_lb.nrn_alb.name}"
