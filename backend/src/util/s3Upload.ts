@@ -30,12 +30,19 @@ export async function uploadFileToS3(file: Express.Multer.File): Promise<string>
   });
   
   try {
+    console.log(`Attempting to upload to bucket: ${BUCKET}, key: ${key}`);
     await s3.send(command);
+    console.log(`Successfully uploaded to S3: ${key}`);
     
     // Return a public URL
     return `https://${BUCKET}.s3.${REGION}.amazonaws.com/${key}`;
   } catch (error) {
-    console.error('S3 upload error:', error);
+    console.error('S3 upload error details:', {
+      bucketName: BUCKET,
+      region: REGION,
+      key: key,
+      error: error
+    });
     throw error;
   }
 }
