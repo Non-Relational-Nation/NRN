@@ -1,6 +1,10 @@
 import { createFederationContextFromExpressReq } from "@/federation/federationContext.ts";
+import { postRepository } from "@/repositories/postRepository.ts";
+import { userRepository } from "@/repositories/userRepository.ts";
+import actorService from "@/services/actorService.ts";
+import { PostService } from "@/services/postService.ts";
 import userService from "@/services/userService.ts";
-import { Follow, isActor } from "@fedify/fedify";
+import { Create, Follow, isActor, Note } from "@fedify/fedify";
 import { Request, Response, type NextFunction } from "express";
 
 export class UserController {
@@ -53,7 +57,7 @@ export class UserController {
       const userFollowers = await userService.getUserFollowers(
         req.params.username
       );
-      return res.json({ followers: userFollowers });
+      return res.json(userFollowers);
     } catch (err) {
       next(err);
     }
@@ -96,6 +100,66 @@ export class UserController {
         req.params.username
       );
       return res.json({ following: userFollowing });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  //Added here to avoid confusion with the post in posts routes
+  async addPost(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> {
+    try {
+      const username = req.params.username;
+
+      const user = await userService.getUserByUsername(username);
+
+      if (!user) {
+        return res.status(400).json({ error: "User not found" });
+      }
+
+      const actor = await actorService.getActorByUserId(user.id);
+
+      if (!actor) {
+        return res.status(404).json({ error: "Actor profile not found" });
+      }
+
+      const content = req.body.content.toString();
+
+      if (content == null || content.trim() === "") {
+        return res.status(400).json({ error: "Content is required" });
+      }
+
+      const ctx = createFederationContextFromExpressReq(req);
+
+      const post = await new PostService(
+        postRepository,
+        userRepository
+      ).createActivityPubPost(ctx, actor, username, content);
+
+      if (!post) {
+        return res.status(500).json({ error: "Failed to create a post" });
+      } else {
+        const noteArgs = { identifier: username, id: post.id };
+        const note = await ctx.getObject(Note, noteArgs);
+        
+        
+        await ctx.sendActivity(
+          { identifier: username },
+          "followers",
+          new Create({
+            id: new URL("#activity", note?.id ?? undefined),
+            object: note,
+            actors: note?.attributionIds,
+            tos: note?.toIds,
+            ccs: note?.ccIds,
+          })
+        );
+        
+        return res.status(201).json({postUrl: ctx.getObjectUri(Note, noteArgs).href});
+      }
     } catch (err) {
       next(err);
     }

@@ -1,7 +1,7 @@
-import mongoose from 'mongoose';
+import { Schema, Document, Types, model } from 'mongoose';
 import { PostVisibility, PostType } from '../types/post.js';
 
-const mediaItemSchema = new mongoose.Schema({
+const mediaItemSchema = new Schema({
   type: { type: String, enum: ['image', 'video'], required: true },
   url: { type: String, required: true },
   thumbnailUrl: String,
@@ -12,7 +12,7 @@ const mediaItemSchema = new mongoose.Schema({
   altText: String,
 }, { _id: false });
 
-const postSchema = new mongoose.Schema({
+const postSchema = new Schema({
   authorId: { type: String, required: true },
   title: { type: String },
   type: { type: String, enum: Object.values(PostType), default: PostType.TEXT },
@@ -34,4 +34,48 @@ const postSchema = new mongoose.Schema({
   flagged: { type: Boolean, default: false },
 });
 
-export const PostModel = mongoose.model('Post', postSchema);
+export interface PostDocument extends Document {
+  uri: string;
+  actor_id: Types.ObjectId;
+  content: string;
+  url?: string;
+  create_at: Date;
+}
+
+const activityPubPostSchema = new Schema<PostDocument>({
+  uri: {
+    type: String,
+    required: true,
+    unique: true,
+    validate: {
+      validator: (v: string) => v.trim() !== "",
+      message: "URI cannot be empty",
+    },
+  },
+  actor_id: {
+    type: Schema.Types.ObjectId,
+    ref: "Actor",
+    required: true,
+  },
+  content: {
+    type: String,
+    required: true,
+  },
+  url: {
+    type: String,
+    validate: {
+      validator: (v: string | undefined) => {
+        if (!v) return true; // optional
+        return /^https?:\/\/.+/.test(v);
+      },
+      message: "URL must start with http:// or https://",
+    },
+  },
+  create_at: {
+    type: Date,
+    default: Date.now,
+    required: true,
+  },
+}); 
+export const PostModel = model('Post', postSchema);
+export const ActivityPubPostModel = model('ActivityPubPost', activityPubPostSchema);

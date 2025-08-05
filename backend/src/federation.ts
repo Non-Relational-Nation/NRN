@@ -260,4 +260,52 @@ federation
     return count;
   });
 
+federation.setObjectDispatcher(
+  Note,
+  "/users/{identifier}/posts/{id}",
+  async (ctx, values) => {
+    const [post] = await ActivityPubPostModel.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(values.id),
+        },
+      },
+      {
+        $lookup: {
+          from: "actors",
+          localField: "actor_id",
+          foreignField: "_id",
+          as: "actor",
+        },
+      },
+      { $unwind: "$actor" },
+      {
+        $lookup: {
+          from: "users",
+          localField: "actor.user_id",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+      {
+        $match: {
+          "user.username": values.identifier,
+        },
+      },
+    ]);
+
+    if (!post) return null;
+
+    return new Note({
+      id: ctx.getObjectUri(Note, values),
+      attribution: ctx.getActorUri(values.identifier),
+      to: PUBLIC_COLLECTION,
+      cc: ctx.getFollowersUri(values.identifier),
+      content: post.content,
+      mediaType: "text/html",
+      url: ctx.getObjectUri(Note, values),
+    });
+  }
+);
 export default federation;
