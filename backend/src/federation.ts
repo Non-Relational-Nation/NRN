@@ -169,30 +169,34 @@ federation
   })
   .on(Undo, async (ctx, undo) => {
     const object = await undo.getObject();
-    if (object instanceof Follow){
+    if (object instanceof Follow) {
       if (undo.actorId == null || object.objectId == null) return;
-      
+
       const parsed = ctx.parseUri(object.objectId);
       if (parsed == null || parsed.type !== "actor") return;
-      
+
       const user = await UserModel.findOne({ username: parsed.identifier });
       if (!user) throw new Error("User not found");
-      
+
       const followingActor = await ActorModel.findOne({ user_id: user._id });
       if (!followingActor) throw new Error("Following actor not found");
-      
-      const followerActor = await ActorModel.findOne({ uri: undo.actorId.href });
+
+      const followerActor = await ActorModel.findOne({
+        uri: undo.actorId.href,
+      });
       if (!followerActor) throw new Error("Follower actor not found");
-      
+
       await FollowModel.deleteOne({
         following_id: followingActor._id,
         follower_id: followerActor._id,
       });
     } else if (object instanceof Like) {
-      const liker = await persistActor(await undo.getActor() as Person);
+      const liker = await persistActor((await undo.getActor()) as Person);
       if (!liker || !object.objectId) return;
 
-      const post = await ActivityPubPostModel.findOne({ uri: object.objectId.href });
+      const post = await ActivityPubPostModel.findOne({
+        uri: object.objectId.href,
+      });
       if (!post) return;
 
       await LikeModel.deleteOne({
@@ -255,6 +259,10 @@ federation
     if (!actorId || !object.id) return;
 
     const content = object.content?.toString();
+    const existingPost = await ActivityPubPostModel.findOne({
+      uri: object.id.href,
+    });
+    if (existingPost) return; // Already saved
 
     await ActivityPubPostModel.create({
       uri: object.id.href,
@@ -262,37 +270,33 @@ federation
       content: content,
       url: object.url?.href,
     });
-  }).on(Like, async (ctx, like) => {
-  
-  if (!like.objectId || !like.actorId) return;
+  })
+  .on(Like, async (ctx, like) => {
+    if (!like.objectId || !like.actorId) return;
 
-  const liker = await persistActor(await like.getActor() as Person);
-  if (!liker) return;
+    const liker = await persistActor((await like.getActor()) as Person);
+    if (!liker) return;
 
-  const postUri = like.objectId.href;
+    const postUri = like.objectId.href;
 
-  const post = await ActivityPubPostModel.findOne({ uri: postUri });
-  if (!post) return;
+    const post = await ActivityPubPostModel.findOne({ uri: postUri });
+    if (!post) return;
 
-  // Prevent duplicate likes
-  const existing = await LikeModel.findOne({
-    actor_id: liker._id,
-    post_id: post._id,
-  });
-
-  if (!existing) {
-    await LikeModel.create({
+    // Prevent duplicate likes
+    const existing = await LikeModel.findOne({
       actor_id: liker._id,
       post_id: post._id,
     });
 
-    // Optional: increment counter
-    await ActivityPubPostModel.updateOne(
-      { _id: post._id },
-      { $inc: { likesCount: 1 } }
-    );
-  }
-})
+    if (!existing) {
+      await LikeModel.create({
+        actor_id: liker._id,
+        post_id: post._id,
+      });
+
+      // Optional: increment likes counter on the post
+    }
+  });
 
 federation
   .setFollowersDispatcher(

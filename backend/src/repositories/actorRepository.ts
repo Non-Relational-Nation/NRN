@@ -11,4 +11,9 @@ export const actorRepository = {
     const doc = await ActorModel.findOne({ user_id: userId });
     return doc ? toActor(doc.toObject()) : null;
   },
+
+  async findById(actorId: string): Promise<Actor | null> {
+    const doc = await ActorModel.findOne({ _id: actorId });
+    return doc ? toActor(doc.toObject()) : null;
+  },
 };

@@ -9,8 +9,12 @@ import type { IActorRepository } from "@/repositories/interfaces/IActorRepositor
 export class ActorService {
   constructor(private actorRepository: IActorRepository) {}
 
-  getActorByUserId = async (username: string) => {
-    return this.actorRepository.findByUserId(username);
+  getActorByUserId = async (userId: string) => {
+    return this.actorRepository.findByUserId(userId);
+  };
+
+  getActorById = async (actorId: string) => {
+    return this.actorRepository.findById(actorId);
   };
 }
 

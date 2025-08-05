@@ -1,7 +1,7 @@
 export interface Actor {
-  id: number;
+  id: string;
   user_id: number | null;
-  uri: string;
+  uri: URL;
   handle: string;
   name: string | null;
   inbox_url: string;

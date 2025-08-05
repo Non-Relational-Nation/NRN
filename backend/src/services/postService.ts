@@ -236,19 +236,12 @@ export class PostService {
   }
 
   // Like a post
-  async likePost(postId: string, userId: string) {
-    // For demo: just increment a like count array on the post (no unlike, no user tracking)
-    // In real app, you would track which users liked which posts
-    const post = await this.postRepository.findById(postId);
-    if (!post) throw new Error("Post not found");
-    // Add a likes field if not present
-    if (!("likes" in post)) (post as any).likes = 0;
-    (post as any).likes++;
-    // Save likes to DB (assume a setLikes method or updatePost)
-    await this.postRepository.update(postId, {
-      likesCount: (post as any).likes,
-    });
-    return post;
+  async likePost(actorId: string, postId: string, ) {
+    return await this.postRepository.likePost(actorId, postId)
+  }
+ 
+  async getLikedPost(actorId: string, postId: string) {
+    return this.postRepository.findLikedPost(actorId, postId);
   }
 
   public getUserRepository() {

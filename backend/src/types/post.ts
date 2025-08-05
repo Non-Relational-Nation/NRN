@@ -1,3 +1,5 @@
+import type { Types } from "mongoose";
+
 export enum PostType {
   TEXT = 'text',
   IMAGE = 'image',
@@ -53,6 +55,10 @@ export interface Post {
   isDeleted: boolean;
   deletedAt?: Date;
   flagged: boolean;
+  uri: URL;
+  actor: URL;
+  actor_id: string;
+
 }
 
 export interface CreatePostData {
@@ -73,4 +79,12 @@ export interface UpdatePostData {
   content?: string;
   visibility?: PostVisibility;
   likesCount?: number;
+}
+
+export interface PostLike {
+  _id?: Types.ObjectId;
+  actor_id: Types.ObjectId;
+  post_id: Types.ObjectId;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
