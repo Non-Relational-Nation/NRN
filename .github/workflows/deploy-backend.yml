@@ -184,26 +184,24 @@ jobs:
           # Stop the systemd service if running
           sudo systemctl stop nrn-backend || echo "Service already stopped"
           
-          # Update systemd service to use tsx
-          echo "Updating systemd service configuration..."
-          sudo tee /etc/systemd/system/nrn-backend.service > /dev/null <<SERVICEEOF
-[Unit]
-Description=NRN Backend Service
-After=network.target
-
-[Service]
-Type=simple
-User=ubuntu
-WorkingDirectory=/home/ubuntu/app/backend
-Environment=NODE_ENV=production
-EnvironmentFile=/home/ubuntu/app/backend/.env
-ExecStart=/usr/bin/npx tsx src/server.ts
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-SERVICEEOF
+          # Create systemd service file
+          echo "Creating systemd service configuration..."
+          echo '[Unit]' | sudo tee /etc/systemd/system/nrn-backend.service
+          echo 'Description=NRN Backend Service' | sudo tee -a /etc/systemd/system/nrn-backend.service
+          echo 'After=network.target' | sudo tee -a /etc/systemd/system/nrn-backend.service
+          echo '' | sudo tee -a /etc/systemd/system/nrn-backend.service
+          echo '[Service]' | sudo tee -a /etc/systemd/system/nrn-backend.service
+          echo 'Type=simple' | sudo tee -a /etc/systemd/system/nrn-backend.service
+          echo 'User=ubuntu' | sudo tee -a /etc/systemd/system/nrn-backend.service
+          echo 'WorkingDirectory=/home/ubuntu/app/backend' | sudo tee -a /etc/systemd/system/nrn-backend.service
+          echo 'Environment=NODE_ENV=production' | sudo tee -a /etc/systemd/system/nrn-backend.service
+          echo 'EnvironmentFile=/home/ubuntu/app/backend/.env' | sudo tee -a /etc/systemd/system/nrn-backend.service
+          echo 'ExecStart=/usr/bin/npx tsx src/server.ts' | sudo tee -a /etc/systemd/system/nrn-backend.service
+          echo 'Restart=always' | sudo tee -a /etc/systemd/system/nrn-backend.service
+          echo 'RestartSec=10' | sudo tee -a /etc/systemd/system/nrn-backend.service
+          echo '' | sudo tee -a /etc/systemd/system/nrn-backend.service
+          echo '[Install]' | sudo tee -a /etc/systemd/system/nrn-backend.service
+          echo 'WantedBy=multi-user.target' | sudo tee -a /etc/systemd/system/nrn-backend.service
           
           # Reload systemd daemon to pick up service changes
           sudo systemctl daemon-reload
