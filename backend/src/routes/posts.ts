@@ -17,6 +17,6 @@ router.get('/author/:authorId', (req, res, next) => postController.getPostsByAut
 router.get('/', (req, res, next) => postController.getPublicPosts(req, res, next));
 router.get('/search', (req, res) => postController.searchPosts(req, res));
 router.get('/feed/:userId', (req, res) => postController.getFeed(req, res));
-router.post('/:id/like', (req, res) => postController.likePost(req, res));
+router.post('/:id/like', (req, res, next) => postController.likePost(req, res, next));
 
 export { router as postRoutes };

@@ -13,13 +13,19 @@ import {
   isActor,
   type Actor as APActor,
   type Recipient,
+  Note,
+  PUBLIC_COLLECTION,
+  Create,
+  Like,
 } from "@fedify/fedify";
 import { MemoryKvStore, InProcessMessageQueue } from "@fedify/fedify";
 import { UserModel } from "./models/userModel.ts";
 import { KeyModel } from "./models/keySchema.ts";
 import { ActorModel } from "./models/actorModel.ts";
 import { FollowModel } from "./models/followSchema.ts";
-import type { Actor } from "./types/actor.ts";
+import { ActivityPubPostModel } from "./models/postModel.ts";
+import mongoose from "mongoose";
+import { LikeModel } from "./models/likeModel.ts";
 
 type KeyType = "RSASSA-PKCS1-v1_5" | "Ed25519";
 
@@ -163,62 +169,134 @@ federation
   })
   .on(Undo, async (ctx, undo) => {
     const object = await undo.getObject();
-    if (!(object instanceof Follow)) return;
+    if (object instanceof Follow) {
+      if (undo.actorId == null || object.objectId == null) return;
 
-    if (undo.actorId == null || object.objectId == null) return;
+      const parsed = ctx.parseUri(object.objectId);
+      if (parsed == null || parsed.type !== "actor") return;
 
-    const parsed = ctx.parseUri(object.objectId);
+      const user = await UserModel.findOne({ username: parsed.identifier });
+      if (!user) throw new Error("User not found");
+
+      const followingActor = await ActorModel.findOne({ user_id: user._id });
+      if (!followingActor) throw new Error("Following actor not found");
+
+      const followerActor = await ActorModel.findOne({
+        uri: undo.actorId.href,
+      });
+      if (!followerActor) throw new Error("Follower actor not found");
+
+      await FollowModel.deleteOne({
+        following_id: followingActor._id,
+        follower_id: followerActor._id,
+      });
+    } else if (object instanceof Like) {
+      const liker = await persistActor((await undo.getActor()) as Person);
+      if (!liker || !object.objectId) return;
+
+      const post = await ActivityPubPostModel.findOne({
+        uri: object.objectId.href,
+      });
+      if (!post) return;
+
+      await LikeModel.deleteOne({
+        actor_id: liker._id,
+        post_id: post._id,
+      });
+
+      await ActivityPubPostModel.updateOne(
+        { _id: post._id },
+        { $inc: { likesCount: -1 } }
+      );
+    }
+  })
+  .on(Accept, async (ctx, accept) => {
+    const follow = await accept.getObject();
+    if (!(follow instanceof Follow)) return;
+
+    const following = await accept.getActor();
+    if (!isActor(following)) return;
+
+    const follower = follow.actorId;
+    if (follower == null) return;
+
+    const parsed = ctx.parseUri(follower);
     if (parsed == null || parsed.type !== "actor") return;
 
+    const followingActor = await persistActor(following);
+    if (!followingActor) return;
+
     const user = await UserModel.findOne({ username: parsed.identifier });
-    if (!user) throw new Error("User not found");
+    if (!user) return;
 
-    const followingActor = await ActorModel.findOne({ user_id: user._id });
-    if (!followingActor) throw new Error("Following actor not found");
+    const followerActor = await ActorModel.findOne({ user_id: user._id });
+    if (!followerActor) return;
 
-    const followerActor = await ActorModel.findOne({ uri: undo.actorId.href });
-    if (!followerActor) throw new Error("Follower actor not found");
-
-    await FollowModel.deleteOne({
-      following_id: followingActor._id,
-      follower_id: followerActor._id,
-    });
-  }).on(Accept, async (ctx, accept) => {
-  const follow = await accept.getObject();
-  if (!(follow instanceof Follow)) return;
-
-  const following = await accept.getActor();
-  if (!isActor(following)) return;
-
-  const follower = follow.actorId;
-  if (follower == null) return;
-
-  const parsed = ctx.parseUri(follower);
-  if (parsed == null || parsed.type !== "actor") return;
-
-  const followingActor = await persistActor(following);
-  if (!followingActor) return;
-
-  const user = await UserModel.findOne({ username: parsed.identifier });
-  if (!user) return;
-
-  const followerActor = await ActorModel.findOne({ user_id: user._id });
-  if (!followerActor) return;
-
-  try {
-    await FollowModel.create({
-      following_id: followingActor._id,
-      follower_id: followerActor._id,
-    });
-  } catch (err: any) {
-    if (err.code === 11000) {
-      // Duplicate follow; ignore
-    } else {
-      throw err;
+    try {
+      await FollowModel.create({
+        following_id: followingActor._id,
+        follower_id: followerActor._id,
+      });
+    } catch (err: any) {
+      if (err.code === 11000) {
+        // Duplicate follow; ignore
+      } else {
+        throw err;
+      }
     }
-  }
-});
+  })
+  .on(Create, async (ctx, create) => {
+    const object = await create.getObject();
+    if (!(object instanceof Note)) return;
 
+    const actor = create.actorId;
+    if (!actor) return;
+
+    const author = await object.getAttribution();
+    if (!isActor(author) || author.id?.href !== actor.href) return;
+
+    const actorId = (await persistActor(author))?.id;
+    if (!actorId || !object.id) return;
+
+    const content = object.content?.toString();
+    const existingPost = await ActivityPubPostModel.findOne({
+      uri: object.id.href,
+    });
+    if (existingPost) return; // Already saved
+
+    await ActivityPubPostModel.create({
+      uri: object.id.href,
+      actor_id: actorId,
+      content: content,
+      url: object.url?.href,
+    });
+  })
+  .on(Like, async (ctx, like) => {
+    if (!like.objectId || !like.actorId) return;
+
+    const liker = await persistActor((await like.getActor()) as Person);
+    if (!liker) return;
+
+    const postUri = like.objectId.href;
+
+    const post = await ActivityPubPostModel.findOne({ uri: postUri });
+    if (!post) return;
+
+    // Prevent duplicate likes
+    const existing = await LikeModel.findOne({
+      actor_id: liker._id,
+      post_id: post._id,
+    });
+
+    if (!existing) {
+      await LikeModel.create({
+        actor_id: liker._id,
+        post_id: post._id,
+      });
+
+      // Optional: increment likes counter on the post
+    }
+  });
 
 federation
   .setFollowersDispatcher(
@@ -230,12 +308,17 @@ federation
       const actor = await ActorModel.findOne({ user_id: user._id });
       if (!actor) return { items: [] };
 
-      const follows = await FollowModel.find({ following_id: actor.user_id })
-        .sort({ created: -1 })
-        .populate("follower_id");
+      const follows = await FollowModel.find({ following_id: actor._id }).sort({
+        created: -1,
+      });
 
-      const items: Recipient[] = follows.map((f) => {
-        const follower = f as unknown as Actor;
+      const followerIds = follows.map((f) => f.follower_id);
+
+      const followerActors = await ActorModel.find({
+        _id: { $in: followerIds },
+      });
+
+      const items: Recipient[] = followerActors.map((follower) => {
         return {
           id: new URL(follower.uri),
           inboxId: new URL(follower.inbox_url),
@@ -259,5 +342,54 @@ federation
 
     return count;
   });
+
+federation.setObjectDispatcher(
+  Note,
+  "/users/{identifier}/posts/{id}",
+  async (ctx, values) => {
+    const [post] = await ActivityPubPostModel.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(values.id),
+        },
+      },
+      {
+        $lookup: {
+          from: "actors",
+          localField: "actor_id",
+          foreignField: "_id",
+          as: "actor",
+        },
+      },
+      { $unwind: "$actor" },
+      {
+        $lookup: {
+          from: "users",
+          localField: "actor.user_id",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+      {
+        $match: {
+          "user.username": values.identifier,
+        },
+      },
+    ]);
+
+    if (!post) return null;
+
+    return new Note({
+      id: ctx.getObjectUri(Note, values),
+      attribution: ctx.getActorUri(values.identifier),
+      to: PUBLIC_COLLECTION,
+      cc: ctx.getFollowersUri(values.identifier),
+      content: post.content,
+      mediaType: "text/html",
+      url: ctx.getObjectUri(Note, values),
+    });
+  }
+);
 
 export default federation;
