@@ -50,7 +50,6 @@ export async function unfollowUser(userId?: string): Promise<void> {
 }
 
 export async function editProfile(userDetails: EditProfile): Promise<void> {
-
   const formData = new FormData();
   formData.append("username", userDetails.username);
   formData.append("displayName", userDetails.displayName);
@@ -67,4 +66,36 @@ export async function editProfile(userDetails: EditProfile): Promise<void> {
   await handleError(response);
 
   return await response.json();
+}
+
+export async function getUserFollowers(): Promise<User[]> {
+  const username = sessionStorage.getItem("MY_USERNAME");
+  if (!username) {
+    throw new Error(`No username provided`);
+  }
+
+  const response = await apiFetch({
+    path: `/api/users/${username}/followers`,
+    method: "GET",
+  });
+  await handleError(response);
+
+  const data = await response.json()
+  return data?.followers;
+}
+
+export async function getUserFollowing(): Promise<User[]> {
+  const username = sessionStorage.getItem("MY_USERNAME");
+  if (!username) {
+    throw new Error(`No username provided`);
+  }
+
+  const response = await apiFetch({
+    path: `/api/users/${username}/following`,
+    method: "GET",
+  });
+  await handleError(response);
+
+  const data = await response.json()
+  return data?.following;
 }

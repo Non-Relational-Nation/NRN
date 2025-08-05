@@ -90,10 +90,16 @@ export default function Profile() {
             {userData?.bio && <p className="info-text">{userData.bio}</p>}
             <section id="follower-container">
               <section id="follow-counts">
-                <span>
+                <span
+                  onClick={() => isMyProfile && navigate(`/followers`)}
+                  className={isMyProfile ? "button" : ""}
+                >
                   Followers: <b>{followerCount}</b>
                 </span>
-                <span>
+                <span
+                  onClick={() => isMyProfile && navigate(`/following`)}
+                  className={isMyProfile ? "button" : ""}
+                >
                   Following: <b>{userData?.followingCount}</b>
                 </span>
                 <span>
