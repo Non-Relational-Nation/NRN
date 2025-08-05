@@ -11,7 +11,14 @@ export class UserService {
     return this.userRepository.findByUsername(username);
   };
 
-  async registerUser({ username, email, displayName, bio = "", avatar = null, context }: {
+  async registerUser({
+    username,
+    email,
+    displayName,
+    bio = "",
+    avatar = null,
+    context,
+  }: {
     username: string;
     email: string;
     displayName: string;
@@ -48,16 +55,20 @@ export class UserService {
     return this.userRepository.findById(id);
   }
 
+  async getUserByEmail(email: string) {
+    return this.userRepository.findByEmail(email);
+  }
+
   async searchUsers(query?: string) {
     return this.userRepository.searchUsers(query || "");
   }
 
-  async getUserFollowers(username: string){
-    return userRepository.findUserFollowers(username)
+  async getUserFollowers(username: string) {
+    return userRepository.findUserFollowers(username);
   }
 
-  async getUserFollowing(username: string){
-    return userRepository.findUserFollowing(username)
+  async getUserFollowing(username: string) {
+    return userRepository.findUserFollowing(username);
   }
 }
 

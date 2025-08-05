@@ -1,10 +1,15 @@
 import { createFederationContextFromExpressReq } from "@/federation/federationContext.ts";
 import userService from "@/services/userService.ts";
+import { AuthenticatedRequest } from "@/types/common.ts";
 import { Follow, isActor } from "@fedify/fedify";
 import { Request, Response, type NextFunction } from "express";
 
 export class UserController {
-  async registerUser(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+  async registerUser(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> {
     try {
       const { username, email, displayName, bio, avatar } = req.body;
       if (!username || !email || !displayName) {
@@ -25,7 +30,11 @@ export class UserController {
     }
   }
 
-  async getUserById(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+  async getUserById(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> {
     try {
       const requestedId = req.params.id;
       const user = await userService.getUserById(requestedId);
@@ -38,7 +47,11 @@ export class UserController {
     }
   }
 
-  async searchUsers(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+  async searchUsers(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> {
     try {
       const search = req.query.search as string;
       const users = await userService.searchUsers(search);
@@ -48,7 +61,11 @@ export class UserController {
     }
   }
 
-  async getUserFollowers(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+  async getUserFollowers(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> {
     try {
       const userFollowers = await userService.getUserFollowers(
         req.params.username
@@ -59,25 +76,34 @@ export class UserController {
     }
   }
 
-  async sendFollowRequest(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+  async sendFollowRequest(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> {
     try {
-      const username = req.params.username;
-      const handle = req.body.actor;
-      if (typeof handle !== "string") {
-        return res.status(400).send("Invalid actor handle or URL");
+      if (!req?.user?.email) {
+        return res.status(401).send("No username for logged in user");
       }
+      const follower = await userService.getUserByEmail(req?.user?.email);
+      if (!follower) {
+        return res.status(401).send("No user found with email");
+      }
+      const followerUsername = follower?.username;
+
+      const username = req.params.username;
       const ctx = createFederationContextFromExpressReq(req);
 
-      const actor = await ctx.lookupObject(handle.trim());
+      const actor = await ctx.lookupObject(username);
       if (!isActor(actor)) {
         return res.status(400).send("Invalid actor handle or URL");
       }
 
       await ctx.sendActivity(
-        { identifier: username },
+        { identifier: followerUsername },
         actor,
         new Follow({
-          actor: ctx.getActorUri(username),
+          actor: ctx.getActorUri(followerUsername),
           object: actor.id,
           to: actor.id,
         })
@@ -90,7 +116,11 @@ export class UserController {
     }
   }
 
-  async getUserFollowing(req: Request, res: Response, next: NextFunction): Promise<Response | void> {
+  async getUserFollowing(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> {
     try {
       const userFollowing = await userService.getUserFollowing(
         req.params.username
