@@ -144,16 +144,31 @@ jobs:
           echo "NPM version: $(npm --version)"
           
           # Extract new code - clean deployment
-          rm -rf /home/ubuntu/backend || true
-          mkdir -p /home/ubuntu/backend
-          tar -xzf /home/ubuntu/backend-deploy.tar.gz -C /home/ubuntu/backend
-          cd /home/ubuntu/backend
+          sudo rm -rf /home/ubuntu/app/backend || true
+          sudo mkdir -p /home/ubuntu/app/backend
+          sudo tar -xzf /home/ubuntu/backend-deploy.tar.gz -C /home/ubuntu/app/backend
+          cd /home/ubuntu/app/backend
+          sudo chown -R ubuntu:ubuntu /home/ubuntu/app/backend
           
           # Install dependencies
           echo "Installing dependencies..."
           npm ci || npm install
           
-          # Create environment file
+          # Build TypeScript to JavaScript
+          echo "Building TypeScript..."
+          npm run build
+          
+          # Verify dist directory was created
+          if [ ! -d "dist" ]; then
+            echo "ERROR: dist directory not created after build"
+            ls -la
+            exit 1
+          fi
+          
+          echo "Build successful, checking dist directory:"
+          ls -la dist/
+          
+          # Create environment file in correct location
           echo "Creating environment configuration..."
           echo "NODE_ENV=production" > .env
           echo "PORT=3001" >> .env
@@ -172,36 +187,34 @@ jobs:
           echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
           echo "GOOGLE_REDIRECT_URL=https://dikiudmyn4guv.cloudfront.net/login/callback" >> .env
           
-          # Install PM2 globally
-          sudo npm install -g pm2@latest
+          # Stop any existing PM2 processes
+          pm2 kill || echo "PM2 already clean"
+          sudo pkill -9 -f "node" || echo "No node processes to kill"
           
-          # Create logs directory
-          mkdir -p logs
+          # Stop the systemd service if running
+          sudo systemctl stop nrn-backend || echo "Service already stopped"
           
-          # Start application with PM2 - single reliable approach with timeout
-          timeout 30 pm2 start "npx tsx src/server.ts" --name "backend" --env production --force || echo "PM2 start completed"
-          timeout 10 pm2 save || echo "PM2 save completed"
+          # Start the systemd service
+          echo "Starting NRN backend service..."
+          sudo systemctl start nrn-backend
+          sudo systemctl enable nrn-backend
           
-          # Verify only one instance is running
-          sleep 3
-          timeout 10 pm2 list || echo "PM2 list completed"
-          echo "=== Verifying single instance ==="
-          INSTANCE_COUNT=$(timeout 5 pm2 list | grep -c "backend" 2>/dev/null || echo "0")
-          echo "Backend instances running: $INSTANCE_COUNT"
+          # Wait a moment for service to start
+          sleep 5
           
-          # Show final status and exit cleanly
-          echo "=== Deployment completed successfully ==="
-          pm2 status || echo "PM2 status check completed"
-          echo "✅ Backend deployment finished successfully"
+          # Check service status
+          echo "=== Service Status ==="
+          sudo systemctl status nrn-backend --no-pager
           
-          # Setup PM2 startup script
-          sudo pm2 startup systemd -u ubuntu --hp /home/ubuntu || true
-          
-          # Show PM2 status and logs for debugging
-          echo "=== PM2 Status ==="
-          pm2 status
-          echo "=== PM2 Logs (last 10 lines) ==="
-          timeout 5 pm2 logs backend --lines 10 --no-stream || echo "Log check completed"
+          # Check if service is active
+          if sudo systemctl is-active --quiet nrn-backend; then
+            echo "✅ Backend service is running successfully"
+          else
+            echo "❌ Backend service failed to start"
+            echo "=== Recent logs ==="
+            sudo journalctl -u nrn-backend -n 20 --no-pager
+            exit 1
+          fi
           
           echo "✅ Backend deployment completed successfully"
           echo "🎯 Workflow finishing now..."
