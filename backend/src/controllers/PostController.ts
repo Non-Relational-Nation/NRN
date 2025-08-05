@@ -1,10 +1,16 @@
-import { Request, Response } from 'express';
+import { Request, Response, type NextFunction } from 'express';
 import { PostService } from '../services/postService.js';
 import { CreatePostData, UpdatePostData, PostType } from '../types/post.js';
 import { uploadFileToS3 } from "../util/s3Upload.ts";
+import actorService from '@/services/actorService.ts';
+import { Like } from '@fedify/fedify';
+import { createFederationContextFromExpressReq } from '@/federation/federationContext.ts';
+import userService from '@/services/userService.ts';
 
 export class PostController {
-  constructor(private postService: PostService) {}
+  constructor(private postService: PostService) {
+    this.postService = postService
+  }
 
   async createPost(req: Request, res: Response): Promise<void> {
     try {
@@ -318,16 +324,72 @@ export class PostController {
     }
   }
   // Like a post
-  async likePost(req: Request, res: Response): Promise<void> {
+  async likePost(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
-      const userId = req.body.MY_USER_ID || req.body.authorId; // fallback for now
-      if (!userId) {
-        res.status(401).json({ success: false, error: 'Authentication required' });
+      const userId = req.body.userId;
+
+      if (!userId) {res.status(401).json({ message: "Unauthorized" })
         return;
       }
-      const post = await this.postService.likePost(id, userId);
-      res.json({ success: true, data: post });
+
+      const user = await userService.getUserById(userId);
+
+      if (!user){
+        res.status(404).send("User not found");
+        return;
+      }
+
+      const post = await this.postService.getPostById(id);
+
+      if (!post){
+        res.status(404).send("Post not found");
+        return;
+      }
+
+      const liker = await actorService.getActorByUserId(userId)
+
+      if (!liker) {
+         res.status(404).json({ message: "Actor not found" });
+        return;
+      }
+
+      const existingPostLike = await this.postService.getLikedPost(liker.id, post.id);
+
+      if(existingPostLike){
+        return;
+      }
+      
+    // Send federated Like activity
+    const like = new Like({
+      id: new URL(`#like-${liker.id}-${post.id}`, post.uri), // unique
+      actor: liker.uri,
+      object: new URL(post.uri),
+    });
+
+    const authorActor = await actorService.getActorById(post.actor_id);
+
+    if (!authorActor) {
+         res.status(404).json({ message: "Post author not found" });
+        return;
+    }
+
+    await this.postService.likePost(liker.id, post.id);
+
+    const likeRecipient = {
+      id: new URL(authorActor.uri),
+      inboxId: new URL(authorActor.inbox_url)
+    }
+
+    const ctx = createFederationContextFromExpressReq(req);
+    
+      await ctx.sendActivity(
+        { identifier: user.username },
+        likeRecipient,
+        like
+      );
+
+    res.status(200).json({ message: "Post liked" });
     } catch (error) {
       console.error('Error in likePost:', error);
       res.status(500).json({ success: false, error: 'Failed to like post' });

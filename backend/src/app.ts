@@ -54,9 +54,22 @@ export const createApp = () => {
   app.use("/api/auth", authRoutes);
   app.use("/api/posts", postRoutes);
   app.use("/api/users", userRoutes);
-  
-  // ActivityPub routes
+
+  // Fix for clients like ActivityPub Academy sending no Accept header
+  app.use((req, res, next) => {
+    if (
+      typeof req.headers.accept !== "string" ||
+      req.headers.accept.trim() === "" ||
+      !req.headers.accept.includes("application/activity+json") ||
+      !req.headers.accept.includes("application/ld+json")
+    ) {
+      req.headers.accept = "application/activity+json";
+    }
+    next();
+  });
+  // Federation routes
   app.use(integrateFederation(federation, (req: express.Request) => undefined));
+  
   app.use("*", (req, res) => {
     res.status(404).json({
       success: false,
