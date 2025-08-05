@@ -145,7 +145,11 @@ resource "aws_s3_bucket_cors_configuration" "nrn_bucket_cors" {
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["GET", "PUT", "POST", "DELETE", "HEAD"]
-    allowed_origins = ["*"]
+    allowed_origins = [
+      "https://dikiudmyn4guv.cloudfront.net",
+      "http://localhost:5173",
+      "http://localhost:3000"
+    ]
     expose_headers  = ["ETag"]
     max_age_seconds = 3000
   }
@@ -184,6 +188,7 @@ resource "aws_iam_policy" "s3_access_policy" {
         Action = [
           "s3:GetObject",
           "s3:PutObject",
+          "s3:PutObjectAcl",
           "s3:DeleteObject",
           "s3:ListBucket"
         ]
