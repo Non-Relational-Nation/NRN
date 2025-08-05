@@ -2,7 +2,16 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { v4 as uuidv4 } from "uuid";
 
 const REGION = process.env.AWS_REGION || "af-south-1";
-const BUCKET = process.env.AWS_S3_BUCKET || "nrn-grad-group01-dev-ws00bw6b";
+const BUCKET = process.env.AWS_S3_BUCKET || process.env.S3_BUCKET_NAME || "nrn-grad-group01-dev-ws00bw6b";
+
+// Debug logging - remove this after fixing
+console.log('S3 Configuration:', {
+  AWS_REGION: process.env.AWS_REGION,
+  AWS_S3_BUCKET: process.env.AWS_S3_BUCKET,
+  S3_BUCKET_NAME: process.env.S3_BUCKET_NAME,
+  BUCKET: BUCKET,
+  REGION: REGION
+});
 
 export const s3 = new S3Client({ 
   region: REGION,
