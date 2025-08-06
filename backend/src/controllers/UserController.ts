@@ -98,7 +98,7 @@ export class UserController {
       const username = req.params.username;
       const ctx = createFederationContextFromExpressReq(req);
 
-      const actor = await ctx.lookupObject(`@${username}@dikiudmyn4guv.cloudfront.net`);
+      const actor = await ctx.lookupObject(`@bigulia_rubawen@activitypub.academy`);
       if (!isActor(actor)) {
         return res.status(400).send("Invalid actor handle or URL");
       }
