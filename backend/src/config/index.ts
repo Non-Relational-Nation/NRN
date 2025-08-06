@@ -27,9 +27,15 @@ export interface AppConfig {
     userAgent: string;
   };
 
-  // Database configurations - simplified for MVP
   databases: {
     primary?: DatabaseConfig; // MongoDB for posts and user profiles
+    redis?: { url: string 
+      host: string; // Redis host
+      port: number; // Redis port
+      db?: number; // Redis database index
+      username?: string; // Optional for Redis clusters
+      password?: string; // Optional password for Redis
+    }; // Redis for caching
   };
 
   // External services
@@ -69,10 +75,18 @@ export const config: AppConfig = {
     primary: {
       host: process.env.MONGODB_HOST || "localhost",
       port: parseInt(process.env.MONGODB_PORT || "27017"),
-      name: process.env.MONGODB_DATABASE || "nrn_db",
+      name: process.env.MONGODB_DATABASE || "nrn_social",
       username: process.env.MONGODB_USERNAME,
       password: process.env.MONGODB_PASSWORD,
       uri: process.env.MONGODB_URI, // For MongoDB Atlas connection string
+    },
+
+    redis: {
+      host: process.env.REDIS_HOST || "localhost",
+      port: parseInt(process.env.REDIS_PORT || "6379"),
+      password: process.env.REDIS_PASSWORD,
+      db: parseInt(process.env.REDIS_DB || "0"),
+      url: process.env.REDIS_URL || "redis://localhost:6379",
     },
   },
 
@@ -84,8 +98,8 @@ export const config: AppConfig = {
   },
 
   google: {
-    clientId: process.env.GOOGLE_CLIENT_ID || "",
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-    redirectUrl: process.env.GOOGLE_REDIRECT_URL || "http://localhost:5173/login/callback",
+    clientId: process.env.GOOGLE_CLIENT_ID || "your-google-client-id",
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || "your-google-client-secret",
+    redirectUrl: process.env.GOOGLE_REDIRECT_URL || "http://localhost:3001/auth/google/callback",
   },
 };

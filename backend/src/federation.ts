@@ -26,14 +26,26 @@ import { FollowModel } from "./models/followSchema.ts";
 import { ActivityPubPostModel } from "./models/postModel.ts";
 import mongoose from "mongoose";
 import { LikeModel } from "./models/likeModel.ts";
-import { config } from "dotenv";
-config();
+import { RedisKvStore,RedisMessageQueue  } from "@fedify/redis";
+import { Redis } from "ioredis";
+import { config } from "./config/index.ts";
 
 type KeyType = "RSASSA-PKCS1-v1_5" | "Ed25519";
+
+const redis = new Redis({
+  host: config.databases.redis?.host || "localhost",
+  port: config.databases.redis?.port || 6379,
+});
 const federation = createFederation({
-  origin: process.env.SERVER_URL ?? "https://dikiudmyn4guv.cloudfront.net",
-  kv: new MemoryKvStore(), // to be changed to Redis
-  queue: new InProcessMessageQueue(), // to be changed to Redis
+  origin: config.serverUrl ?? "https://dikiudmyn4guv.cloudfront.net",
+  kv: new RedisKvStore(redis),
+  queue: new RedisMessageQueue(
+  () =>
+  new Redis({
+  host: config.databases.redis?.host || "localhost",
+  port: config.databases.redis?.port || 6379,
+  })
+  ),
 });
 
 async function persistActor(actor: APActor) {
