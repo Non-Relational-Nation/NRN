@@ -7,16 +7,7 @@ import userService from "@/services/userService.ts";
 import { AuthenticatedRequest } from "@/types/common.ts";
 import { Create, Follow, isActor, Note } from "@fedify/fedify";
 import { Request, Response, type NextFunction } from "express";
-import winston from 'winston';
 
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.json(),
-  transports: [
-    new winston.transports.File({ filename: 'error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'combined.log' }),
-  ],
-});
 export class UserController {
   async registerUser(
     req: Request,
@@ -107,10 +98,10 @@ export class UserController {
       const username = req.params.username;
       const ctx = createFederationContextFromExpressReq(req);
 
-      logger.info(ctx)
+      console.log(ctx)
 
       const actor = await ctx.lookupObject(`@fabicus_darbill@activitypub.academy`);
-      logger.info(ctx.getActor("@fabicus_darbill@activitypub.academy"));
+      console.log(ctx.getActor("@fabicus_darbill@activitypub.academy"));
       if (!isActor(actor)) {
         return res.status(400).send("Invalid actor handle or URL");
       }
