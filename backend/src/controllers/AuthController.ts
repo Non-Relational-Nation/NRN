@@ -91,12 +91,11 @@ export class AuthController {
       if (!user) {
         return res.status(500).json({ error: "User not found after registration" });
       }
-      const actor = await this.actorService.getActorByUserId(user.id);
 
       return res.status(200).json({
         id_token,
         user,
-        actor
+        handle: `@${username}@${config.serverDomain}`
       });
     } catch (err) {
       return res.status(500).json({ error: "Login failed" });

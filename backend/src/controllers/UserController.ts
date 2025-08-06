@@ -5,7 +5,7 @@ import actorService from "@/services/actorService.ts";
 import { PostService } from "@/services/postService.ts";
 import userService, { mapActorToUserObject } from "@/services/userService.ts";
 import { AuthenticatedRequest } from "@/types/common.ts";
-import { Create, Follow, lookupWebFinger, Note } from "@fedify/fedify";
+import { Create, Follow, isActor, lookupWebFinger, Note } from "@fedify/fedify";
 import { Request, Response, type NextFunction } from "express";
 
 export class UserController {
@@ -62,7 +62,6 @@ export class UserController {
       if (!match) {
         return res.status(404).json({ error: "Actor not found" });
       }
-      console.log(match)
       const user = await mapActorToUserObject(match);
       return res.json(user);
     } catch (err) {
@@ -121,20 +120,19 @@ export class UserController {
       const handle = req.params.handle;
       const ctx = createFederationContextFromExpressReq(req);
 
-      // Fetch the actor data for the user to be followed
-      const actorData = await actorService.fetchActorByHandle(handle);
+      const actor = await ctx.lookupObject(`${handle}`);
 
-      if (!actorData) {
-        return res.status(404).json({ error: "Target actor not found" });
+      if (!isActor(actor)) {
+        return res.status(400).send("Invalid actor handle or URL");
       }
 
       await ctx.sendActivity(
         { identifier: followerUsername },
-        actorData,
+        actor,
         new Follow({
           actor: ctx.getActorUri(followerUsername),
-          object: new URL(actorData.id ?? ""),
-          to: new URL(actorData.id ?? ""),
+          object: actor.id,
+          to: actor.id,
         })
       );
       return res

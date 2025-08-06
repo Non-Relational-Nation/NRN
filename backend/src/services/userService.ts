@@ -74,7 +74,6 @@ export class UserService {
 }
 
 async function fetchCount(url?: string): Promise<number> {
-  console.log("Fetching count from:", url);
   if (!url) return 0;
   
   try {

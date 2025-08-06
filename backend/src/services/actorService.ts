@@ -29,9 +29,6 @@ export class ActorService {
     const protocol = domain.includes("localhost") ? "http" : "https";
     domain = domain.includes("localhost") ? "localhost:3001" : domain;
 
-    console.log(
-      `${protocol}://${domain}/.well-known/webfinger?resource=acct:${username}@${domain}`
-    );
     let webfingerResponse;
     try {
       webfingerResponse = await fetch(

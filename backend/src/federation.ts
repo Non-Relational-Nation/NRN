@@ -26,10 +26,12 @@ import { FollowModel } from "./models/followSchema.ts";
 import { ActivityPubPostModel } from "./models/postModel.ts";
 import mongoose from "mongoose";
 import { LikeModel } from "./models/likeModel.ts";
+import { config } from "dotenv";
+config();
 
 type KeyType = "RSASSA-PKCS1-v1_5" | "Ed25519";
-
 const federation = createFederation({
+  origin: process.env.SERVER_URL ?? "https://dikiudmyn4guv.cloudfront.net",
   kv: new MemoryKvStore(), // to be changed to Redis
   queue: new InProcessMessageQueue(), // to be changed to Redis
 });
