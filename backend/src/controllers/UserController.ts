@@ -98,10 +98,11 @@ export class UserController {
       const username = req.params.username;
       const ctx = createFederationContextFromExpressReq(req);
 
-      console.log(ctx)
+      console.log("[UserController] Sending follow request for user:", username);
+      console.log("ctx",ctx)
 
       const actor = await ctx.lookupObject(`@fabicus_darbill@activitypub.academy`);
-      console.log(ctx.getActor("@fabicus_darbill@activitypub.academy"));
+      console.log("actor",  ctx.getActor("@fabicus_darbill@activitypub.academy"));
       if (!isActor(actor)) {
         return res.status(400).send("Invalid actor handle or URL");
       }
