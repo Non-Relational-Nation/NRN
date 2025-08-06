@@ -4,7 +4,7 @@ import { IUserRepository } from '../repositories/interfaces/IUserRepository.js';
 import { Note, type RequestContext } from '@fedify/fedify';
 import type { Actor } from '@/types/actor.ts';
 import mongoose from 'mongoose';
-// import he from 'he';
+import he from 'he';
 import { ActivityPubPostModel } from '@/models/postModel.ts';
 
 // Define PostWithAuthor type if not already defined elsewhere
