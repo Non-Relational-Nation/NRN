@@ -45,6 +45,10 @@ const federation = createFederation({
         port: config.databases.redis?.port || 6379,
       })
   ),
+  // Force HTTPS for all generated URLs in production
+  ...(config.nodeEnv === "production" && config.federation && {
+    baseUrl: `https://${config.federation.domain}`,
+  }),
 });
 
 async function persistActor(actor: APActor) {
