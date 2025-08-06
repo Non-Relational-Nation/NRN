@@ -93,6 +93,8 @@ federation
         publicKey: keys[0]?.cryptographicKey,
         assertionMethods: keys.map((k) => k.multikey),
         followers: ctx.getFollowersUri(identifier),
+        following: ctx.getFollowingUri(identifier),
+        outbox: ctx.getOutboxUri(identifier),
       });
     }
   )
