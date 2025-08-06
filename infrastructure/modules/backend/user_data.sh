@@ -110,6 +110,8 @@ FEDERATION_USER_AGENT=NRN/1.0.0
 GOOGLE_CLIENT_ID=${google_client_id}
 GOOGLE_CLIENT_SECRET=${google_client_secret}
 GOOGLE_REDIRECT_URL=https://CLOUDFRONT_DOMAIN_PLACEHOLDER/login/callback
+SERVER_URL=https://dikiudmyn4guv.cloudfront.net
+SERVER_DOMAIN=dikiudmyn4guv.cloudfront.net
 EOL
 
 chown ubuntu:ubuntu /home/ubuntu/app/.env
