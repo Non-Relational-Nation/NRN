@@ -25,13 +25,7 @@ export const createApp = () => {
   app.use(authMiddleware); 
   app.set("trust proxy", true);
 
-  // Force HTTPS protocol for URL generation in production
-  app.use((req, res, next) => {
-    if (process.env.NODE_ENV === "production") {
-      req.headers["x-forwarded-proto"] = "https";
-    }
-    next();
-  });
+  app.set("trust proxy", true);
 
   
   // Health check
