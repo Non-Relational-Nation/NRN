@@ -3,9 +3,9 @@ import { postRepository } from "@/repositories/postRepository.ts";
 import { userRepository } from "@/repositories/userRepository.ts";
 import actorService from "@/services/actorService.ts";
 import { PostService } from "@/services/postService.ts";
-import userService from "@/services/userService.ts";
+import userService, { mapActorToUserObject } from "@/services/userService.ts";
 import { AuthenticatedRequest } from "@/types/common.ts";
-import { Create, Follow, isActor, Note } from "@fedify/fedify";
+import { Create, Follow, isActor, lookupWebFinger, Note } from "@fedify/fedify";
 import { Request, Response, type NextFunction } from "express";
 
 export class UserController {
@@ -51,6 +51,24 @@ export class UserController {
     }
   }
 
+  async getUserByHandle(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> {
+    try {
+      const handle = req.params.handle;
+      const match = await actorService.fetchActorByHandle(handle);
+      if (!match) {
+        return res.status(404).json({ error: "Actor not found" });
+      }
+      const user = await mapActorToUserObject(match);
+      return res.json(user);
+    } catch (err) {
+      next(err);
+    }
+  }
+
   async searchUsers(
     req: Request,
     res: Response,
@@ -58,8 +76,12 @@ export class UserController {
   ): Promise<Response | void> {
     try {
       const search = req.query.search as string;
-      const users = await userService.searchUsers(search);
-      return res.json(users);
+      const match = await actorService.fetchActorByHandle(search);
+      if (!match) {
+        return res.status(200).json([]);
+      }
+      const user = await mapActorToUserObject(match);
+      return res.json([user]);
     } catch (err) {
       next(err);
     }
@@ -95,14 +117,11 @@ export class UserController {
       }
       const followerUsername = follower?.username;
 
-      const username = req.params.username;
+      const handle = req.params.handle;
       const ctx = createFederationContextFromExpressReq(req);
 
-      console.log("[UserController] Sending follow request for user:", username);
-      console.log("ctx",ctx)
+      const actor = await ctx.lookupObject(`${handle}`);
 
-      const actor = await ctx.lookupObject(`@fabicus_darbill@activitypub.academy`);
-      console.log("actor",  ctx.getActor("@fabicus_darbill@activitypub.academy"));
       if (!isActor(actor)) {
         return res.status(400).send("Invalid actor handle or URL");
       }
@@ -178,8 +197,7 @@ export class UserController {
       } else {
         const noteArgs = { identifier: username, id: post.id };
         const note = await ctx.getObject(Note, noteArgs);
-        
-        
+
         await ctx.sendActivity(
           { identifier: username },
           "followers",
@@ -191,8 +209,10 @@ export class UserController {
             ccs: note?.ccIds,
           })
         );
-        
-        return res.status(201).json({postUrl: ctx.getObjectUri(Note, noteArgs).href});
+
+        return res
+          .status(201)
+          .json({ postUrl: ctx.getObjectUri(Note, noteArgs).href });
       }
     } catch (err) {
       next(err);

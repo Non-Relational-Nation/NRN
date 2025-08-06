@@ -5,6 +5,7 @@ import { IUserRepository } from "@/repositories/interfaces/IUserRepository.ts";
 import { userRepository } from "@/repositories/userRepository.ts";
 import { actorRepository } from "@/repositories/actorRepository.ts";
 import type { IActorRepository } from "@/repositories/interfaces/IActorRepository.ts";
+import { Actor } from "@fedify/fedify";
 
 export class ActorService {
   constructor(private actorRepository: IActorRepository) {}
@@ -16,6 +17,43 @@ export class ActorService {
   getActorById = async (actorId: string) => {
     return this.actorRepository.findById(actorId);
   };
+
+  async fetchActorByHandle(handle: string): Promise<Actor | null> {
+    if (handle.startsWith("@")) {
+      handle = handle.slice(1);
+    }
+    let [username, domain] = handle.split("@");
+    if (!domain) {
+      domain = "dikiudmyn4guv.cloudfront.net";
+    }
+    const protocol = domain.includes("localhost") ? "http" : "https";
+    domain = domain.includes("localhost") ? "localhost:3001" : domain;
+
+    let webfingerResponse;
+    try {
+      webfingerResponse = await fetch(
+        `${protocol}://${domain}/.well-known/webfinger?resource=acct:${username}@${domain}`
+      );
+    } catch (error) {
+      return null;
+    }
+    if (!webfingerResponse.ok) {
+      return null;
+    }
+    const webfingerData = await webfingerResponse.json();
+    let actorResponse;
+    try {
+      actorResponse = await fetch(webfingerData.links[0].href, {
+        headers: { Accept: "application/activity+json" },
+      });
+    } catch (error) {
+      return null;
+    }
+    if (!actorResponse.ok) {
+      return null;
+    }
+    return await actorResponse.json();
+  }
 }
 
 const actorService = new ActorService(actorRepository);

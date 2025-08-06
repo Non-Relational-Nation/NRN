@@ -12,6 +12,18 @@ export interface User {
   updatedAt: Date;
 }
 
+
+export interface UserResponse {
+  id: string;
+  username: string;
+  displayName: string;
+  bio?: string;
+  avatar?: string;
+  followersCount: number;
+  followingCount: number;
+  postsCount: number;
+  handle: string;
+}
 export interface UserPreferences {
   notifications: {
     likes: boolean;

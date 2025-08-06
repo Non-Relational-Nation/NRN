@@ -8,7 +8,7 @@ import Feed from "./pages/Feed/Feed";
 import Search from "./pages/Search/Search";
 import Profile from "./pages/Profile/Profile";
 import CreatePost from "./pages/CreatePost/CreatePost";
-import EditProfile from "./pages/EditProfile/EditProfile";
+// import EditProfile from "./pages/EditProfile/EditProfile";
 import Following from "./pages/Following/Following";
 import Followers from "./pages/Followers/Followers";
 
@@ -32,7 +32,7 @@ function App() {
       <Route path="/" element={<Feed />} />
       <Route path="/login/callback" element={<Callback />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/profile/edit" element={<EditProfile />} />
+      {/* <Route path="/profile/edit" element={<EditProfile />} /> */}
       <Route path="/following" element={<Following />} />
       <Route path="/followers" element={<Followers />} />
       <Route path="/profile/:user?" element={<Profile />} />

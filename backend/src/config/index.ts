@@ -15,6 +15,8 @@ export interface AppConfig {
   host: string;
   nodeEnv: string;
   frontendUrl: string;
+  serverUrl?: string;
+  serverDomain?: string;
 
   // ActivityPub federation (for later)
   federation?: {
@@ -56,6 +58,8 @@ export const config: AppConfig = {
   host: process.env.HOST || "localhost",
   nodeEnv: process.env.NODE_ENV || "development",
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
+  serverUrl: process.env.SERVER_URL || "http://localhost:3001",
+  serverDomain: process.env.SERVER_DOMAIN || "localhost:3001",
 
   // ActivityPub federation configuration
   federation: {

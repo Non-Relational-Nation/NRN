@@ -171,6 +171,8 @@ jobs:
           echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
           echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
           echo "GOOGLE_REDIRECT_URL=https://dikiudmyn4guv.cloudfront.net/login/callback" >> .env
+          echo "SERVER_URL=https://dikiudmyn4guv.cloudfront.net" >> .env
+          echo "SERVER_DOMAIN=dikiudmyn4guv.cloudfront.net" >> .env
           
           # Install PM2 globally
           sudo npm install -g pm2@latest

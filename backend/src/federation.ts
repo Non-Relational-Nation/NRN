@@ -37,13 +37,14 @@ const redis = new Redis({
   port: config.databases.redis?.port || 6379,
 });
 const federation = createFederation({
+  origin: config.serverUrl ?? "https://dikiudmyn4guv.cloudfront.net",
   kv: new RedisKvStore(redis),
   queue: new RedisMessageQueue(
-    () =>
-      new Redis({
-        host: config.databases.redis?.host || "localhost",
-        port: config.databases.redis?.port || 6379,
-      })
+  () =>
+  new Redis({
+  host: config.databases.redis?.host || "localhost",
+  port: config.databases.redis?.port || 6379,
+  })
   ),
 });
 

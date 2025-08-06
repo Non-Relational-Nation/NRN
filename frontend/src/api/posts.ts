@@ -23,6 +23,7 @@ export async function getFeed({
 
 // Get posts for a specific user
 export async function getUsersFeed(userId: string): Promise<Post[]> {
+  return [];
   const response = await apiFetch({
     path: `/api/posts/author/${userId}`,
     method: "GET",
