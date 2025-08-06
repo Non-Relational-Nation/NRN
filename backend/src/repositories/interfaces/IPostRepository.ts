@@ -2,7 +2,6 @@ import { Post, CreatePostData, UpdatePostData, type PostLike } from '../../types
 
 export interface IPostRepository {
   create(data: CreatePostData): Promise<Post>;
-  createPost(data: CreatePostData): Promise<Post>;
   findById(id: string): Promise<Post | null>;
   findByAuthorId(authorId: string, limit?: number, offset?: number): Promise<Post[]>;
   update(id: string, data: UpdatePostData): Promise<Post | null>;

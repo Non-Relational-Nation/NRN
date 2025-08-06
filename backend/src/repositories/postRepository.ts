@@ -1,6 +1,6 @@
 import { Post, CreatePostData, UpdatePostData, PostVisibility, PostLike } from '../types/post.js';
 import { IPostRepository } from './interfaces/IPostRepository.js';
-import { ActivityPubPostModel, PostModel } from '../models/postModel.js';
+import { PostModel } from '../models/postModel.js';
 import { LikeModel } from '@/models/likeModel.ts';
 function toPost(obj: any): Post {
   const { _id, __v, ...rest } = obj;
@@ -18,7 +18,8 @@ export const postRepository: IPostRepository = {
   },
 
   async findById(id: string): Promise<Post | null> {
-    const doc = await ActivityPubPostModel.findById(id);
+    const doc = await PostModel.findById(id);
+    console.log(doc)
     return doc ? toPost(doc.toObject()) : null;
   },
 

@@ -3,9 +3,10 @@ import { PostService } from '../services/postService.js';
 import { CreatePostData, UpdatePostData, PostType } from '../types/post.js';
 import { uploadFileToS3 } from "../util/s3Upload.ts";
 import actorService from '@/services/actorService.ts';
-import { Like } from '@fedify/fedify';
+import { Create, Like, Note } from '@fedify/fedify';
 import { createFederationContextFromExpressReq } from '@/federation/federationContext.ts';
 import userService from '@/services/userService.ts';
+import { imageSize } from 'image-size';
 
 export class PostController {
   constructor(private postService: PostService) {
@@ -14,6 +15,32 @@ export class PostController {
 
   async createPost(req: Request, res: Response): Promise<void> {
     try {
+      // Validate authorId and log more details for debugging
+      let authorId = req.body.authorId;
+      // Always prefer user_id if present and valid (for actor->user mapping)
+      if (req.body.user_id && typeof req.body.user_id === 'string' && req.body.user_id.length === 24) {
+        if (authorId !== req.body.user_id) {
+          console.warn('Overriding authorId with user_id from body:', req.body.user_id);
+        }
+        authorId = req.body.user_id;
+      }
+
+      const ctx = createFederationContextFromExpressReq(req);
+
+      const user = await userService.getUserById(authorId);
+
+      if (!user) {
+        res.status(400).json({ error: "User not found" });
+        return;
+      }
+
+      const actor = await actorService.getActorByUserId(user.id);
+
+      if (!actor) {
+        res.status(404).json({ error: "Actor profile not found" });
+        return;
+      }
+
       // Handle file uploads
       let files: any[] = [];
       if (Array.isArray((req as any).files)) {
@@ -28,68 +55,58 @@ export class PostController {
       if (files.length > 0) {
         media = await Promise.all(
           files.map(async (file: any) => {
-            const url = await uploadFileToS3(file);
+            // const url = await uploadFileToS3(file);
+            const dimensions = imageSize(file.buffer);
+
             return {
-              type: file.mimetype.startsWith("video") ? "video" : "image",
-              url,
-              size: file.size,
-              width: undefined,
-              height: undefined,
-              altText: file.originalname,
+              mediaType: file.mimetype,
+              url: "",
+              width: dimensions.width,
+              height: dimensions.height,
             };
           })
         );
       }
-      // Determine post type
-      let type: PostType = PostType.TEXT;
-      if (media.length > 0) {
-        type = media.some(m => m.type === 'video') ? PostType.VIDEO : PostType.IMAGE;
-      }
-      // Validate authorId and log more details for debugging
-      let authorId = req.body.authorId;
-      // Always prefer user_id if present and valid (for actor->user mapping)
-      if (req.body.user_id && typeof req.body.user_id === 'string' && req.body.user_id.length === 24) {
-        if (authorId !== req.body.user_id) {
-          console.warn('Overriding authorId with user_id from body:', req.body.user_id);
-        }
-        authorId = req.body.user_id;
-      }
-      if (!authorId || typeof authorId !== 'string' || authorId.length !== 24) {
-        console.error('Invalid or missing authorId:', authorId, '| type:', typeof authorId, '| body:', req.body);
-        res.status(400).json({
-          success: false,
-          error: 'Invalid or missing authorId. Please ensure you are sending the correct MongoDB user id.'
-        });
-        return;
-      }
+
+      const content = req.body.content.toString();
       // Check if author exists in users collection before proceeding
-      const userRepo = this.postService.getUserRepository();
-      const author = await userRepo.findById(authorId);
-      if (!author) {
-        console.error('Author not found for authorId:', authorId, '| body:', req.body);
-        res.status(400).json({
-          success: false,
-          error: 'Author not found. Please ensure you are sending a valid MongoDB user id.'
-        });
-        return;
-      }
-      const postData: CreatePostData = {
-        authorId,
-        content: req.body.content,
-        title: req.body.title,
-        visibility: req.body.visibility || 'public',
-        media,
-        type,
+
+      const postData = {
+        actor_id: actor.id,
+        content,
+        attachment: media,
       };
+
       // Debugging: log postData
       console.log('Creating post with data:', postData);
-      const post = await this.postService.createPost(postData);
+      const post = await this.postService.createPost(ctx, user.username, postData);
+
+      if (!post) {
+        res.status(500).json({ error: "Failed to create a post" });
+        return;
+      } else {
+        const noteArgs = { identifier: user.username, id: post.id };
+        const note = await ctx.getObject(Note, noteArgs);
+        
+        await ctx.sendActivity(
+          { identifier: user.username },
+          "followers",
+          new Create({
+            id: new URL("#activity", note?.id ?? undefined),
+            object: note,
+            actors: note?.attributionIds,
+            tos: note?.toIds,
+            ccs: note?.ccIds,
+          })
+        );
+
       res.status(201).json({
         success: true,
         message: 'Post created successfully',
         data: post
       });
-    } catch (error) {
+    } 
+  } catch (error) {
       console.error('Error in createPost:', error);
       if (error instanceof Error) {
         res.status(400).json({

@@ -1,49 +1,12 @@
-import { Schema, Document, Types, model } from 'mongoose';
-import { PostVisibility, PostType } from '../types/post.js';
+import type { CreatePostData } from '@/types/post.ts';
+import { Schema, Types, model } from 'mongoose';
 
-const mediaItemSchema = new Schema({
-  type: { type: String, enum: ['image', 'video'], required: true },
-  url: { type: String, required: true },
-  thumbnailUrl: String,
-  duration: Number,
-  width: Number,
-  height: Number,
-  size: Number,
-  altText: String,
-}, { _id: false });
-
-const postSchema = new Schema({
-  authorId: { type: String, required: true },
-  title: { type: String },
-  type: { type: String, enum: Object.values(PostType), default: PostType.TEXT },
-  content: String,
-  media: [mediaItemSchema],
-  originalPostId: String,
-  repostComment: String,
-  likesCount: { type: Number, default: 0 },
-  commentsCount: { type: Number, default: 0 },
-  repostsCount: { type: Number, default: 0 },
-  viewsCount: { type: Number, default: 0 },
-  hashtags: [String],
-  mentions: [String],
-  visibility: { type: String, enum: Object.values(PostVisibility), default: PostVisibility.PUBLIC },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
-  isDeleted: { type: Boolean, default: false },
-  deletedAt: Date,
-  flagged: { type: Boolean, default: false },
-});
-
-export interface PostDocument extends Document {
-  uri: string;
-  actor_id: Types.ObjectId;
-  content: string;
-  url?: string;
-  likes: string[],
-  create_at: Date;
-}
-
-const activityPubPostSchema = new Schema<PostDocument>({
+const postSchema = new Schema<CreatePostData>({
+  actor_id: { 
+    type: Schema.Types.ObjectId,
+    ref: "Actor",
+    required: true,
+  },
   uri: {
     type: String,
     required: true,
@@ -53,31 +16,37 @@ const activityPubPostSchema = new Schema<PostDocument>({
       message: "URI cannot be empty",
     },
   },
-  actor_id: {
-    type: Schema.Types.ObjectId,
-    ref: "Actor",
-    required: true,
-  },
+
   content: {
     type: String,
     required: true,
   },
-  url: {
-    type: String,
-    validate: {
-      validator: (v: string | undefined) => {
-        if (!v) return true; // optional
-        return /^https?:\/\/.+/.test(v);
-      },
-      message: "URL must start with http:// or https://",
+
+  attachment: [{
+    url: {
+      type: String,
     },
+    mediaType: {
+      type: String,
+    },
+    width: {
+      type: Number
+    },
+    height: {
+      type: Number
+    }
+  }],
+
+  likes_count: { type: Number, default: 0 },
+
+  created_at: { type: Date, default: Date.now },
+  updated_at: { type: Date, default: Date.now },
+  is_deleted: { type: Boolean, default: false },
+  flagged: { type: Boolean, default: false },
+    url: {
+    type: String,
   },
-  likes: [{ type: Types.ObjectId, ref: "Actor" }], 
-  create_at: {
-    type: Date,
-    default: Date.now,
-    required: true,
-  },
-}); 
+});
+
 export const PostModel = model('Post', postSchema);
-export const ActivityPubPostModel = model('ActivityPubPost', activityPubPostSchema);
+

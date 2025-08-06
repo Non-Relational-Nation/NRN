@@ -15,6 +15,7 @@ export const userRepository = {
     return toUser(doc.toObject());
   },
   async findById(id: string): Promise<User | null> {
+    console.log("id", id)
     const doc = await UserModel.findById(id);
     return doc ? toUser(doc.toObject()) : null;
   },

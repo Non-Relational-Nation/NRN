@@ -1,9 +1,9 @@
-import mongoose from "mongoose";
+import mongoose, { type Types } from "mongoose";
 import { User, CreateUserData, UpdateUserData } from "../../types/user.js";
 
 export interface IUserRepository {
   create(data: CreateUserData): Promise<User>;
-  findById(id: string): Promise<User | null>;
+  findById(id: Types.ObjectId): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
   findByUsername(username: string): Promise<User | null>;
   update(id: string, data: UpdateUserData): Promise<User | null>;
