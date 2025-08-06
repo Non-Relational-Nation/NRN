@@ -17,7 +17,7 @@ export default function UserCard({ user }: UserCardProps) {
   const [following, setFollowing] = useState(user?.following);
 
   const followMutation = useMutation({
-    mutationFn: () => followUser(user?.username),
+    mutationFn: () => followUser(user?.handle),
     onSuccess: () => {
       setFollowing(true);
     },
@@ -25,7 +25,7 @@ export default function UserCard({ user }: UserCardProps) {
   });
 
   const unfollowMutation = useMutation({
-    mutationFn: () => unfollowUser(user?.id),
+    mutationFn: () => unfollowUser(user?.handle),
     onSuccess: () => {
       setFollowing(false);
     },
@@ -36,7 +36,7 @@ export default function UserCard({ user }: UserCardProps) {
   const handleUnfollow = () => unfollowMutation.mutate();
 
   const handleClick = () => {
-    navigate(`/profile/${user?.id}`);
+    navigate(`/profile/${user?.handle}`);
   };
   return (
     <>

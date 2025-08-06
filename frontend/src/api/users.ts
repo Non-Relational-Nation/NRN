@@ -12,9 +12,9 @@ export async function searchUsers(searchTerm: string): Promise<User[]> {
   return await response.json();
 }
 
-export async function getUser(userId: string): Promise<User> {
+export async function getUser(userHandle: string): Promise<User> {
   const response = await apiFetch({
-    path: `/api/users/${userId}`,
+    path: `/api/users/${userHandle}`,
     method: "GET",
   });
   await handleError(response);

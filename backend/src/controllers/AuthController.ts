@@ -2,12 +2,15 @@ import { config } from "../config/index.ts";
 import { Request, Response } from "express";
 import { jwtVerify, createRemoteJWKSet } from "jose";
 import userService from "@/services/userService.ts";
+import actorService from "@/services/actorService.ts";
 import { createFederationContextFromExpressReq } from "@/federation/federationContext.ts";
 
 export class AuthController {
   private userService;
-  constructor(userServiceInstance = userService) {
+  private actorService;
+  constructor(userServiceInstance = userService, actorServiceInstance = actorService) {
     this.userService = userServiceInstance;
+    this.actorService = actorServiceInstance;
   }
   async login(req: Request, res: Response): Promise<Response> {
     console.log('[AuthController] Login attempt started');
@@ -79,14 +82,21 @@ export class AuthController {
             context
           });
           user = await this.userService.getUserByUsername(username);
+          
         } catch (err) {
           return res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
         }
       }
 
+      if (!user) {
+        return res.status(500).json({ error: "User not found after registration" });
+      }
+      const actor = await this.actorService.getActorByUserId(user.id);
+
       return res.status(200).json({
         id_token,
         user,
+        actor
       });
     } catch (err) {
       return res.status(500).json({ error: "Login failed" });
