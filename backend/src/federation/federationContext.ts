@@ -2,6 +2,7 @@ import type { Request as ExpressRequest } from "express";
 import federation from "../federation.ts";
 
 export function createFederationContextFromExpressReq(req: ExpressRequest) {
+  console.log("[federationContext] Request headers:", req.headers);
   const protocol = "https";//req.get("X-Forwarded-Proto") || req.protocol;
   const fullUrl = `${protocol}://${req.get("host")}${req.originalUrl}`;
   const url = new URL(fullUrl);
