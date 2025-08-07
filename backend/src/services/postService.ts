@@ -40,21 +40,6 @@ export class PostService {
     }
   }
 
-  // async createPost(data: CreatePostData): Promise<Post> {
-  //   this.validatePostContent(data.content);
-  //   // Only validate title if it exists on data and is a string
-  //   if ("title" in data && typeof data.title === "string") {
-  //     this.validatePostTitle(data.title);
-  //   }
-
-  //   const author = await this.userRepository.findById(data.authorId);
-  //   if (!author) {
-  //     throw new Error("Author not found");
-  //   }
-
-  //   return this.postRepository.create(data);
-  // }
-
   async createPost(
     ctx: RequestContext<unknown>,
     username: string,
@@ -135,13 +120,7 @@ export class PostService {
     limit?: number,
     offset?: number
   ): Promise<Post[]> {
-    const author = await actorRepository.findByUserId(authorId);
-    if (!author) {
-      throw new Error("Author not found");
-    }
-
-    console.log(author);
-    return this.postRepository.findByAuthorId(author.id, limit, offset);
+    return this.postRepository.findByAuthorId(authorId, limit, offset);
   }
 
   async updatePost(
