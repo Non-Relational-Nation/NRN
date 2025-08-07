@@ -37,7 +37,7 @@ const redis = new Redis({
   port: config.databases.redis?.port || 6379,
 });
 const federation = createFederation({
-  origin: config.serverUrl ?? "https://dikiudmyn4guv.cloudfront.net",
+  origin: config.serverUrl ?? "https://d3m0gyk7rj0vr1.cloudfront.net",
   kv: new RedisKvStore(redis),
   queue: new RedisMessageQueue(
   () =>
