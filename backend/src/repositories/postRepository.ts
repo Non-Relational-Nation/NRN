@@ -35,7 +35,7 @@ export const postRepository: IPostRepository = {
     offset = 0
   ): Promise<Post[]> {
     const docs = await PostModel.find({ actor_id: authorId })
-      .sort({ createdAt: -1 })
+      .sort({ created_at: -1 })
       .skip(offset)
       .limit(limit);
     return docs.map((d: any) => toPost(d.toObject()));
