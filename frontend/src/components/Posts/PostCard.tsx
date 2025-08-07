@@ -4,18 +4,15 @@ import heart from "../../assets/heart.svg";
 import redHeart from "../../assets/red-heart.svg";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import UserAvatar from "../Users/UserAvatar";
 import { useMutation } from "@tanstack/react-query";
 import { likePost, unlikePost } from "../../api/posts";
 import ErrorDialog from "../Dialogs/ErrorDialog";
-import type { User } from "../../models/User";
 
 interface PostCardProps {
   post: Post;
-  user?: User
 }
 
-export default function PostCard({ post, user }: PostCardProps) {
+export default function PostCard({ post }: PostCardProps) {
   const navigate = useNavigate();
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [likesCount, setLikesCount] = useState(post.likesCount);
@@ -52,46 +49,40 @@ export default function PostCard({ post, user }: PostCardProps) {
         <button
           className="button"
           id="profile-button"
-          onClick={() => navigate(`/profile/${post.author?.id}`)}
+          onClick={() => navigate(`/profile/${post.authorHandle}`)}
         >
-          <UserAvatar imageUrl={user?.avatar} size={20} />
-        
-          {user?.displayName ||
-            user?.username ||
-            post?.authorId}
+
+          {post?.authorHandle}
         </button>
-        <span id="time-text">
-          {new Date(post?.created_at).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-          {" - "}
-          {new Date(post?.created_at).toLocaleDateString()}
-        </span>
+        {post?.created_at && (
+          <span id="time-text">
+            {new Date(post.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+            {" - "}
+            {new Date(post.created_at).toLocaleDateString()}
+          </span>
+        )}
       </header>
       <hr />
       <section id="post-content">
-        <p>{post?.content}</p>
+        {post?.content && <p>{post?.content}</p>}
 
         {post?.media?.length ? (
           <div className="post-media-column">
-            {post.media.map((item) => (
-              <div key={item.id} className="media-item">
+            {post.media.map((item, index) => (
+              <div key={index} className="media-item">
                 {item.type === "image" ? (
                   <img
                     src={item.url}
-                    alt={item.altText || "Post image"}
                     className="media-image"
-                    width={item.width}
-                    height={item.height}
+
                   />
                 ) : (
                   <video
                     controls
-                    width={item.width}
-                    height={item.height}
                     className="media-video"
-                    poster={item.thumbnailUrl}
                   >
                     <source src={item.url} type="video/mp4" />
                     Your browser does not support video.
@@ -124,7 +115,7 @@ export default function PostCard({ post, user }: PostCardProps) {
           />
         )}
 
-        <span>{likesCount}</span>
+        <span>{likesCount ?? 0}</span>
       </footer>
       <ErrorDialog
         isOpen={!!errorDialogMessage}

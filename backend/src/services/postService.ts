@@ -47,43 +47,41 @@ export class PostService {
   ): Promise<Partial<CreatePostData> | undefined> {
     try {
       let newPost;
-        const escapedContent = he.encode(postData.content ?? "");
+      const escapedContent = he.encode(postData.content ?? "");
 
-        // Create post with temporary URI
-        const [post] = await PostModel.create(
-          [
-            {
-              ...postData,
-              uri: "https://localhost/",
-              content: escapedContent,
-            },
-          ]
-        );
+      // Create post with temporary URI
+      const [post] = await PostModel.create([
+        {
+          ...postData,
+          uri: "https://localhost/",
+          content: escapedContent,
+        },
+      ]);
 
-        if (!post) {
-          throw new Error("Failed to create post");
-        }
+      if (!post) {
+        throw new Error("Failed to create post");
+      }
 
-        // Generate final object URI
-        const url = ctx.getObjectUri(Note, {
-          identifier: username,
-          id: post.id,
-        }).href;
+      // Generate final object URI
+      const url = ctx.getObjectUri(Note, {
+        identifier: username,
+        id: post.id,
+      }).href;
 
-        const updatedPost = await PostModel.findByIdAndUpdate(
-          post._id,
-          {
-            uri: url,
-            url: url,
-          },
-          { new: true }
-        );
+      const updatedPost = await PostModel.findByIdAndUpdate(
+        post._id,
+        {
+          uri: url,
+          url: url,
+        },
+        { new: true }
+      );
 
-        if (!updatedPost) {
-          throw new Error("Failed to update post with final URI");
-        }
+      if (!updatedPost) {
+        throw new Error("Failed to update post with final URI");
+      }
 
-        newPost = updatedPost;
+      newPost = updatedPost;
 
       return updatedPost;
     } catch (err) {
@@ -221,4 +219,35 @@ export class PostService {
   public getUserRepository() {
     return this.userRepository;
   }
+}
+
+function extractHandleFromActor(actorUrl: string): string {
+  const url = new URL(actorUrl);
+  const username = url.pathname.split("/").pop() || "";
+  return `${username}@${url.hostname}`;
+}
+
+export function mapOutboxToPosts(outbox: any): Post[] {
+  return (outbox.orderedItems || []).map((item: any) => {
+    const obj = item.object || {};
+    return {
+      id: obj?.id || item.id,
+      authorId: obj?.attributedTo || item.actor,
+      authorHandle: extractHandleFromActor(obj?.attributedTo || item.actor),
+      type: obj?.type || "Note",
+      content: obj?.content || "",
+      media: obj?.attachment
+        ? Array.isArray(obj?.attachment)
+          ? obj.attachment.map((att: any) => ({
+              url: att?.url,
+              type: att?.type,
+              mediaType: att?.mediaType,
+            }))
+          : [obj.attachment]
+        : [],
+      isLiked: false, // TODO
+      likesCount: 0, //TODO
+      created_at: obj?.published ? new Date(obj?.published) : undefined,
+    };
+  });
 }
