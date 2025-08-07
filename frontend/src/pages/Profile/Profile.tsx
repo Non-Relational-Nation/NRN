@@ -141,7 +141,7 @@ export default function Profile() {
             </section>
           </header>
         </section>
-        <PostList posts={userFeed} user={userData}></PostList>
+        <PostList posts={userFeed}></PostList>
       </section>
       <ErrorDialog
         isOpen={!!errorDialogMessage}

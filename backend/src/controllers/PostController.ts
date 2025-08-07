@@ -1,6 +1,6 @@
 import { Request, Response, type NextFunction } from "express";
-import { PostService } from "../services/postService.js";
-import { CreatePostData, UpdatePostData, PostType } from "../types/post.js";
+import { mapOutboxToPosts, PostService } from "../services/postService.js";
+import { UpdatePostData } from "../types/post.js";
 import { uploadFileToS3 } from "../util/s3Upload.ts";
 import actorService from "@/services/actorService.ts";
 import { Create, Like, Note } from "@fedify/fedify";
@@ -307,9 +307,9 @@ export class PostController {
             Accept: "application/json",
           },
         });
-        res.json(firstPage);
+        res.json(mapOutboxToPosts(firstPage));
       } else {
-        res.json(data);
+        res.json(mapOutboxToPosts(data));
       }
     } catch (err) {
       next(err);

@@ -1,4 +1,3 @@
-import type { EditProfile } from "../models/Post";
 import { type User } from "../models/User";
 import { apiFetch, handleError } from "../util/api";
 
@@ -43,25 +42,6 @@ export async function unfollowUser(handle?: string): Promise<void> {
   const response = await apiFetch({
     path: `/api/users/${handle}/following`,
     method: "DELETE",
-  });
-  await handleError(response);
-
-  return await response.json();
-}
-
-export async function editProfile(userDetails: EditProfile): Promise<void> {
-  const formData = new FormData();
-  formData.append("username", userDetails.username);
-  formData.append("displayName", userDetails.displayName);
-  formData.append("bio", userDetails.bio);
-  if (userDetails.avatar) {
-    formData.append("avatar", userDetails.avatar);
-  }
-
-  const response = await apiFetch({
-    path: `/api/user`,
-    method: "PUT",
-    body: formData,
   });
   await handleError(response);
 

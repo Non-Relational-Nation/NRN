@@ -8,14 +8,14 @@ interface PostListProps {
   user?: User
 }
 
-export default function PostList({ posts, user }: PostListProps) {
+export default function PostList({ posts }: PostListProps) {
   if (!posts?.length) {
     return <section id="empty-container"><p>There are no posts to display</p></section>
   }
   return (
     <section id="post-container">
         {posts?.map((post, index) => (
-        <PostCard key={index} post={post} user={user} />
+        <PostCard key={index} post={post} />
       ))}
     </section>
   );
