@@ -9,9 +9,10 @@ import { followUser, unfollowUser } from "../../api/users";
 
 interface UserCardProps {
   user: User;
+  disableUserAvatar?: boolean;
 }
 
-export default function UserCard({ user }: UserCardProps) {
+export default function UserCard({ user, disableUserAvatar }: UserCardProps) {
   const navigate = useNavigate();
   const [errorDialogMessage, setErrorDialogMessage] = useState("");
   const [following, setFollowing] = useState(user?.following);
@@ -41,8 +42,8 @@ export default function UserCard({ user }: UserCardProps) {
   return (
     <>
       <article id="user-card" onClick={handleClick}>
-        <UserAvatar size={40}></UserAvatar>
-        <p>{user?.username}</p>
+        {!disableUserAvatar && <UserAvatar imageUrl={user?.avatar} size={40} />}
+        <p>{user?.handle}</p>
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -56,7 +57,7 @@ export default function UserCard({ user }: UserCardProps) {
         >
           {following ? "unfollow" : "follow"}
         </button>
-      </article>{" "}
+      </article>
       <ErrorDialog
         isOpen={!!errorDialogMessage}
         onClose={() => setErrorDialogMessage("")}
