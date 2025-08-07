@@ -63,10 +63,7 @@ export async function unlikePost(postId: string): Promise<Post> {
 
 // Create a new post
 export async function createPost(post: CreatePost): Promise<Post> {
-  const authorId = sessionStorage.getItem("MY_USER_ID");
-  if (!authorId) throw new Error("Not authenticated");
   const formData = new FormData();
-  formData.append("authorId", authorId);
   formData.append("content", post.content);
   formData.append("title", "");
   formData.append("visibility", "public");
