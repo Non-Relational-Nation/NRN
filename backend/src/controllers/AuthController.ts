@@ -78,7 +78,7 @@ export class AuthController {
             email,
             displayName,
             bio: "",
-            avatar: null,
+            avatar: typeof decoded?.picture === "string" ? decoded?.picture : "",
             context
           });
           user = await this.userService.getUserByUsername(username);
