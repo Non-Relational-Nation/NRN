@@ -20,6 +20,7 @@ import {
   Image,
   Video,
 } from "@fedify/fedify";
+import { Actor } from "@fedify/fedify";
 import { MemoryKvStore, InProcessMessageQueue } from "@fedify/fedify";
 import { UserModel } from "./models/userModel.ts";
 import { KeyModel } from "./models/keySchema.ts";
@@ -101,7 +102,7 @@ federation
               mediaType: "image/jpeg",
             })
           : undefined,
-        // following: ctx.getFollowingUri(identifier),
+        following: ctx.getFollowingUri(identifier),
         // outbox: ctx.getOutboxUri(identifier),
       });
     }
@@ -376,6 +377,48 @@ federation
     if (!actor) return 0;
 
     const count = await FollowModel.countDocuments({ following_id: actor._id });
+
+    return count;
+  });
+
+  federation
+  .setFollowingDispatcher(
+    "/users/{identifier}/following",
+    async (ctx, identifier, cursor) => {
+      const user = await UserModel.findOne({ username: identifier });
+      if (!user) return { items: [] };
+
+      const actor = await ActorModel.findOne({ user_id: user._id });
+      if (!actor) return { items: [] };
+
+      const following = await FollowModel.find({ follower_id: actor._id }).sort({
+        created: -1,
+      });
+
+      const followingIds = following.map((f) => f.following_id);
+
+      const followingActors = await ActorModel.find({
+        _id: { $in: followingIds },
+      });
+
+      const items: Person[] = followingActors.map((following) => {
+        return new Person({
+          id: new URL(following.uri),
+          inbox: new URL(following.inbox_url),
+        });
+      });
+
+      return { items };
+    }
+  )
+  .setCounter(async (ctx, identifier) => {
+    const user = await UserModel.findOne({ username: identifier });
+    if (!user) return 0;
+
+    const actor = await ActorModel.findOne({ user_id: user._id });
+    if (!actor) return 0;
+
+    const count = await FollowModel.countDocuments({ follower_id: actor._id });
 
     return count;
   });
