@@ -530,5 +530,15 @@ federation
       nextCursor: posts.length === limit ? (page + 1).toString() : null,
     };
 
+  }).setCounter(async (ctx, identifier) => {
+    const user = await UserModel.findOne({ username: identifier });
+    if (!user) return 0;
+
+    const actor = await ActorModel.findOne({ user_id: user._id });
+    if (!actor) return 0;
+
+    const count = await PostModel.countDocuments({ author_id: actor._id });
+
+    return count;
   });
 export default federation;
