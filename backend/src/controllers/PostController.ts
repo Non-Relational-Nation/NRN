@@ -307,7 +307,7 @@ export class PostController {
             Accept: "application/json",
           },
         });
-        res.json(mapOutboxToPosts(firstPage));
+        res.json(mapOutboxToPosts(await firstPage.json()));
       } else {
         res.json(mapOutboxToPosts(data));
       }
