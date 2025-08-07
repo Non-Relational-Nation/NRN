@@ -1,11 +1,11 @@
 const LOCAL_FE_URL = "http://localhost:5173";
-const HOSTED_FE_URL = "https://dikiudmyn4guv.cloudfront.net";
+const HOSTED_FE_URL = "https://d3m0gyk7rj0vr1.cloudfront.net";
 
 const FE_URL =
   window.location.hostname === "localhost" ? LOCAL_FE_URL : HOSTED_FE_URL;
 
 const LOCAL_API_URL = "http://localhost:3001";
-const HOSTED_API_URL = "https://dikiudmyn4guv.cloudfront.net";
+const HOSTED_API_URL = "https://d3m0gyk7rj0vr1.cloudfront.net";
 
 export const API_URL =
   window.location.hostname === "localhost" ? LOCAL_API_URL : HOSTED_API_URL;

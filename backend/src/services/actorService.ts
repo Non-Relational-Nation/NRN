@@ -24,7 +24,7 @@ export class ActorService {
     }
     let [username, domain] = handle.split("@");
     if (!domain) {
-      domain = "dikiudmyn4guv.cloudfront.net";
+      domain = "d3m0gyk7rj0vr1.cloudfront.net";
     }
     const protocol = domain.includes("localhost") ? "http" : "https";
     domain = domain.includes("localhost") ? "localhost:3001" : domain;

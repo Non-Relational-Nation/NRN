@@ -143,7 +143,7 @@ resource "aws_s3_bucket_cors_configuration" "nrn_bucket_cors" {
     allowed_headers = ["*"]
     allowed_methods = ["GET", "PUT", "POST", "DELETE", "HEAD"]
     allowed_origins = [
-      "https://dikiudmyn4guv.cloudfront.net",
+      "https://d3m0gyk7rj0vr1.cloudfront.net",
       "http://localhost:5173",
       "http://localhost:3000"
     ]
