@@ -537,7 +537,7 @@ federation
     const actor = await ActorModel.findOne({ user_id: user._id });
     if (!actor) return 0;
 
-    const count = await PostModel.countDocuments({ author_id: actor._id });
+    const count = await PostModel.countDocuments({ actor_id: actor._id });
 
     return count;
   });
