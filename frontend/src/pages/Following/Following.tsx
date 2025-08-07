@@ -20,7 +20,7 @@ export default function Following() {
     <Layout loading={isFetching} error={error}>
       <section id="following-container">
         <h2>Following</h2>
-        <UserList users={users} />
+        <UserList users={users} disableUserAvatar={true} />
       </section>
     </Layout>
   );

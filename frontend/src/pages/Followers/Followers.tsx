@@ -20,7 +20,7 @@ export default function Followers() {
     <Layout loading={isFetching} error={error}>
       <section id="followers-container">
         <h2>Followers</h2>
-        <UserList users={users} />
+        <UserList users={users} disableUserAvatar={true} />
       </section>
     </Layout>
   );
