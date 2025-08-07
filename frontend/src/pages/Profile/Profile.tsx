@@ -6,7 +6,7 @@ import type { Post } from "../../models/Post";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { getUsersFeed } from "../../api/posts";
 import type { User } from "../../models/User";
-import { followUser, getUser, unfollowUser } from "../../api/users";
+import { followUser, getUser } from "../../api/users";
 import UserAvatar from "../../components/Users/UserAvatar";
 import { useEffect, useState } from "react";
 import { logout } from "../../util/logout";
@@ -62,17 +62,17 @@ export default function Profile() {
     onError: (error: Error) => setErrorDialogMessage(error.message),
   });
 
-  const unfollowMutation = useMutation({
-    mutationFn: () => unfollowUser(userData?.handle),
-    onSuccess: () => {
-      setFollowing(false);
-      setFollowerCount((prev) => (prev ?? 0) - 1);
-    },
-    onError: (error: Error) => setErrorDialogMessage(error.message),
-  });
+  // const unfollowMutation = useMutation({
+  //   mutationFn: () => unfollowUser(userData?.handle),
+  //   onSuccess: () => {
+  //     setFollowing(false);
+  //     setFollowerCount((prev) => (prev ?? 0) - 1);
+  //   },
+  //   onError: (error: Error) => setErrorDialogMessage(error.message),
+  // });
 
   const handleFollow = () => followMutation.mutate();
-  const handleUnfollow = () => unfollowMutation.mutate();
+  // const handleUnfollow = () => unfollowMutation.mutate();
 
   return (
     <Layout
@@ -107,13 +107,14 @@ export default function Profile() {
               </section>
               {!isMyProfile &&
                 (following ? (
-                  <button
-                    className="button"
-                    id="follow-button"
-                    onClick={handleUnfollow}
-                  >
-                    Unfollow
-                  </button>
+                  // <button
+                  //   className="button"
+                  //   id="follow-button"
+                  //   onClick={handleUnfollow}
+                  // >
+                  //   Unfollow
+                  // </button>
+                  <span>You are following this user</span>
                 ) : (
                   <button
                     className="button"
