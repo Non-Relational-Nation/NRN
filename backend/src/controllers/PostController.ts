@@ -225,6 +225,11 @@ export class PostController {
 
   async getPostsByAuthor(req: Request, res: Response, next: Function): Promise<void> {
     try {
+      const handle = req.params.handle;
+      const ctx = createFederationContextFromExpressReq(req);
+      const author = await ctx.lookupObject(handle);
+      const actor = 
+      console.log("author: ",author)
       const posts = await this.postService.getPostsByAuthor(req.params.authorId, 20, 0);
       res.json(posts);
     } catch (err) {
