@@ -241,12 +241,27 @@ export class PostController {
   async getPostsByAuthor(req: Request, res: Response, next: Function): Promise<void> {
     try {
       const handle = req.params.handle;
+      
+      const author = (await actorService.fetchActorByHandle(handle));
+      console.log("author: ",author);
+
+      if(!author){
+        res.status(404).json({
+          success: false,
+          error: 'Author not found'
+        });
+        return;
+      }
+      
       const ctx = createFederationContextFromExpressReq(req);
-      const author = await ctx.lookupObject(handle);
-      const actor = 
-      console.log("author: ",author)
-      const posts = await this.postService.getPostsByAuthor(req.params.authorId, 20, 0);
-      res.json(posts);
+
+      let [username, domain] = handle.slice(1).split("@");
+      const outboxUrl = ctx.getOutboxUri(username);
+
+      const userPosts =  await fetch(outboxUrl);
+      const data = await userPosts.json();
+
+      res.json(data);
     } catch (err) {
       next(err);
     }

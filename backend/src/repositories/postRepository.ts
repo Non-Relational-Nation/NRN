@@ -23,6 +23,7 @@ export const postRepository: IPostRepository = {
     return doc ? toPost(doc.toObject()) : null;
   },
 
+
   async findByAuthorId(authorId: string, limit = 20, offset = 0): Promise<Post[]> {
     const docs = await PostModel.find({ actor_id: authorId }).skip(offset).limit(limit);
     return docs.map((d: any) => toPost(d.toObject()));
