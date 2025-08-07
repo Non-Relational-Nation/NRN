@@ -5,7 +5,7 @@ import "./styles.css";
 
 interface PostListProps {
   posts: Post[];
-  user: User
+  user?: User
 }
 
 export default function PostList({ posts, user }: PostListProps) {
