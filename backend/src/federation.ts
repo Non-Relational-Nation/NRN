@@ -18,6 +18,7 @@ import {
   Create,
   Like,
   Image,
+  Video,
 } from "@fedify/fedify";
 import { MemoryKvStore, InProcessMessageQueue } from "@fedify/fedify";
 import { UserModel } from "./models/userModel.ts";
@@ -416,13 +417,24 @@ federation.setObjectDispatcher(
       to: PUBLIC_COLLECTION,
       cc: ctx.getFollowersUri(values.identifier),
       content: post.content,
-      attachments: (post.attachment || []).map(
-        (att: any) =>
-          new Image({
+      attachments: (post.attachment || []).map((att: any) => {
+        if (att.mediaType && att.mediaType.startsWith("image/")) {
+          return new Image({
             url: new URL(att.url),
             mediaType: att.mediaType,
-          })
-      ),
+            width: att.width,
+            height: att.height,
+          });
+        } else {
+          return new Video({
+            url: new URL(att.url),
+            mediaType: att.mediaType,
+            width: att.width,
+            height: att.height,
+          });
+          
+        }
+      }),
     });
   }
 );
