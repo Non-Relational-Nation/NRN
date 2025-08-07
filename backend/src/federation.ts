@@ -17,7 +17,10 @@ import {
   PUBLIC_COLLECTION,
   Create,
   Like,
+  Image,
+  Video,
 } from "@fedify/fedify";
+import { Actor } from "@fedify/fedify";
 import { MemoryKvStore, InProcessMessageQueue } from "@fedify/fedify";
 import { UserModel } from "./models/userModel.ts";
 import { KeyModel } from "./models/keySchema.ts";
@@ -26,7 +29,7 @@ import { FollowModel } from "./models/followSchema.ts";
 import { PostModel } from "./models/postModel.ts";
 import mongoose from "mongoose";
 import { LikeModel } from "./models/likeModel.ts";
-import { RedisKvStore,RedisMessageQueue  } from "@fedify/redis";
+import { RedisKvStore, RedisMessageQueue } from "@fedify/redis";
 import { Redis } from "ioredis";
 import { config } from "./config/index.ts";
 import userService from "./services/userService.ts";
@@ -45,11 +48,11 @@ const federation = createFederation({
   origin: config.serverUrl ?? "https://d3m0gyk7rj0vr1.cloudfront.net",
   kv: new RedisKvStore(redis),
   queue: new RedisMessageQueue(
-  () =>
-  new Redis({
-  host: config.databases.redis?.host || "localhost",
-  port: config.databases.redis?.port || 6379,
-  })
+    () =>
+      new Redis({
+        host: config.databases.redis?.host || "localhost",
+        port: config.databases.redis?.port || 6379,
+      })
   ),
 });
 
@@ -98,7 +101,13 @@ federation
         publicKey: keys[0]?.cryptographicKey,
         assertionMethods: keys.map((k) => k.multikey),
         followers: ctx.getFollowersUri(identifier),
-        // following: ctx.getFollowingUri(identifier),
+        icon: user.avatar
+          ? new Image({
+              url: new URL(user.avatar),
+              mediaType: "image/jpeg",
+            })
+          : undefined,
+        following: ctx.getFollowingUri(identifier),
         outbox: ctx.getOutboxUri(identifier),
       });
     }
@@ -281,12 +290,11 @@ federation
 
     const attachments = [];
     for await (const attachment of object.getAttachments()) {
-      
-    attachments.push({
+      attachments.push({
         url: (attachment as any).url.href,
         mediaType: (attachment as any).mediaType,
         width: (attachment as any).width,
-        height: (attachment as any).height
+        height: (attachment as any).height,
       });
     }
 
@@ -378,6 +386,48 @@ federation
     return count;
   });
 
+  federation
+  .setFollowingDispatcher(
+    "/users/{identifier}/following",
+    async (ctx, identifier, cursor) => {
+      const user = await UserModel.findOne({ username: identifier });
+      if (!user) return { items: [] };
+
+      const actor = await ActorModel.findOne({ user_id: user._id });
+      if (!actor) return { items: [] };
+
+      const following = await FollowModel.find({ follower_id: actor._id }).sort({
+        created: -1,
+      });
+
+      const followingIds = following.map((f) => f.following_id);
+
+      const followingActors = await ActorModel.find({
+        _id: { $in: followingIds },
+      });
+
+      const items: Person[] = followingActors.map((following) => {
+        return new Person({
+          id: new URL(following.uri),
+          inbox: new URL(following.inbox_url),
+        });
+      });
+
+      return { items };
+    }
+  )
+  .setCounter(async (ctx, identifier) => {
+    const user = await UserModel.findOne({ username: identifier });
+    if (!user) return 0;
+
+    const actor = await ActorModel.findOne({ user_id: user._id });
+    if (!actor) return 0;
+
+    const count = await FollowModel.countDocuments({ follower_id: actor._id });
+
+    return count;
+  });
+
 federation.setObjectDispatcher(
   Note,
   "/users/{identifier}/posts/{id}",
@@ -421,8 +471,23 @@ federation.setObjectDispatcher(
       to: PUBLIC_COLLECTION,
       cc: ctx.getFollowersUri(values.identifier),
       content: post.content,
-      mediaType: "text/html",
-      url: ctx.getObjectUri(Note, values),
+      attachments: (post.attachment || []).map((att: any) => {
+        if (att.mediaType && att.mediaType.startsWith("image/")) {
+          return new Image({
+            url: new URL(att.url),
+            mediaType: att.mediaType,
+            width: att.width,
+            height: att.height,
+          });
+        } else {
+          return new Video({
+            url: new URL(att.url),
+            mediaType: att.mediaType,
+            width: att.width,
+            height: att.height,
+          });
+        }
+      }),
     });
   }
 );
