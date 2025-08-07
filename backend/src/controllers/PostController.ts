@@ -242,7 +242,7 @@ export class PostController {
     try {
       const handle = req.params.handle;
       
-      const author = await actorService.fetchActorByHandle(handle);
+      const author = (await actorService.fetchActorByHandle(handle));
       console.log("author: ",author);
 
       if(!author){
@@ -252,8 +252,13 @@ export class PostController {
         });
         return;
       }
+      
+      const ctx = createFederationContextFromExpressReq(req);
 
-      const userPosts =  await fetch(author?.outbox);
+      let [username, domain] = handle.slice(1).split("@");
+      const outboxUrl = ctx.getOutboxUri(username);
+
+      const userPosts =  await fetch(outboxUrl);
       const data = await userPosts.json();
 
       res.json(data);
