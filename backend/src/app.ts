@@ -16,7 +16,7 @@ export const createApp = () => {
     cors({
       origin: [
         "http://localhost:5173",
-        "https://dikiudmyn4guv.cloudfront.net",
+        "https://d3m0gyk7rj0vr1.cloudfront.net",
         "http://nrn-alb-grad-group01-dev-1538977457.af-south-1.elb.amazonaws.com",
       ],
       credentials: true,
