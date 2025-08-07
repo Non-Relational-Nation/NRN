@@ -1,8 +1,8 @@
 import type { Types } from "mongoose";
 
 export interface Actor {
-  id: Types.ObjectId;
-  user_id: Types.ObjectId | null;
+  id: string;
+  user_id: string | null;
   uri: URL;
   handle: string;
   name: string | null;

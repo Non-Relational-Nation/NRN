@@ -157,67 +157,6 @@ export class UserController {
       next(err);
     }
   }
-
-  //Added here to avoid confusion with the post in posts routes
-  async addPost(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<Response | void> {
-    try {
-      const username = req.params.username;
-
-      const user = await userService.getUserByUsername(username);
-
-      if (!user) {
-        return res.status(400).json({ error: "User not found" });
-      }
-
-      const actor = await actorService.getActorByUserId(user.id);
-
-      if (!actor) {
-        return res.status(404).json({ error: "Actor profile not found" });
-      }
-
-      const content = req.body.content.toString();
-
-      if (content == null || content.trim() === "") {
-        return res.status(400).json({ error: "Content is required" });
-      }
-
-      const ctx = createFederationContextFromExpressReq(req);
-
-      const post = await new PostService(
-        postRepository,
-        userRepository
-      ).createPost(ctx, actor, username, content);
-
-      if (!post) {
-        return res.status(500).json({ error: "Failed to create a post" });
-      } else {
-        const noteArgs = { identifier: username, id: post.id };
-        const note = await ctx.getObject(Note, noteArgs);
-
-        await ctx.sendActivity(
-          { identifier: username },
-          "followers",
-          new Create({
-            id: new URL("#activity", note?.id ?? undefined),
-            object: note,
-            actors: note?.attributionIds,
-            tos: note?.toIds,
-            ccs: note?.ccIds,
-          })
-        );
-
-        return res
-          .status(201)
-          .json({ postUrl: ctx.getObjectUri(Note, noteArgs).href });
-      }
-    } catch (err) {
-      next(err);
-    }
-  }
 }
 
 export default new UserController();
