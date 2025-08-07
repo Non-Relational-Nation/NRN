@@ -59,11 +59,9 @@ export class PostService {
     ctx: RequestContext<unknown>,
     username: string,
     postData: Partial<CreatePostData>
-  ): Promise<Post | undefined> {
-    const session = await mongoose.startSession();
+  ): Promise<Partial<CreatePostData> | undefined> {
     try {
       let newPost;
-      await session.withTransaction(async () => {
         const escapedContent = he.encode(postData.content ?? "");
 
         // Create post with temporary URI
@@ -74,8 +72,7 @@ export class PostService {
               uri: "https://localhost/",
               content: escapedContent,
             },
-          ],
-          { session }
+          ]
         );
 
         if (!post) {
@@ -94,7 +91,7 @@ export class PostService {
             uri: url,
             url: url,
           },
-          { session, new: true }
+          { new: true }
         );
 
         if (!updatedPost) {
@@ -102,14 +99,11 @@ export class PostService {
         }
 
         newPost = updatedPost;
-      });
 
-      return newPost;
+      return updatedPost;
     } catch (err) {
       console.error("Transaction failed:", err);
       return;
-    } finally {
-      await session.endSession();
     }
   }
 
