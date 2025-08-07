@@ -6,14 +6,11 @@ interface UserListProps {
 }
 
 export default function UserList({ users }: UserListProps) {
-  const filteredUsers = users.filter(
-    (user) => user.id !== sessionStorage.getItem("MY_USER_ID")
-  );
-  return !filteredUsers.length ? (
+  return !users.length ? (
     <section id="no-users-section">No users found</section>
   ) : (
     <div id="users-list">
-      {filteredUsers.map((user, index) => (
+      {users.map((user, index) => (
         <UserCard user={user} key={index}></UserCard>
       ))}
     </div>

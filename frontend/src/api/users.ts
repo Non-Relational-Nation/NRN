@@ -22,13 +22,13 @@ export async function getUser(userHandle: string): Promise<User> {
   return await response.json();
 }
 
-export async function followUser(username?: string): Promise<void> {
-  if (!username) {
-    throw new Error(`User not found`);
+export async function followUser(handle?: string): Promise<void> {
+  if (!handle) {
+    throw new Error(`No user handle provided for follow`);
   }
 
   const response = await apiFetch({
-    path: `/api/users/${username}/following`,
+    path: `/api/users/${handle}/following`,
     method: "POST",
   });
   await handleError(response);
@@ -36,12 +36,12 @@ export async function followUser(username?: string): Promise<void> {
   return await response.json();
 }
 
-export async function unfollowUser(userId?: string): Promise<void> {
-  if (!userId) {
-    throw new Error(`No user Id provided`);
+export async function unfollowUser(handle?: string): Promise<void> {
+  if (!handle) {
+    throw new Error(`No user handle provided for unfollow`);
   }
   const response = await apiFetch({
-    path: `/api/users/${userId}/following`,
+    path: `/api/users/${handle}/following`,
     method: "DELETE",
   });
   await handleError(response);
