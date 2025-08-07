@@ -26,7 +26,7 @@ import { FollowModel } from "./models/followSchema.ts";
 import { PostModel } from "./models/postModel.ts";
 import mongoose from "mongoose";
 import { LikeModel } from "./models/likeModel.ts";
-import { RedisKvStore,RedisMessageQueue  } from "@fedify/redis";
+import { RedisKvStore, RedisMessageQueue } from "@fedify/redis";
 import { Redis } from "ioredis";
 import { config } from "./config/index.ts";
 
@@ -40,11 +40,11 @@ const federation = createFederation({
   origin: config.serverUrl ?? "https://d3m0gyk7rj0vr1.cloudfront.net",
   kv: new RedisKvStore(redis),
   queue: new RedisMessageQueue(
-  () =>
-  new Redis({
-  host: config.databases.redis?.host || "localhost",
-  port: config.databases.redis?.port || 6379,
-  })
+    () =>
+      new Redis({
+        host: config.databases.redis?.host || "localhost",
+        port: config.databases.redis?.port || 6379,
+      })
   ),
 });
 
@@ -276,12 +276,11 @@ federation
 
     const attachments = [];
     for await (const attachment of object.getAttachments()) {
-      
-    attachments.push({
+      attachments.push({
         url: (attachment as any).url.href,
         mediaType: (attachment as any).mediaType,
         width: (attachment as any).width,
-        height: (attachment as any).height
+        height: (attachment as any).height,
       });
     }
 
@@ -418,6 +417,7 @@ federation.setObjectDispatcher(
       content: post.content,
       mediaType: "text/html",
       url: ctx.getObjectUri(Note, values),
+      attachments: post.attachment,
     });
   }
 );
