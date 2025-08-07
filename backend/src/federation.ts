@@ -95,6 +95,8 @@ federation
         publicKey: keys[0]?.cryptographicKey,
         assertionMethods: keys.map((k) => k.multikey),
         followers: ctx.getFollowersUri(identifier),
+        icon: user.avatar ? new URL(user.avatar) : null,
+        image: user.avatar ? new URL(user.avatar) : null,
         // following: ctx.getFollowingUri(identifier),
         // outbox: ctx.getOutboxUri(identifier),
       });
