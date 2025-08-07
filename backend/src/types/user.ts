@@ -1,7 +1,7 @@
 import type { Types } from "mongoose";
 
 export interface User {
-  id: Types.ObjectId;
+  id: string;
   username: string;
   email: string;
   displayName: string;
@@ -13,7 +13,6 @@ export interface User {
   createdAt: Date;
   updatedAt: Date;
 }
-
 
 export interface UserResponse {
   id: string;

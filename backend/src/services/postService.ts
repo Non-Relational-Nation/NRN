@@ -1,17 +1,17 @@
-import { Post, CreatePostData, UpdatePostData } from '../types/post.js';
-import { IPostRepository } from '../repositories/interfaces/IPostRepository.js';
-import { IUserRepository } from '../repositories/interfaces/IUserRepository.js';
-import { Note, type RequestContext } from '@fedify/fedify';
-import type { Actor } from '@/types/actor.ts';
-import mongoose, { type Types } from 'mongoose';
-import he from 'he';
-import { PostModel } from '@/models/postModel.ts';
-import { actorRepository } from '@/repositories/actorRepository.ts';
+import { Post, CreatePostData, UpdatePostData } from "../types/post.js";
+import { IPostRepository } from "../repositories/interfaces/IPostRepository.js";
+import { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
+import { Note, type RequestContext } from "@fedify/fedify";
+import type { Actor } from "@/types/actor.ts";
+import mongoose, { type Types } from "mongoose";
+import he from "he";
+import { PostModel } from "@/models/postModel.ts";
+import { actorRepository } from "@/repositories/actorRepository.ts";
 
 // Define PostWithAuthor type if not already defined elsewhere
 export type PostWithAuthor = Post & {
   author: {
-    id: Types.ObjectId;
+    id: string;
     username: string;
     displayName?: string;
     avatar?: string;
@@ -105,7 +105,6 @@ export class PostService {
       });
 
       return newPost;
-
     } catch (err) {
       console.error("Transaction failed:", err);
       return;
@@ -121,7 +120,7 @@ export class PostService {
   async getPostWithAuthor(id: string): Promise<PostWithAuthor | null> {
     const post = await this.postRepository.findById(id);
     if (!post) return null;
-    
+
     const author = await this.userRepository.findById(post.actor_id!);
 
     if (!author) return null;
@@ -132,8 +131,8 @@ export class PostService {
         id: author.id,
         username: author.username,
         displayName: author.displayName,
-        avatar: author.avatar
-      }
+        avatar: author.avatar,
+      },
     };
   }
 
@@ -147,7 +146,7 @@ export class PostService {
       throw new Error("Author not found");
     }
 
-    console.log(author)
+    console.log(author);
     return this.postRepository.findByAuthorId(author.id, limit, offset);
   }
 
@@ -161,7 +160,7 @@ export class PostService {
       throw new Error("Post not found");
     }
 
-    if (post.authorId !== authorId) {
+    if (post.actor_id !== authorId) {
       throw new Error("You can only update your own posts");
     }
 
@@ -182,7 +181,7 @@ export class PostService {
       throw new Error("Post not found");
     }
 
-    if (post.authorId !== authorId) {
+    if (post.actor_id !== authorId) {
       throw new Error("You can only delete your own posts");
     }
 
@@ -238,10 +237,10 @@ export class PostService {
   }
 
   // Like a post
-  async likePost(actorId: string, postId: string, ) {
-    return await this.postRepository.likePost(actorId, postId)
+  async likePost(actorId: string, postId: string) {
+    return await this.postRepository.likePost(actorId, postId);
   }
- 
+
   async getLikedPost(actorId: string, postId: string) {
     return this.postRepository.findLikedPost(actorId, postId);
   }

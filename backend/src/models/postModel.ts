@@ -1,10 +1,9 @@
 import type { CreatePostData } from '@/types/post.ts';
 import { Schema, Types, model } from 'mongoose';
 
-const postSchema = new Schema<CreatePostData>({
+const postSchema = new Schema<Partial<CreatePostData>>({
   actor_id: { 
     type: Schema.Types.ObjectId,
-    ref: "Actor",
     required: true,
   },
   uri: {

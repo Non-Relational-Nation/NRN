@@ -7,6 +7,7 @@ import { Create, Like, Note } from '@fedify/fedify';
 import { createFederationContextFromExpressReq } from '@/federation/federationContext.ts';
 import userService from '@/services/userService.ts';
 import { imageSize } from 'image-size';
+import type { noteArgs } from '@/types/noteArgs.ts';
 
 export class PostController {
   constructor(private postService: PostService) {
@@ -85,7 +86,7 @@ export class PostController {
         res.status(500).json({ error: "Failed to create a post" });
         return;
       } else {
-        const noteArgs = { identifier: user.username, id: post.id };
+        const noteArgs: Record<string, string> = { identifier: user.username, id: post.id };
         const note = await ctx.getObject(Note, noteArgs);
         
         await ctx.sendActivity(
@@ -289,7 +290,7 @@ export class PostController {
       // Fetch author info for each post
       const userRepo = this.postService.getUserRepository();
       const postsWithAuthor = await Promise.all(posts.map(async (post) => {
-        const author = await userRepo.findById(post.authorId);
+        const author = await userRepo.findById(post.actor_id);
         return {
           ...post,
           author: author ? { id: author.id, username: author.username, displayName: author.displayName, avatar: author.avatar } : undefined
