@@ -472,7 +472,7 @@ federation.setObjectDispatcher(
       attribution: ctx.getActorUri(values.identifier),
       to: PUBLIC_COLLECTION,
       cc: ctx.getFollowersUri(values.identifier),
-      published: post.createdAt,
+      published: post.created_at,
       content: post.content,
       attachments: (post.attachment || []).map((att: any) => {
         if (att.mediaType && att.mediaType.toUpperCase().startsWith("IMAGE/")) {
@@ -518,7 +518,7 @@ federation
           id: new URL(post.uri),
           content: post.content,
           to: PUBLIC_COLLECTION,
-          published: post.createdAt,
+          published: post.created_at,
           attribution: ctx.getActorUri(identifier),
           attachments: (post.attachment || []).map((att: any) => {
             if (att.mediaType && att.mediaType.toUpperCase().startsWith("IMAGE/")) {
