@@ -91,7 +91,7 @@ export class PostController {
         res.status(500).json({ error: "Failed to create a post" });
         return;
       } else {
-        const noteArgs: Record<string, string> = { identifier: user.username, id: post.id };
+        const noteArgs: Record<string, string> = { identifier: user.username, id: post.id! };
         const note = await ctx.getObject(Note, noteArgs);
         
         await ctx.sendActivity(
