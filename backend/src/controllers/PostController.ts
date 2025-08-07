@@ -8,16 +8,22 @@ import { createFederationContextFromExpressReq } from '@/federation/federationCo
 import userService from '@/services/userService.ts';
 import { imageSize } from 'image-size';
 import type { noteArgs } from '@/types/noteArgs.ts';
+import type { AuthenticatedRequest } from '@/types/common.ts';
 
 export class PostController {
   constructor(private postService: PostService) {
     this.postService = postService
   }
 
-  async createPost(req: Request, res: Response): Promise<void> {
+  async createPost(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
+      if (!req?.user?.email) {
+        res.status(401).send("No username for logged in user");
+        return
+      }
+      const user = await userService.getUserByEmail(req?.user?.email);
       // Validate authorId and log more details for debugging
-      let authorId = req.body.authorId;
+      let authorId = user?.id;
       // Always prefer user_id if present and valid (for actor->user mapping)
       if (req.body.user_id && typeof req.body.user_id === 'string' && req.body.user_id.length === 24) {
         if (authorId !== req.body.user_id) {
@@ -28,7 +34,6 @@ export class PostController {
 
       const ctx = createFederationContextFromExpressReq(req);
 
-      const user = await userService.getUserById(authorId);
 
       if (!user) {
         res.status(400).json({ error: "User not found" });
