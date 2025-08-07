@@ -12,7 +12,7 @@ import type { User } from "../../models/User";
 
 interface PostCardProps {
   post: Post;
-  user: User
+  user?: User
 }
 
 export default function PostCard({ post, user }: PostCardProps) {
@@ -54,7 +54,7 @@ export default function PostCard({ post, user }: PostCardProps) {
           id="profile-button"
           onClick={() => navigate(`/profile/${post.author?.id}`)}
         >
-          <UserAvatar imageUrl={user.avatar} size={20} />
+          <UserAvatar imageUrl={user?.avatar} size={20} />
         
           {user?.displayName ||
             user?.username ||
