@@ -67,6 +67,7 @@ type attach = {
 };
 
 export interface CreatePostData extends Document {
+  id?: string;
   uri?: string;
   actor_id: string;
   content: string;
