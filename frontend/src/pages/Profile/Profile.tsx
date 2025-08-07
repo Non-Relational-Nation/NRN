@@ -28,6 +28,7 @@ export default function Profile() {
     queryFn: () => getUser(user || "1"),
     retry: false,
     enabled: !!user,
+    gcTime: 0,
   });
 
   const [following, setFollowing] = useState(userData?.following);
@@ -48,6 +49,8 @@ export default function Profile() {
     queryKey: ["feed", user],
     queryFn: () => getUsersFeed(user || "1"),
     retry: false,
+    enabled: !!user,
+    gcTime: 0,
   });
 
   const followMutation = useMutation({

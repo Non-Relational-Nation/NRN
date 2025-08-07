@@ -24,6 +24,7 @@ export interface UserResponse {
   followingCount: number;
   postsCount: number;
   handle: string;
+  following?: boolean;
 }
 export interface UserPreferences {
   notifications: {
