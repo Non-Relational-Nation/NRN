@@ -10,7 +10,7 @@ interface AuthenticatedRequest extends Request {
   user?: AuthUser;
 }
 
-const unauthedEndpoints: string[] = ["/health", "/api/auth/login", "/api/health"];
+const unauthedEndpoints: string[] = ["/health", "/api/auth/login", "/api/health", "/users", "/.well-known"];
 
 export const authMiddleware: RequestHandler  = (
   req: AuthenticatedRequest,
@@ -21,7 +21,7 @@ export const authMiddleware: RequestHandler  = (
   const path = req.path || req.url;
   console.log('[AuthMiddleware] Checking path:', path, 'against unauthed endpoints:', unauthedEndpoints);
   
-  if (unauthedEndpoints.some(endpoint => path.includes(endpoint))) {
+  if (unauthedEndpoints.some(endpoint => path.startsWith(endpoint))) {
     console.log('[AuthMiddleware] Path is unauthed, skipping auth');
     return next();
   }

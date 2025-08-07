@@ -32,12 +32,18 @@ export async function handleOAuthCallback() {
         return response.json();
       })
       .then((data) => {
-        sessionStorage.setItem("JWT_TOKEN", data.id_token);
+        console.log(data)
+        sessionStorage.setItem("JWT_TOKEN", data?.id_token);
         // Store the real MongoDB user id returned by the backend
-        if (data.user && (data.user._id || data.user.id)) {
-          sessionStorage.setItem("MY_USER_ID", data.user._id || data.user.id);
+        if (data?.handle) {
+          sessionStorage.setItem("MY_HANDLE", data?.handle);
         } else {
-          throw new Error("No user id returned from backend");
+          throw new Error("No handle returned from backend");
+        }
+        if (data?.user?.username) {
+          sessionStorage.setItem("MY_USERNAME", data?.user?.username);
+        } else {
+          throw new Error("No username returned from backend");
         }
       });
   } else {

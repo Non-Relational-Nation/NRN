@@ -14,8 +14,8 @@ import ErrorDialog from "../../components/Dialogs/ErrorDialog";
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { user = sessionStorage.getItem("MY_USER_ID") } = useParams();
-  const isMyProfile = user === sessionStorage.getItem("MY_USER_ID");
+  const { user = sessionStorage.getItem("MY_HANDLE") } = useParams();
+  const isMyProfile = user === sessionStorage.getItem("MY_HANDLE");
 
   const [errorDialogMessage, setErrorDialogMessage] = useState("");
 
@@ -51,7 +51,7 @@ export default function Profile() {
   });
 
   const followMutation = useMutation({
-    mutationFn: () => followUser(userData?.id),
+    mutationFn: () => followUser(userData?.username),
     onSuccess: () => {
       setFollowing(true);
       setFollowerCount((prev) => (prev ?? 0) + 1);
@@ -81,19 +81,20 @@ export default function Profile() {
           <header id="profile-header">
             <UserAvatar size={40} imageUrl={userData?.avatar} />
             <h3 className="info-text">{userData?.displayName}</h3>
-            <p className="info-text">@{userData?.username}</p>
-            {userData?.email && (
-              <p className="info-text" id="email-text">
-                {userData.email}
-              </p>
-            )}
+            <p className="info-text">@{userData?.handle}</p>
             {userData?.bio && <p className="info-text">{userData.bio}</p>}
             <section id="follower-container">
               <section id="follow-counts">
-                <span>
+                <span
+                  onClick={() => isMyProfile && navigate(`/followers`)}
+                  className={isMyProfile ? "button" : ""}
+                >
                   Followers: <b>{followerCount}</b>
                 </span>
-                <span>
+                <span
+                  onClick={() => isMyProfile && navigate(`/following`)}
+                  className={isMyProfile ? "button" : ""}
+                >
                   Following: <b>{userData?.followingCount}</b>
                 </span>
                 <span>
@@ -120,13 +121,13 @@ export default function Profile() {
                 ))}
               {isMyProfile && (
                 <>
-                  <button
+                  {/* <button
                     className="button"
                     id="edit-profile-button"
                     onClick={() => navigate("/profile/edit")}
                   >
                     Edit Profile
-                  </button>
+                  </button> */}
                   <button
                     className="button"
                     id="logout-button"
