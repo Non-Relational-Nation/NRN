@@ -31,7 +31,7 @@ export async function getUsersFeed(userHandle: string): Promise<Post[]> {
   await handleError(response);
 
   const data = await response.json();
-  return data.orderedItems || [];
+  return data || [];
 }
 
 // Like a post (if endpoint exists)
