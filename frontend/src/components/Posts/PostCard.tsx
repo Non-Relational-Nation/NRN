@@ -73,7 +73,7 @@ export default function PostCard({ post }: PostCardProps) {
           <div className="post-media-column">
             {post.media.map((item, index) => (
               <div key={index} className="media-item">
-                {item.type === "image" ? (
+                {item.type.toUpperCase() === "IMAGE" ? (
                   <img
                     src={item.url}
                     className="media-image"
