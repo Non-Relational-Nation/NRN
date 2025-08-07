@@ -95,8 +95,12 @@ federation
         publicKey: keys[0]?.cryptographicKey,
         assertionMethods: keys.map((k) => k.multikey),
         followers: ctx.getFollowersUri(identifier),
-        icon: user.avatar ? new URL(user.avatar) : null,
-        image: user.avatar ? new URL(user.avatar) : null,
+        icon: user.avatar
+          ? new Image({
+              url: new URL(user.avatar),
+              mediaType: "image/jpeg",
+            })
+          : undefined,
         // following: ctx.getFollowingUri(identifier),
         // outbox: ctx.getOutboxUri(identifier),
       });
@@ -434,7 +438,6 @@ federation.setObjectDispatcher(
             width: att.width,
             height: att.height,
           });
-          
         }
       }),
     });
