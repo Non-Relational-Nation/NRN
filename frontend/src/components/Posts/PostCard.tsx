@@ -1,11 +1,9 @@
 import type { Post } from "../../models/Post";
 import "./styles.css";
-import heart from "../../assets/heart.svg";
-import redHeart from "../../assets/red-heart.svg";
+// import heart from "../../assets/heart.svg";
+// import redHeart from "../../assets/red-heart.svg";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation } from "@tanstack/react-query";
-import { likePost, unlikePost } from "../../api/posts";
 import ErrorDialog from "../Dialogs/ErrorDialog";
 
 interface PostCardProps {
@@ -14,34 +12,34 @@ interface PostCardProps {
 
 export default function PostCard({ post }: PostCardProps) {
   const navigate = useNavigate();
-  const [isLiked, setIsLiked] = useState(post.isLiked);
-  const [likesCount, setLikesCount] = useState(post.likesCount);
+  // const [isLiked, setIsLiked] = useState(post.isLiked);
+  // const [likesCount, setLikesCount] = useState(post.likesCount);
   const [errorDialogMessage, setErrorDialogMessage] = useState("");
 
-  const likeMutation = useMutation({
-    mutationFn: () => likePost(post.id),
-    onSuccess: () => {
-      setIsLiked(true);
-      setLikesCount((prev) => prev + 1);
-    },
-    onError: (error: Error) => {
-      setErrorDialogMessage(error.message);
-    },
-  });
+  // const likeMutation = useMutation({
+  //   mutationFn: () => likePost(post.id),
+  //   onSuccess: () => {
+  //     setIsLiked(true);
+  //     setLikesCount((prev) => prev + 1);
+  //   },
+  //   onError: (error: Error) => {
+  //     setErrorDialogMessage(error.message);
+  //   },
+  // });
 
-  const unlikeMutation = useMutation({
-    mutationFn: () => unlikePost(post.id),
-    onSuccess: () => {
-      setIsLiked(false);
-      setLikesCount((prev) => prev - 1);
-    },
-    onError: (error: Error) => {
-      setErrorDialogMessage(error.message);
-    },
-  });
+  // const unlikeMutation = useMutation({
+  //   mutationFn: () => unlikePost(post.id),
+  //   onSuccess: () => {
+  //     setIsLiked(false);
+  //     setLikesCount((prev) => prev - 1);
+  //   },
+  //   onError: (error: Error) => {
+  //     setErrorDialogMessage(error.message);
+  //   },
+  // });
 
-  const handleLike = () => likeMutation.mutate();
-  const handleUnlike = () => unlikeMutation.mutate();
+  // const handleLike = () => likeMutation.mutate();
+  // const handleUnlike = () => unlikeMutation.mutate();
 
   return (
     <article id="post">
@@ -93,7 +91,7 @@ export default function PostCard({ post }: PostCardProps) {
           </div>
         ) : null}
       </section>
-      <hr />
+      {/* <hr />
       <footer id="post-footer">
         {isLiked ? (
           <img
@@ -116,7 +114,7 @@ export default function PostCard({ post }: PostCardProps) {
         )}
 
         <span>{likesCount ?? 0}</span>
-      </footer>
+      </footer> */}
       <ErrorDialog
         isOpen={!!errorDialogMessage}
         onClose={() => setErrorDialogMessage("")}
