@@ -158,7 +158,7 @@ jobs:
           echo "NODE_ENV=production" > .env
           echo "PORT=3001" >> .env
           echo "HOST=0.0.0.0" >> .env
-          echo "FRONTEND_URL=https://d3m0gyk7rj0vr1.cloudfront.net/" >> .env
+          echo "FRONTEND_URL=https://d3m0gyk7rj0vr1.cloudfront.net" >> .env
           echo "MONGODB_HOST=localhost" >> .env
           echo "MONGODB_PORT=27017" >> .env
           echo "MONGODB_DATABASE=nrn_db" >> .env
