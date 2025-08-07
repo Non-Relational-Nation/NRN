@@ -253,10 +253,15 @@ export class PostController {
         return;
       }
       
-      const ctx = createFederationContextFromExpressReq(req);
+      const outboxUrl = author?.outbox;
 
-      let [username, domain] = handle.slice(1).split("@");
-      const outboxUrl = ctx.getOutboxUri(username);
+      if (!outboxUrl) {
+        res.status(201).json({
+          success: true,
+          data: []
+        });
+        return;
+      }
 
       const userPosts =  await fetch(outboxUrl);
       const data = await userPosts.json();

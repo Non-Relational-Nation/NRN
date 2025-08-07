@@ -15,7 +15,7 @@ export class ActorService {
     return this.actorRepository.findById(actorId);
   };
 
-  async fetchActorByHandle(handle: string): Promise<Actor | null> {
+  async fetchActorByHandle(handle: string): Promise<any | null> {
     if (handle.startsWith("@")) {
       handle = handle.slice(1);
     }
