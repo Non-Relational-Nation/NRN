@@ -76,6 +76,7 @@ export default function Profile() {
       loading={isUserFeedLoading || isUserLoading}
       error={userFeedError || userError}
     >
+      
       <section id="profile-container">
         <section id="profile-header-container">
           <header id="profile-header">
