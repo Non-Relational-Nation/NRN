@@ -1,39 +1,45 @@
-import { Request, Response, type NextFunction } from 'express';
-import { PostService } from '../services/postService.js';
-import { CreatePostData, UpdatePostData, PostType } from '../types/post.js';
+import { Request, Response, type NextFunction } from "express";
+import { PostService } from "../services/postService.js";
+import { CreatePostData, UpdatePostData, PostType } from "../types/post.js";
 import { uploadFileToS3 } from "../util/s3Upload.ts";
-import actorService from '@/services/actorService.ts';
-import { Create, Like, Note } from '@fedify/fedify';
-import { createFederationContextFromExpressReq } from '@/federation/federationContext.ts';
-import userService from '@/services/userService.ts';
-import { imageSize } from 'image-size';
-import type { noteArgs } from '@/types/noteArgs.ts';
-import type { AuthenticatedRequest } from '@/types/common.ts';
+import actorService from "@/services/actorService.ts";
+import { Create, Like, Note } from "@fedify/fedify";
+import { createFederationContextFromExpressReq } from "@/federation/federationContext.ts";
+import userService from "@/services/userService.ts";
+import { imageSize } from "image-size";
+import type { noteArgs } from "@/types/noteArgs.ts";
+import type { AuthenticatedRequest } from "@/types/common.ts";
 
 export class PostController {
   constructor(private postService: PostService) {
-    this.postService = postService
+    this.postService = postService;
   }
 
   async createPost(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req?.user?.email) {
         res.status(401).send("No username for logged in user");
-        return
+        return;
       }
       const user = await userService.getUserByEmail(req?.user?.email);
       // Validate authorId and log more details for debugging
       let authorId = user?.id;
       // Always prefer user_id if present and valid (for actor->user mapping)
-      if (req.body.user_id && typeof req.body.user_id === 'string' && req.body.user_id.length === 24) {
+      if (
+        req.body.user_id &&
+        typeof req.body.user_id === "string" &&
+        req.body.user_id.length === 24
+      ) {
         if (authorId !== req.body.user_id) {
-          console.warn('Overriding authorId with user_id from body:', req.body.user_id);
+          console.warn(
+            "Overriding authorId with user_id from body:",
+            req.body.user_id
+          );
         }
         authorId = req.body.user_id;
       }
 
       const ctx = createFederationContextFromExpressReq(req);
-
 
       if (!user) {
         res.status(400).json({ error: "User not found" });
@@ -51,12 +57,19 @@ export class PostController {
       let files: any[] = [];
       if (Array.isArray((req as any).files)) {
         files = (req as any).files;
-      } else if (req.files && typeof req.files === 'object') {
+      } else if (req.files && typeof req.files === "object") {
         // Multer can also provide files as an object (when using .fields)
         files = Object.values(req.files).flat();
       }
       // Debugging: log file info
-      console.log('Received files:', files.map(f => ({ originalname: f.originalname, mimetype: f.mimetype, size: f.size })));
+      console.log(
+        "Received files:",
+        files.map((f) => ({
+          originalname: f.originalname,
+          mimetype: f.mimetype,
+          size: f.size,
+        }))
+      );
       let media: any[] = [];
       if (files.length > 0) {
         media = await Promise.all(
@@ -93,16 +106,23 @@ export class PostController {
       };
 
       // Debugging: log postData
-      console.log('Creating post with data:', postData);
-      const post = await this.postService.createPost(ctx, user.username, postData);
+      console.log("Creating post with data:", postData);
+      const post = await this.postService.createPost(
+        ctx,
+        user.username,
+        postData
+      );
 
       if (!post) {
         res.status(500).json({ error: "Failed to create a post" });
         return;
       } else {
-        const noteArgs: Record<string, string> = { identifier: user.username, id: post.id! };
+        const noteArgs: Record<string, string> = {
+          identifier: user.username,
+          id: post.id!,
+        };
         const note = await ctx.getObject(Note, noteArgs);
-        
+
         await ctx.sendActivity(
           { identifier: user.username },
           "followers",
@@ -115,24 +135,24 @@ export class PostController {
           })
         );
 
-      res.status(201).json({
-        success: true,
-        message: 'Post created successfully',
-        data: post
-      });
-    } 
-  } catch (error) {
-      console.error('Error in createPost:', error);
+        res.status(201).json({
+          success: true,
+          message: "Post created successfully",
+          data: post,
+        });
+      }
+    } catch (error) {
+      console.error("Error in createPost:", error);
       if (error instanceof Error) {
         res.status(400).json({
           success: false,
-          error: error.message
+          error: error.message,
         });
         return;
       }
       res.status(500).json({
         success: false,
-        error: 'Failed to create post'
+        error: "Failed to create post",
       });
     }
   }
@@ -159,38 +179,38 @@ export class PostController {
       if (!authorId) {
         res.status(401).json({
           success: false,
-          error: 'Authentication required'
+          error: "Authentication required",
         });
         return;
       }
 
       const post = await this.postService.updatePost(id, updateData, authorId);
-      
+
       if (!post) {
         res.status(404).json({
           success: false,
-          error: 'Post not found'
+          error: "Post not found",
         });
         return;
       }
-      
+
       res.json({
         success: true,
-        message: 'Post updated successfully',
-        data: post
+        message: "Post updated successfully",
+        data: post,
       });
     } catch (error) {
       if (error instanceof Error) {
         res.status(400).json({
           success: false,
-          error: error.message
+          error: error.message,
         });
         return;
       }
-      
+
       res.status(500).json({
         success: false,
-        error: 'Failed to update post'
+        error: "Failed to update post",
       });
     }
   }
@@ -203,70 +223,94 @@ export class PostController {
       if (!authorId) {
         res.status(401).json({
           success: false,
-          error: 'Authentication required'
+          error: "Authentication required",
         });
         return;
       }
 
       const deleted = await this.postService.deletePost(id, authorId);
-      
+
       if (!deleted) {
         res.status(404).json({
           success: false,
-          error: 'Post not found'
+          error: "Post not found",
         });
         return;
       }
-      
+
       res.json({
         success: true,
-        message: 'Post deleted successfully'
+        message: "Post deleted successfully",
       });
     } catch (error) {
       if (error instanceof Error) {
         res.status(400).json({
           success: false,
-          error: error.message
+          error: error.message,
         });
         return;
       }
-      
+
       res.status(500).json({
         success: false,
-        error: 'Failed to delete post'
+        error: "Failed to delete post",
       });
     }
   }
 
-  async getPostsByAuthor(req: Request, res: Response, next: Function): Promise<void> {
+  async getPostsByAuthor(
+    req: Request,
+    res: Response,
+    next: Function
+  ): Promise<void> {
     try {
       const handle = req.params.handle;
-      
-      const author = (await actorService.fetchActorByHandle(handle));
-      console.log("author: ",author);
 
-      if(!author){
+      const author = await actorService.fetchActorByHandle(handle);
+      console.log("author: ", author);
+
+      if (!author) {
         res.status(404).json({
           success: false,
-          error: 'Author not found'
+          error: "Author not found",
         });
         return;
       }
-      
+
       const outboxUrl = author?.outbox;
 
       if (!outboxUrl) {
         res.status(201).json({
           success: true,
-          data: []
+          data: [],
         });
         return;
       }
 
-      const userPosts =  await fetch(outboxUrl);
+      const userPosts = await fetch(outboxUrl, {
+        headers: {
+          Accept: "application/json",
+        },
+      });
       const data = await userPosts.json();
+      if (!data) {
+        res.status(404).json({
+          success: false,
+          error: "No posts found for this author",
+        });
+        return;
+      }
 
-      res.json(data);
+      if (data?.first) {
+        const firstPage = await fetch(outboxUrl, {
+          headers: {
+            Accept: "application/json",
+          },
+        });
+        res.json(firstPage);
+      } else {
+        res.json(data);
+      }
     } catch (err) {
       next(err);
     }
@@ -276,18 +320,20 @@ export class PostController {
     try {
       const { q: query } = req.query;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
-      const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
-      
-      if (!query || typeof query !== 'string') {
+      const offset = req.query.offset
+        ? parseInt(req.query.offset as string)
+        : 0;
+
+      if (!query || typeof query !== "string") {
         res.status(400).json({
           success: false,
-          error: 'Search query is required'
+          error: "Search query is required",
         });
         return;
       }
 
       const posts = await this.postService.searchPosts(query, limit, offset);
-      
+
       res.json({
         success: true,
         data: {
@@ -296,40 +342,55 @@ export class PostController {
           pagination: {
             limit,
             offset,
-            total: posts.length
-          }
-        }
+            total: posts.length,
+          },
+        },
       });
     } catch (error) {
       if (error instanceof Error) {
         res.status(400).json({
           success: false,
-          error: error.message
+          error: error.message,
         });
         return;
       }
-      
+
       res.status(500).json({
         success: false,
-        error: 'Failed to search posts'
+        error: "Failed to search posts",
       });
     }
   }
 
-  async getPublicPosts(req: Request, res: Response, next: Function): Promise<void> {
+  async getPublicPosts(
+    req: Request,
+    res: Response,
+    next: Function
+  ): Promise<void> {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
-      const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
+      const offset = req.query.offset
+        ? parseInt(req.query.offset as string)
+        : 0;
       const posts = await this.postService.getPublicPosts(limit, offset);
       // Fetch author info for each post
       const userRepo = this.postService.getUserRepository();
-      const postsWithAuthor = await Promise.all(posts.map(async (post) => {
-        const author = await userRepo.findById(post.actor_id);
-        return {
-          ...post,
-          author: author ? { id: author.id, username: author.username, displayName: author.displayName, avatar: author.avatar } : undefined
-        };
-      }));
+      const postsWithAuthor = await Promise.all(
+        posts.map(async (post) => {
+          const author = await userRepo.findById(post.actor_id);
+          return {
+            ...post,
+            author: author
+              ? {
+                  id: author.id,
+                  username: author.username,
+                  displayName: author.displayName,
+                  avatar: author.avatar,
+                }
+              : undefined,
+          };
+        })
+      );
       res.json({
         success: true,
         data: {
@@ -337,9 +398,9 @@ export class PostController {
           pagination: {
             limit,
             offset,
-            total: postsWithAuthor.length
-          }
-        }
+            total: postsWithAuthor.length,
+          },
+        },
       });
     } catch (err) {
       next(err);
@@ -350,18 +411,24 @@ export class PostController {
     try {
       const userId = req.body.userId; // In real app, get from auth middleware
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
-      const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
-      
+      const offset = req.query.offset
+        ? parseInt(req.query.offset as string)
+        : 0;
+
       if (!userId) {
         res.status(401).json({
           success: false,
-          error: 'Authentication required'
+          error: "Authentication required",
         });
         return;
       }
 
-      const posts = await this.postService.getFeedForUser(userId, limit, offset);
-      
+      const posts = await this.postService.getFeedForUser(
+        userId,
+        limit,
+        offset
+      );
+
       res.json({
         success: true,
         data: {
@@ -369,87 +436,95 @@ export class PostController {
           pagination: {
             limit,
             offset,
-            total: posts.length
-          }
-        }
+            total: posts.length,
+          },
+        },
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        error: 'Failed to get feed'
+        error: "Failed to get feed",
       });
     }
   }
   // Like a post
-  async likePost(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async likePost(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const { id } = req.params;
       const userId = req.body.userId;
 
-      if (!userId) {res.status(401).json({ message: "Unauthorized" })
+      if (!userId) {
+        res.status(401).json({ message: "Unauthorized" });
         return;
       }
 
       const user = await userService.getUserById(userId);
 
-      if (!user){
+      if (!user) {
         res.status(404).send("User not found");
         return;
       }
 
       const post = await this.postService.getPostById(id);
 
-      if (!post){
+      if (!post) {
         res.status(404).send("Post not found");
         return;
       }
 
-      const liker = await actorService.getActorByUserId(userId)
+      const liker = await actorService.getActorByUserId(userId);
 
       if (!liker) {
-         res.status(404).json({ message: "Actor not found" });
+        res.status(404).json({ message: "Actor not found" });
         return;
       }
 
-      const existingPostLike = await this.postService.getLikedPost(liker.id, post.id);
+      const existingPostLike = await this.postService.getLikedPost(
+        liker.id,
+        post.id
+      );
 
-      if(existingPostLike){
+      if (existingPostLike) {
         return;
       }
-      
-    // Send federated Like activity
-    const like = new Like({
-      id: new URL(`#like-${liker.id}-${post.id}`, post.uri), // unique
-      actor: liker.uri,
-      object: new URL(post.uri),
-    });
 
-    const authorActor = await actorService.getActorById(post.actor_id);
+      // Send federated Like activity
+      const like = new Like({
+        id: new URL(`#like-${liker.id}-${post.id}`, post.uri), // unique
+        actor: liker.uri,
+        object: new URL(post.uri),
+      });
 
-    if (!authorActor) {
-         res.status(404).json({ message: "Post author not found" });
+      const authorActor = await actorService.getActorById(post.actor_id);
+
+      if (!authorActor) {
+        res.status(404).json({ message: "Post author not found" });
         return;
-    }
+      }
 
-    await this.postService.likePost(liker.id, post.id);
+      await this.postService.likePost(liker.id, post.id);
 
-    const likeRecipient = {
-      id: new URL(authorActor.uri),
-      inboxId: new URL(authorActor.inbox_url)
-    }
+      const likeRecipient = {
+        id: new URL(authorActor.uri),
+        inboxId: new URL(authorActor.inbox_url),
+      };
 
-    const ctx = createFederationContextFromExpressReq(req);
-    
+      const ctx = createFederationContextFromExpressReq(req);
+
       await ctx.sendActivity(
         { identifier: user.username },
         likeRecipient,
         like
       );
 
-    res.status(200).json({ message: "Post liked" });
+      res.status(200).json({ message: "Post liked" });
     } catch (error) {
-      console.error('Error in likePost:', error);
-      res.status(500).json({ success: false, error: 'Failed to like post' });
+      console.error("Error in likePost:", error);
+      res.status(500).json({ success: false, error: "Failed to like post" });
     }
   }
 }
