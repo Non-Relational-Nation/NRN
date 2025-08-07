@@ -190,7 +190,7 @@ export class UserController {
       const post = await new PostService(
         postRepository,
         userRepository
-      ).createActivityPubPost(ctx, actor, username, content);
+      ).createPost(ctx, actor, username, content);
 
       if (!post) {
         return res.status(500).json({ error: "Failed to create a post" });

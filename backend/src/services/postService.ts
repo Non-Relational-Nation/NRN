@@ -3,14 +3,15 @@ import { IPostRepository } from '../repositories/interfaces/IPostRepository.js';
 import { IUserRepository } from '../repositories/interfaces/IUserRepository.js';
 import { Note, type RequestContext } from '@fedify/fedify';
 import type { Actor } from '@/types/actor.ts';
-import mongoose from 'mongoose';
+import mongoose, { type Types } from 'mongoose';
 import he from 'he';
-import { ActivityPubPostModel } from '@/models/postModel.ts';
+import { PostModel } from '@/models/postModel.ts';
+import { actorRepository } from '@/repositories/actorRepository.ts';
 
 // Define PostWithAuthor type if not already defined elsewhere
 export type PostWithAuthor = Post & {
   author: {
-    id: string;
+    id: Types.ObjectId;
     username: string;
     displayName?: string;
     avatar?: string;
@@ -39,39 +40,38 @@ export class PostService {
     }
   }
 
-  async createPost(data: CreatePostData): Promise<Post> {
-    this.validatePostContent(data.content);
-    // Only validate title if it exists on data and is a string
-    if ("title" in data && typeof data.title === "string") {
-      this.validatePostTitle(data.title);
-    }
+  // async createPost(data: CreatePostData): Promise<Post> {
+  //   this.validatePostContent(data.content);
+  //   // Only validate title if it exists on data and is a string
+  //   if ("title" in data && typeof data.title === "string") {
+  //     this.validatePostTitle(data.title);
+  //   }
 
-    const author = await this.userRepository.findById(data.authorId);
-    if (!author) {
-      throw new Error("Author not found");
-    }
+  //   const author = await this.userRepository.findById(data.authorId);
+  //   if (!author) {
+  //     throw new Error("Author not found");
+  //   }
 
-    return this.postRepository.create(data);
-  }
+  //   return this.postRepository.create(data);
+  // }
 
-  async createActivityPubPost(
+  async createPost(
     ctx: RequestContext<unknown>,
-    actor: Actor,
     username: string,
-    content: string
+    postData: Partial<CreatePostData>
   ): Promise<Post | undefined> {
     const session = await mongoose.startSession();
     try {
       let newPost;
       await session.withTransaction(async () => {
-        const escapedContent = he.encode(content, { allowUnsafeSymbols: true });
+        const escapedContent = he.encode(postData.content ?? "");
 
         // Create post with temporary URI
-        const [post] = await ActivityPubPostModel.create(
+        const [post] = await PostModel.create(
           [
             {
+              ...postData,
               uri: "https://localhost/",
-              actor_id: actor.id,
               content: escapedContent,
             },
           ],
@@ -88,7 +88,7 @@ export class PostService {
           id: post.id,
         }).href;
 
-        const updatedPost = await ActivityPubPostModel.findByIdAndUpdate(
+        const updatedPost = await PostModel.findByIdAndUpdate(
           post._id,
           {
             uri: url,
@@ -121,8 +121,9 @@ export class PostService {
   async getPostWithAuthor(id: string): Promise<PostWithAuthor | null> {
     const post = await this.postRepository.findById(id);
     if (!post) return null;
+    
+    const author = await this.userRepository.findById(post.actor_id!);
 
-    const author = await this.userRepository.findById(post.authorId);
     if (!author) return null;
 
     return {
@@ -141,12 +142,13 @@ export class PostService {
     limit?: number,
     offset?: number
   ): Promise<Post[]> {
-    const author = await this.userRepository.findById(authorId);
+    const author = await actorRepository.findByUserId(authorId);
     if (!author) {
       throw new Error("Author not found");
     }
 
-    return this.postRepository.findByAuthorId(authorId, limit, offset);
+    console.log(author)
+    return this.postRepository.findByAuthorId(author.id, limit, offset);
   }
 
   async updatePost(

@@ -26,8 +26,7 @@ export interface MediaItem {
 }
 
 export interface Post {
-  id: string;
-  authorId: string;
+  id: Types.ObjectId;
   type: PostType;
   content?: string;
   media?: MediaItem[]; // Stored in S3, URLs in MongoDB
@@ -57,21 +56,28 @@ export interface Post {
   flagged: boolean;
   uri: URL;
   actor: URL;
-  actor_id: string;
+  actor_id: Types.ObjectId;
 
 }
 
-export interface CreatePostData {
-  type?: PostType;
-  content?: string;
-  media?: Omit<MediaItem, 'id'>[];
-  visibility: PostVisibility;
-  originalPostId?: string; // For reposts
-  repostComment?: string; // Comment when reposting
-  hashtags?: string[]; // Extracted from content
-  mentions?: string[]; // Extracted from content
-  authorId: string;
-  title?:string
+type attach = {
+  url?: String,
+  mediaType: String,
+  width?: Number,
+  height?: Number
+};
+
+export interface CreatePostData extends Document {
+  uri?: string;
+  actor_id: Types.ObjectId;
+  content: string;
+  url?: string;
+  likes_count?: number,
+  attachment?: attach[]
+  created_at?: Date,
+  updated_at?: Date
+  is_deleted?: boolean,
+  flagged?: boolean
 }
 
 export interface UpdatePostData {

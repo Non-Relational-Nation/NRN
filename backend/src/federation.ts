@@ -23,7 +23,7 @@ import { UserModel } from "./models/userModel.ts";
 import { KeyModel } from "./models/keySchema.ts";
 import { ActorModel } from "./models/actorModel.ts";
 import { FollowModel } from "./models/followSchema.ts";
-import { ActivityPubPostModel } from "./models/postModel.ts";
+import { PostModel } from "./models/postModel.ts";
 import mongoose from "mongoose";
 import { LikeModel } from "./models/likeModel.ts";
 import { RedisKvStore,RedisMessageQueue  } from "@fedify/redis";
@@ -210,7 +210,7 @@ federation
       const liker = await persistActor((await undo.getActor()) as Person);
       if (!liker || !object.objectId) return;
 
-      const post = await ActivityPubPostModel.findOne({
+      const post = await PostModel.findOne({
         uri: object.objectId.href,
       });
       if (!post) return;
@@ -220,7 +220,7 @@ federation
         post_id: post._id,
       });
 
-      await ActivityPubPostModel.updateOne(
+      await PostModel.updateOne(
         { _id: post._id },
         { $inc: { likesCount: -1 } }
       );
@@ -274,16 +274,30 @@ federation
     const actorId = (await persistActor(author))?.id;
     if (!actorId || !object.id) return;
 
+    const attachments = [];
+    for await (const attachment of object.getAttachments()) {
+      
+    attachments.push({
+        url: (attachment as any).url.href,
+        mediaType: (attachment as any).mediaType,
+        width: (attachment as any).width,
+        height: (attachment as any).height
+      });
+    }
+
+    console.log(attachments);
+
     const content = object.content?.toString();
-    const existingPost = await ActivityPubPostModel.findOne({
+    const existingPost = await PostModel.findOne({
       uri: object.id.href,
     });
     if (existingPost) return; // Already saved
 
-    await ActivityPubPostModel.create({
+    await PostModel.create({
       uri: object.id.href,
       actor_id: actorId,
-      content: content,
+      content,
+      attachment: attachments,
       url: object.url?.href,
     });
   })
@@ -295,7 +309,7 @@ federation
 
     const postUri = like.objectId.href;
 
-    const post = await ActivityPubPostModel.findOne({ uri: postUri });
+    const post = await PostModel.findOne({ uri: postUri });
     if (!post) return;
 
     // Prevent duplicate likes
@@ -363,7 +377,7 @@ federation.setObjectDispatcher(
   Note,
   "/users/{identifier}/posts/{id}",
   async (ctx, values) => {
-    const [post] = await ActivityPubPostModel.aggregate([
+    const [post] = await PostModel.aggregate([
       {
         $match: {
           _id: new mongoose.Types.ObjectId(values.id),
