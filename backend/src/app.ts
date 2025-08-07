@@ -22,7 +22,7 @@ export const createApp = () => {
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"]
   }));
-  app.use(authMiddleware); 
+  //app.use(authMiddleware); 
   app.set("trust proxy", true);
 
   app.set("trust proxy", true);
