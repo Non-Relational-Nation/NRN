@@ -42,7 +42,7 @@ export default function UserCard({ user }: UserCardProps) {
     <>
       <article id="user-card" onClick={handleClick}>
         <UserAvatar size={40}></UserAvatar>
-        <p>{user?.username}</p>
+        <p>{user?.handle}</p>
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -56,7 +56,7 @@ export default function UserCard({ user }: UserCardProps) {
         >
           {following ? "unfollow" : "follow"}
         </button>
-      </article>{" "}
+      </article>
       <ErrorDialog
         isOpen={!!errorDialogMessage}
         onClose={() => setErrorDialogMessage("")}

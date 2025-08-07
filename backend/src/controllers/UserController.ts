@@ -96,7 +96,7 @@ export class UserController {
       const userFollowers = await userService.getUserFollowers(
         req.params.username
       );
-      return res.json(userFollowers);
+      return res.json({ followers: userFollowers });
     } catch (err) {
       next(err);
     }
