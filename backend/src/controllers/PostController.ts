@@ -302,7 +302,7 @@ export class PostController {
       }
 
       if (data?.first) {
-        const firstPage = await fetch(outboxUrl, {
+        const firstPage = await fetch(data?.first, {
           headers: {
             Accept: "application/json",
           },
