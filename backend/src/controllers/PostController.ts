@@ -61,12 +61,12 @@ export class PostController {
       if (files.length > 0) {
         media = await Promise.all(
           files.map(async (file: any) => {
-            // const url = await uploadFileToS3(file);
+            const url = await uploadFileToS3(file);
             const dimensions = imageSize(file.buffer);
 
             return {
               mediaType: file.mimetype,
-              url: "",
+              url: url,
               width: dimensions.width,
               height: dimensions.height,
             };
