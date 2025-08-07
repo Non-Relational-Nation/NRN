@@ -8,12 +8,14 @@ import UserAvatar from "../Users/UserAvatar";
 import { useMutation } from "@tanstack/react-query";
 import { likePost, unlikePost } from "../../api/posts";
 import ErrorDialog from "../Dialogs/ErrorDialog";
+import type { User } from "../../models/User";
 
 interface PostCardProps {
   post: Post;
+  user: User
 }
 
-export default function PostCard({ post }: PostCardProps) {
+export default function PostCard({ post, user }: PostCardProps) {
   const navigate = useNavigate();
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [likesCount, setLikesCount] = useState(post.likesCount);
@@ -52,18 +54,19 @@ export default function PostCard({ post }: PostCardProps) {
           id="profile-button"
           onClick={() => navigate(`/profile/${post.author?.id}`)}
         >
-          <UserAvatar imageUrl={post.author?.avatar} size={20} />
-          {post?.author?.displayName ||
-            post?.author?.username ||
+          <UserAvatar imageUrl={user.avatar} size={20} />
+        
+          {user?.displayName ||
+            user?.username ||
             post?.authorId}
         </button>
         <span id="time-text">
-          {new Date(post?.createdAt).toLocaleTimeString([], {
+          {new Date(post?.created_at).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
           })}
           {" - "}
-          {new Date(post?.createdAt).toLocaleDateString()}
+          {new Date(post?.created_at).toLocaleDateString()}
         </span>
       </header>
       <hr />

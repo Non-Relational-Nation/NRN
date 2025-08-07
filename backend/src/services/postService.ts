@@ -142,12 +142,13 @@ export class PostService {
     limit?: number,
     offset?: number
   ): Promise<Post[]> {
-    const author = await this.userRepository.findById(authorId);
+    const author = await actorRepository.findByUserId(authorId);
     if (!author) {
       throw new Error("Author not found");
     }
 
-    return this.postRepository.findByAuthorId(authorId, limit, offset);
+    console.log(author)
+    return this.postRepository.findByAuthorId(author.id, limit, offset);
   }
 
   async updatePost(
