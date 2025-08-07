@@ -17,6 +17,7 @@ import {
   PUBLIC_COLLECTION,
   Create,
   Like,
+  Image,
 } from "@fedify/fedify";
 import { MemoryKvStore, InProcessMessageQueue } from "@fedify/fedify";
 import { UserModel } from "./models/userModel.ts";
@@ -415,9 +416,13 @@ federation.setObjectDispatcher(
       to: PUBLIC_COLLECTION,
       cc: ctx.getFollowersUri(values.identifier),
       content: post.content,
-      mediaType: "text/html",
-      url: ctx.getObjectUri(Note, values),
-      attachments: post.attachment,
+      attachments: (post.attachment || []).map(
+        (att: any) =>
+          new Image({
+            url: new URL(att.url),
+            mediaType: att.mediaType,
+          })
+      ),
     });
   }
 );
