@@ -29,6 +29,11 @@ import { LikeModel } from "./models/likeModel.ts";
 import { RedisKvStore,RedisMessageQueue  } from "@fedify/redis";
 import { Redis } from "ioredis";
 import { config } from "./config/index.ts";
+import userService from "./services/userService.ts";
+import { PostService } from "./services/postService.ts";
+import { postRepository } from "./repositories/postRepository.ts";
+import { userRepository } from "./repositories/userRepository.ts";
+import actorService from "./services/actorService.ts";
 
 type KeyType = "RSASSA-PKCS1-v1_5" | "Ed25519";
 
@@ -94,7 +99,7 @@ federation
         assertionMethods: keys.map((k) => k.multikey),
         followers: ctx.getFollowersUri(identifier),
         // following: ctx.getFollowingUri(identifier),
-        // outbox: ctx.getOutboxUri(identifier),
+        outbox: ctx.getOutboxUri(identifier),
       });
     }
   )
@@ -422,4 +427,43 @@ federation.setObjectDispatcher(
   }
 );
 
+federation
+  .setOutboxDispatcher("/users/{identifier}/outbox", async (ctx, identifier, cursor) => {
+    const user = await userService.getUserByUsername(identifier);
+    if (!user) return null;
+    
+    const actor = await actorService.getActorByUserId(user.id);
+    if (!actor) return null;
+    
+    const page = cursor ? parseInt(cursor) : 1;
+    const limit = 20;
+    const offset = (page - 1) * limit
+    
+    const postService = new PostService(postRepository, userRepository);
+
+    const posts = await postService.getPostsByAuthor(actor.id, limit, offset)
+    
+    const activities = posts.map(post => {
+      
+      const note = new Note({
+        id: new URL(post.uri),
+        content: post.content,
+        to: PUBLIC_COLLECTION,
+        attribution: ctx.getActorUri(identifier),
+      });
+      
+      return new Create({
+        id: new URL(`${post.uri}/activity`),
+        actor: ctx.getActorUri(identifier),
+        object: note,
+        to: new URL("https://www.w3.org/ns/activitystreams#Public")
+      });
+    });
+    
+    return {
+      items: activities,
+      nextCursor: posts.length === limit ? (page + 1).toString() : null,
+    };
+
+  });
 export default federation;
