@@ -3,12 +3,12 @@ import { apiFetch, handleError } from "../util/api";
 
 export async function searchUsers(searchTerm: string): Promise<User[]> {
   const response = await apiFetch({
-    path: `/api/users?search=${encodeURIComponent(searchTerm)}`,
+    path: `/api/users/${searchTerm}`,
     method: "GET",
   });
   await handleError(response);
-
-  return await response.json();
+  const user = await response.json()
+  return [user];
 }
 
 export async function getUser(userHandle: string): Promise<User> {
