@@ -37,6 +37,7 @@ import { PostService } from "./services/postService.ts";
 import { postRepository } from "./repositories/postRepository.ts";
 import { userRepository } from "./repositories/userRepository.ts";
 import actorService from "./services/actorService.ts";
+import { Temporal } from '@js-temporal/polyfill';
 
 type KeyType = "RSASSA-PKCS1-v1_5" | "Ed25519";
 
@@ -472,7 +473,7 @@ federation.setObjectDispatcher(
       attribution: ctx.getActorUri(values.identifier),
       to: PUBLIC_COLLECTION,
       cc: ctx.getFollowersUri(values.identifier),
-      published: post.created_at,
+      published: Temporal.Instant.from(post?.created_at || new Date().toISOString()),
       content: post.content,
       attachments: (post.attachment || []).map((att: any) => {
         if (att.mediaType && att.mediaType.toUpperCase().startsWith("IMAGE/")) {
@@ -518,7 +519,7 @@ federation
           id: new URL(post.uri),
           content: post.content,
           to: PUBLIC_COLLECTION,
-          published: post.created_at,
+          published: Temporal.Instant.from(post?.created_at || new Date().toISOString()),
           attribution: ctx.getActorUri(identifier),
           attachments: (post.attachment || []).map((att: any) => {
             if (att.mediaType && att.mediaType.toUpperCase().startsWith("IMAGE/")) {
