@@ -1,6 +1,5 @@
 import {
   createFederation,
-  Endpoints,
   Person,
   RequestContext,
   exportJwk,
@@ -20,8 +19,6 @@ import {
   Image,
   Video,
 } from "@fedify/fedify";
-import { Actor } from "@fedify/fedify";
-import { MemoryKvStore, InProcessMessageQueue } from "@fedify/fedify";
 import { UserModel } from "./models/userModel.ts";
 import { KeyModel } from "./models/keySchema.ts";
 import { ActorModel } from "./models/actorModel.ts";
@@ -68,7 +65,6 @@ async function persistActor(actor: APActor) {
       handle: await getActorHandle(actor),
       name: actor.name?.toString(),
       inbox_url: actor.inboxId.href,
-      shared_inbox_url: actor.endpoints?.sharedInbox?.href ?? null,
       url: actor.url?.href ?? null,
     },
     {
@@ -94,9 +90,6 @@ federation
         preferredUsername: identifier,
         name: user.displayName,
         inbox: ctx.getInboxUri(identifier),
-        endpoints: new Endpoints({
-          sharedInbox: ctx.getInboxUri(),
-        }),
         url: ctx.getActorUri(identifier),
         publicKey: keys[0]?.cryptographicKey,
         assertionMethods: keys.map((k) => k.multikey),
@@ -561,5 +554,99 @@ federation
     const count = await PostModel.countDocuments({ actor_id: actor._id });
 
     return count;
+  });
+
+federation
+  .setInboxDispatcher(
+    "/users/{identifier}/inbox",
+    async (ctx, identifier, cursor) => {
+      const user = await userService.getUserByUsername(identifier);
+      if (!user) return null;
+
+      const actor = await actorService.getActorByUserId(user.id);
+      if (!actor) return null;
+
+      const page = cursor ? parseInt(cursor) : 1;
+      const limit = 20;
+      const offset = (page - 1) * limit;
+
+      // Find all actors whom the user follows
+      const follows = await FollowModel.find({ follower_id: actor.id }).lean();
+      const followedActorIds = follows.map((f) => f.following_id.toString());
+      // Include the user's own actor id
+      followedActorIds.push(actor.id.toString());
+
+      const posts = await PostModel.find({
+        actor_id: { $in: followedActorIds },
+      })
+        .sort({ created_at: -1 })
+        .skip(offset)
+        .limit(limit)
+        .lean();
+
+      const activities = await Promise.all(
+        posts.map(async (post: any) => {
+          // Find the actor for this post
+          const postActor = await ActorModel.findById(post.actor_id).lean();
+          let postActorUri = undefined;
+
+          if (postActor && postActor.uri) {
+            postActorUri = postActor.uri;
+          }
+          
+          const note = new Note({
+            id: new URL(post.uri),
+            content: post.content,
+            to: PUBLIC_COLLECTION,
+            attribution: postActorUri ? new URL(postActorUri) : undefined,
+            attachments: (post.attachment || []).map((att: any) => {
+              if (
+                att.mediaType &&
+                att.mediaType.toUpperCase().startsWith("IMAGE/")
+              ) {
+                return new Image({
+                  url: new URL(att?.url),
+                  mediaType: att?.mediaType,
+                  width: att?.width,
+                  height: att?.height,
+                });
+              } else {
+                return new Video({
+                  url: new URL(att?.url),
+                  mediaType: att?.mediaType,
+                  width: att?.width,
+                  height: att?.height,
+                });
+              }
+            }),
+          });
+          return new Create({
+            id: new URL(`${post.uri}/activity`),
+            actor: postActorUri
+              ? new URL(postActorUri)
+              : ctx.getActorUri(identifier),
+            object: note,
+            to: new URL("https://www.w3.org/ns/activitystreams#Public"),
+          });
+        })
+      );
+
+      return {
+        items: activities,
+        nextCursor: posts.length === limit ? (page + 1).toString() : null,
+      };
+    }
+  )
+  .setCounter(async (ctx, identifier) => {
+    const user = await UserModel.findOne({ username: identifier });
+    if (!user) return 0;
+    const actor = await ActorModel.findOne({ user_id: user._id });
+    if (!actor) return 0;
+    const follows = await FollowModel.find({ follower_id: actor.id }).lean();
+    const followedActorIds = follows.map((f) => f.following_id.toString());
+    followedActorIds.push(actor.id.toString());
+    return await PostModel.countDocuments({
+      actor_id: { $in: followedActorIds },
+    });
   });
 export default federation;
