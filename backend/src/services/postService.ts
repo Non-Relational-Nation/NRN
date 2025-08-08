@@ -2,13 +2,11 @@ import { Post, CreatePostData, UpdatePostData } from "../types/post.js";
 import { IPostRepository } from "../repositories/interfaces/IPostRepository.js";
 import { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
 import { Note, type RequestContext } from "@fedify/fedify";
-import type { Actor } from "@/types/actor.ts";
 import mongoose, { type Types } from "mongoose";
 import he from "he";
 import { PostModel } from "@/models/postModel.ts";
 import { actorRepository } from "@/repositories/actorRepository.ts";
 
-// Define PostWithAuthor type if not already defined elsewhere
 export type PostWithAuthor = Post & {
   author: {
     id: string;
@@ -40,21 +38,6 @@ export class PostService {
     }
   }
 
-  // async createPost(data: CreatePostData): Promise<Post> {
-  //   this.validatePostContent(data.content);
-  //   // Only validate title if it exists on data and is a string
-  //   if ("title" in data && typeof data.title === "string") {
-  //     this.validatePostTitle(data.title);
-  //   }
-
-  //   const author = await this.userRepository.findById(data.authorId);
-  //   if (!author) {
-  //     throw new Error("Author not found");
-  //   }
-
-  //   return this.postRepository.create(data);
-  // }
-
   async createPost(
     ctx: RequestContext<unknown>,
     username: string,
@@ -66,7 +49,6 @@ export class PostService {
       await session.withTransaction(async () => {
         const escapedContent = he.encode(postData.content ?? "");
 
-        // Create post with temporary URI
         const [post] = await PostModel.create(
           [
             {
@@ -82,7 +64,6 @@ export class PostService {
           throw new Error("Failed to create post");
         }
 
-        // Generate final object URI
         const url = ctx.getObjectUri(Note, {
           identifier: username,
           id: post.id,
@@ -143,11 +124,11 @@ export class PostService {
   ): Promise<Post[]> {
     const author = await actorRepository.findByUserId(authorId);
     if (!author) {
-      throw new Error("Author not found");
+      // throw new Error("Author not found");
     }
 
     console.log(author);
-    return this.postRepository.findByAuthorId(author.id, limit, offset);
+    return [];
   }
 
   async updatePost(
@@ -236,7 +217,6 @@ export class PostService {
     return this.postRepository.getPublicPosts(limit, offset);
   }
 
-  // Like a post
   async likePost(actorId: string, postId: string) {
     return await this.postRepository.likePost(actorId, postId);
   }

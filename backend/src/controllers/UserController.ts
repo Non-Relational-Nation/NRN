@@ -7,8 +7,9 @@ import userService, { mapActorToUserObject } from "@/services/userService.ts";
 import { AuthenticatedRequest } from "@/types/common.ts";
 import { Create, Follow, isActor, lookupWebFinger, Note } from "@fedify/fedify";
 import { Request, Response, type NextFunction } from "express";
+import { GraphService} from "@services/graphService.js";
 
-export class UserController {
+ class UserController {
   async registerUser(
     req: Request,
     res: Response,
@@ -20,7 +21,7 @@ export class UserController {
         return res.status(400).json({ error: "Missing required fields" });
       }
       const context = createFederationContextFromExpressReq(req);
-      await userService.registerUser({
+      let actor=await userService.registerUser({
         username,
         email,
         displayName,
@@ -126,6 +127,7 @@ export class UserController {
         return res.status(400).send("Invalid actor handle or URL");
       }
 
+
       await ctx.sendActivity(
         { identifier: followerUsername },
         actor,
@@ -135,6 +137,25 @@ export class UserController {
           to: actor.id,
         })
       );
+
+      try {
+        await GraphService.addFollow(follower.id.toString(), actor.id!.toString());
+      } catch (err) {
+        console.error('Failed to add follow to Neo4j graph:', err);
+      }
+
+      // Ensure actor exists in Neo4j graph before follow
+      try {
+        // Add follower as actor if not present
+        await GraphService.addActor(follower.id.toString(), 'User');
+        // If ActivityPub actor, add as actor too
+        if (isActor(actor)) {
+          await GraphService.addActor(actor.preferredUsername?.toString() || actor.id!.toString(), 'Actor');
+        }
+      } catch (err) {
+        console.error('Failed to ensure actors in Neo4j graph:', err);
+      }
+
       return res
         .status(201)
         .json({ message: "Follow request sent successfully" });
@@ -153,6 +174,25 @@ export class UserController {
         req.params.username
       );
       return res.json({ following: userFollowing });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async suggestUsers(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const currentActorHandler = req.query.handle as string;
+      if (!currentActorHandler) {
+        return res.status(404).json({ error: 'Missing current actor handle' });
+      }
+
+      const ctx = createFederationContextFromExpressReq(req);
+      const actor = await ctx.lookupObject(`${currentActorHandler}`);
+      if (!isActor(actor)) {
+        return res.status(400).json({ error: 'Invalid actor handle or URL' });
+      }
+      const suggestions = await GraphService.getSuggestedUsersToFollow(actor.id!.toString());
+      res.json({ suggestions });
     } catch (err) {
       next(err);
     }

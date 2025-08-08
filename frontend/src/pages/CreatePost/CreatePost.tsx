@@ -24,7 +24,11 @@ export default function CreatePost() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
     if (!fileList) return;
-    setFiles((prev) => [...prev, ...Array.from(fileList)]);
+    const files = Array.from(fileList).filter((file) => file.size <= 5 * 1024 * 1024);
+    if (files.length !== fileList.length) {
+      setErrorDialogMessage("File size exceeds 5MB limit");
+    }
+    setFiles((prev) => [...prev, ...files]);
   };
   const handleRemoveFile = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
@@ -72,6 +76,7 @@ export default function CreatePost() {
               multiple
               ref={fileInputRef}
               onChange={handleFileChange}
+              
             />
           </div>
           <div id="file-list">

@@ -99,3 +99,13 @@ export async function getUserFollowing(): Promise<User[]> {
   const data = await response.json()
   return data?.following;
 }
+
+export async function getUserSuggestions(): Promise<string[]> {
+  const response = await apiFetch({
+    path: `/api/users/suggestions`,
+    method: "GET",
+  });
+  await handleError(response);
+  const data = await response.json();
+  return data.suggestions;
+}

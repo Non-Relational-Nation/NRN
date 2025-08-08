@@ -1,17 +1,22 @@
 import Layout from "../../components/Layout/Layout";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./styles.css";
 import type { User } from "../../models/User";
 import { searchUsers } from "../../api/users";
+import { getSuggestedUserHandles } from "../../api/suggestions";
 import { useQuery } from "@tanstack/react-query";
 import Loader from "../../components/Loader/Loader";
 import ErrorPage from "../ErrorPage/ErrorPage";
 import searchIcon from "../../assets/search.svg";
 import UserList from "../../components/Users/UsersList";
+import SuggestedUsers from "../../components/Users/SuggestedUsers";
 
 export default function Search() {
   const [searchTerm, setSearchTerm] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
+  const [suggestedHandles, setSuggestedHandles] = useState<string[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(true);
+  const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
 
   const {
     data: users = [],
@@ -25,6 +30,24 @@ export default function Search() {
     retry: false,
     gcTime: 0,
   });
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchSuggestions() {
+      setSuggestionsLoading(true);
+      setSuggestionsError(null);
+      try {
+        const handles = await getSuggestedUserHandles(sessionStorage.getItem("MY_HANDLE")!);
+        if (isMounted) setSuggestedHandles(handles);
+      } catch (err) {
+        if (isMounted) setSuggestionsError("");
+      } finally {
+        setSuggestionsLoading(false);
+      }
+    }
+    fetchSuggestions();
+    return () => { isMounted = false; };
+  }, []);
 
   const handleSearch = () => {
     if (searchTerm) {
@@ -68,6 +91,11 @@ export default function Search() {
         ) : (
           hasSearched && <UserList users={users} />
         )}
+        <SuggestedUsers
+          userIds={suggestedHandles}
+          loading={suggestionsLoading}
+          error={suggestionsError}
+        />
       </div>
     </Layout>
   );

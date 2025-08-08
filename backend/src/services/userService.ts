@@ -1,10 +1,8 @@
-// import { validateRegisterInput } from "@/validators/userValidator.ts";
-import { createFederationContextFromExpressReq } from "@/federation/federationContext.ts";
 import mongoose from "mongoose";
 import { IUserRepository } from "@/repositories/interfaces/IUserRepository.ts";
 import { userRepository } from "@/repositories/userRepository.ts";
 import { UserResponse } from "@/types/user.ts";
-
+import { GraphService } from "@/services/graphService.ts";
 export class UserService {
   constructor(private userRepository: IUserRepository) {}
 
@@ -49,6 +47,13 @@ export class UserService {
       name: displayName,
       context,
     });
+
+    try {
+      await GraphService.addActor(userId.toString(), 'User');
+    } catch (err) {
+      console.error('Failed to add user to Neo4j graph:', err);
+    }
+
     return { message: "User registered successfully" };
   }
 

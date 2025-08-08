@@ -9,6 +9,7 @@ import userService from '@/services/userService.ts';
 import { imageSize } from 'image-size';
 import type { noteArgs } from '@/types/noteArgs.ts';
 import type { AuthenticatedRequest } from '@/types/common.ts';
+import {GraphService} from '@/services/graphService.ts';
 
 export class PostController {
   constructor(private postService: PostService) {
@@ -22,9 +23,7 @@ export class PostController {
         return
       }
       const user = await userService.getUserByEmail(req?.user?.email);
-      // Validate authorId and log more details for debugging
       let authorId = user?.id;
-      // Always prefer user_id if present and valid (for actor->user mapping)
       if (req.body.user_id && typeof req.body.user_id === 'string' && req.body.user_id.length === 24) {
         if (authorId !== req.body.user_id) {
           console.warn('Overriding authorId with user_id from body:', req.body.user_id);
@@ -47,21 +46,17 @@ export class PostController {
         return;
       }
 
-      // Handle file uploads
       let files: any[] = [];
       if (Array.isArray((req as any).files)) {
         files = (req as any).files;
       } else if (req.files && typeof req.files === 'object') {
-        // Multer can also provide files as an object (when using .fields)
         files = Object.values(req.files).flat();
       }
-      // Debugging: log file info
       console.log('Received files:', files.map(f => ({ originalname: f.originalname, mimetype: f.mimetype, size: f.size })));
       let media: any[] = [];
       if (files.length > 0) {
         media = await Promise.all(
           files.map(async (file: any) => {
-            // const url = await uploadFileToS3(file);
             const dimensions = imageSize(file.buffer);
 
             return {
@@ -75,7 +70,6 @@ export class PostController {
       }
 
       const content = req.body.content.toString();
-      // Check if author exists in users collection before proceeding
 
       const postData = {
         actor_id: actor.id,
@@ -83,7 +77,6 @@ export class PostController {
         attachment: media,
       };
 
-      // Debugging: log postData
       console.log('Creating post with data:', postData);
       const post = await this.postService.createPost(ctx, user.username, postData);
 
@@ -91,6 +84,11 @@ export class PostController {
         res.status(500).json({ error: "Failed to create a post" });
         return;
       } else {
+        try {
+          await GraphService.addPost(post.id, user.id);
+        } catch (err) {
+          console.error('Failed to add post to Neo4j graph:', err);
+        }
         const noteArgs: Record<string, string> = { identifier: user.username, id: post.id };
         const note = await ctx.getObject(Note, noteArgs);
         
@@ -145,7 +143,7 @@ export class PostController {
     try {
       const { id } = req.params;
       const updateData: UpdatePostData = req.body;
-      const authorId = req.body.authorId; // In real app, get from auth middleware
+      const authorId = req.body.authorId; 
 
       if (!authorId) {
         res.status(401).json({
@@ -189,7 +187,7 @@ export class PostController {
   async deletePost(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const authorId = req.body.authorId; // In real app, get from auth middleware
+      const authorId = req.body.authorId; 
 
       if (!authorId) {
         res.status(401).json({
@@ -292,7 +290,6 @@ export class PostController {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
       const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
       const posts = await this.postService.getPublicPosts(limit, offset);
-      // Fetch author info for each post
       const userRepo = this.postService.getUserRepository();
       const postsWithAuthor = await Promise.all(posts.map(async (post) => {
         const author = await userRepo.findById(post.actor_id);
@@ -319,7 +316,7 @@ export class PostController {
 
   async getFeed(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.body.userId; // In real app, get from auth middleware
+      const userId = req.body.userId; 
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
       const offset = req.query.offset ? parseInt(req.query.offset as string) : 0;
       
@@ -351,7 +348,6 @@ export class PostController {
       });
     }
   }
-  // Like a post
   async likePost(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
@@ -388,9 +384,8 @@ export class PostController {
         return;
       }
       
-    // Send federated Like activity
     const like = new Like({
-      id: new URL(`#like-${liker.id}-${post.id}`, post.uri), // unique
+      id: new URL(`#like-${liker.id}-${post.id}`, post.uri),
       actor: liker.uri,
       object: new URL(post.uri),
     });
@@ -403,6 +398,12 @@ export class PostController {
     }
 
     await this.postService.likePost(liker.id, post.id);
+
+    try {
+      await GraphService.addLike(user.id, post.id);
+    } catch (err) {
+      console.error('Failed to add like to Neo4j graph:', err);
+    }
 
     const likeRecipient = {
       id: new URL(authorActor.uri),
