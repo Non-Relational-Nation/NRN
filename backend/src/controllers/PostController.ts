@@ -363,45 +363,76 @@ export class PostController {
   }
 
   async getPublicPosts(
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: Function
   ): Promise<void> {
     try {
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
-      const offset = req.query.offset
-        ? parseInt(req.query.offset as string)
-        : 0;
-      const posts = await this.postService.getPublicPosts(limit, offset);
-      // Fetch author info for each post
-      const userRepo = this.postService.getUserRepository();
-      const postsWithAuthor = await Promise.all(
-        posts.map(async (post) => {
-          const author = await userRepo.findById(post.actor_id);
-          return {
-            ...post,
-            author: author
-              ? {
-                  id: author.id,
-                  username: author.username,
-                  displayName: author.displayName,
-                  avatar: author.avatar,
-                }
-              : undefined,
-          };
-        })
-      );
-      res.json({
-        success: true,
-        data: {
-          posts: postsWithAuthor,
-          pagination: {
-            limit,
-            offset,
-            total: postsWithAuthor.length,
-          },
+
+      if (!req?.user?.email) {
+        res.status(401).send("No username for logged in user");
+        return;
+      }
+
+      const user = await userService.getUserByEmail(req?.user?.email);
+
+      if(!user){
+        res.status(404).send("User not found");
+        return;
+      }
+
+      const actor = await actorService.getActorByUserId(user.id);
+
+      
+      if(!actor){
+        res.status(404).send("Actor not found");
+        return;
+      }
+
+      const author = await actorService.fetchActorByHandle(actor.handle);
+
+      if (!author) {
+        res.status(404).json({
+          success: false,
+          error: "Author not found",
+        });
+        return;
+      }
+
+      const inboxUrl = author?.inbox;
+
+      if (!inboxUrl) {
+        res.status(201).json({
+          success: true,
+          data: [],
+        });
+        return;
+      }
+
+      const userPosts = await fetch(inboxUrl, {
+        headers: {
+          Accept: "application/json",
         },
       });
+      const data = await userPosts.json();
+      if (!data) {
+        res.status(404).json({
+          success: false,
+          error: "No posts found for this author",
+        });
+        return;
+      }
+
+      if (data?.first) {
+        const firstPage = await fetch(data?.first, {
+          headers: {
+            Accept: "application/json",
+          },
+        });
+        res.json(mapOutboxToPosts(await firstPage.json()));
+      } else {
+        res.json(mapOutboxToPosts(data));
+      }
     } catch (err) {
       next(err);
     }

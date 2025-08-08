@@ -16,8 +16,8 @@ export async function getFeed({
 
   const data = await response.json();
   return {
-    items: data.data.posts,
-    nextOffset: data.data.posts.length < limit ? undefined : pageParam + limit,
+    items: data,
+    nextOffset: data.length < limit ? undefined : pageParam + limit,
   };
 }
 
