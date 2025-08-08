@@ -34,6 +34,7 @@ import { PostService } from "./services/postService.ts";
 import { postRepository } from "./repositories/postRepository.ts";
 import { userRepository } from "./repositories/userRepository.ts";
 import actorService from "./services/actorService.ts";
+import { Temporal } from '@js-temporal/polyfill';
 
 type KeyType = "RSASSA-PKCS1-v1_5" | "Ed25519";
 
