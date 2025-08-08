@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import { IUserRepository } from "@/repositories/interfaces/IUserRepository.ts";
 import { userRepository } from "@/repositories/userRepository.ts";
 import { UserResponse } from "@/types/user.ts";
+import { ActorModel } from "@/models/actorModel.ts";
+import { FollowModel } from "@/models/followSchema.ts";
 import { GraphService } from "@/services/graphService.ts";
 export class UserService {
   constructor(private userRepository: IUserRepository) {}
@@ -80,7 +82,7 @@ export class UserService {
 
 async function fetchCount(url?: string): Promise<number> {
   if (!url) return 0;
-  
+
   try {
     const res = await fetch(url, {
       headers: { Accept: "application/activity+json" },
@@ -93,8 +95,11 @@ async function fetchCount(url?: string): Promise<number> {
   }
 }
 
-export async function mapActorToUserObject(actor: any): Promise<UserResponse> {
-    let handle = "";
+export async function mapActorToUserObject(
+  actor: any,
+  requester: string
+): Promise<UserResponse> {
+  let handle = "";
   if (typeof actor.id === "string") {
     try {
       const url = new URL(actor.id);
@@ -106,6 +111,13 @@ export async function mapActorToUserObject(actor: any): Promise<UserResponse> {
       handle = "";
     }
   }
+  const actorObj = await ActorModel.findOne({ handle: `@${handle}` });
+
+  const follow = await FollowModel.findOne({
+    following_id: actorObj?.id,
+    follower_id: requester,
+  });
+
   return {
     avatar: actor?.icon?.url ?? actor?.image?.url ?? undefined,
     bio: actor?.summary ?? "",
@@ -115,7 +127,8 @@ export async function mapActorToUserObject(actor: any): Promise<UserResponse> {
     postsCount: await fetchCount(actor?.outbox),
     username: actor.preferredUsername ?? "",
     id: actor.id ?? "",
-    handle 
+    handle,
+    following: !!follow,
   };
 }
 

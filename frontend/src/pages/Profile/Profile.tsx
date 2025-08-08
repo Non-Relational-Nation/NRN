@@ -6,7 +6,7 @@ import type { Post } from "../../models/Post";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { getUsersFeed } from "../../api/posts";
 import type { User } from "../../models/User";
-import { followUser, getUser, unfollowUser } from "../../api/users";
+import { followUser, getUser } from "../../api/users";
 import UserAvatar from "../../components/Users/UserAvatar";
 import { useEffect, useState } from "react";
 import { logout } from "../../util/logout";
@@ -28,6 +28,7 @@ export default function Profile() {
     queryFn: () => getUser(user || "1"),
     retry: false,
     enabled: !!user,
+    gcTime: 0,
   });
 
   const [following, setFollowing] = useState(userData?.following);
@@ -48,6 +49,8 @@ export default function Profile() {
     queryKey: ["feed", user],
     queryFn: () => getUsersFeed(user || "1"),
     retry: false,
+    enabled: !!user,
+    gcTime: 0,
   });
 
   const followMutation = useMutation({
@@ -59,23 +62,24 @@ export default function Profile() {
     onError: (error: Error) => setErrorDialogMessage(error.message),
   });
 
-  const unfollowMutation = useMutation({
-    mutationFn: () => unfollowUser(userData?.handle),
-    onSuccess: () => {
-      setFollowing(false);
-      setFollowerCount((prev) => (prev ?? 0) - 1);
-    },
-    onError: (error: Error) => setErrorDialogMessage(error.message),
-  });
+  // const unfollowMutation = useMutation({
+  //   mutationFn: () => unfollowUser(userData?.handle),
+  //   onSuccess: () => {
+  //     setFollowing(false);
+  //     setFollowerCount((prev) => (prev ?? 0) - 1);
+  //   },
+  //   onError: (error: Error) => setErrorDialogMessage(error.message),
+  // });
 
   const handleFollow = () => followMutation.mutate();
-  const handleUnfollow = () => unfollowMutation.mutate();
+  // const handleUnfollow = () => unfollowMutation.mutate();
 
   return (
     <Layout
       loading={isUserFeedLoading || isUserLoading}
       error={userFeedError || userError}
     >
+      
       <section id="profile-container">
         <section id="profile-header-container">
           <header id="profile-header">
@@ -103,13 +107,14 @@ export default function Profile() {
               </section>
               {!isMyProfile &&
                 (following ? (
-                  <button
-                    className="button"
-                    id="follow-button"
-                    onClick={handleUnfollow}
-                  >
-                    Unfollow
-                  </button>
+                  // <button
+                  //   className="button"
+                  //   id="follow-button"
+                  //   onClick={handleUnfollow}
+                  // >
+                  //   Unfollow
+                  // </button>
+                  <span>You are following this user</span>
                 ) : (
                   <button
                     className="button"
@@ -140,7 +145,7 @@ export default function Profile() {
             </section>
           </header>
         </section>
-        <PostList posts={userFeed} user={userData}></PostList>
+        <PostList posts={userFeed}></PostList>
       </section>
       <ErrorDialog
         isOpen={!!errorDialogMessage}

@@ -1,6 +1,5 @@
 import {
   createFederation,
-  Endpoints,
   Person,
   RequestContext,
   exportJwk,
@@ -17,8 +16,9 @@ import {
   PUBLIC_COLLECTION,
   Create,
   Like,
+  Image,
+  Video,
 } from "@fedify/fedify";
-import { MemoryKvStore, InProcessMessageQueue } from "@fedify/fedify";
 import { UserModel } from "./models/userModel.ts";
 import { KeyModel } from "./models/keySchema.ts";
 import { ActorModel } from "./models/actorModel.ts";
@@ -26,9 +26,15 @@ import { FollowModel } from "./models/followSchema.ts";
 import { PostModel } from "./models/postModel.ts";
 import mongoose from "mongoose";
 import { LikeModel } from "./models/likeModel.ts";
-import { RedisKvStore,RedisMessageQueue  } from "@fedify/redis";
+import { RedisKvStore, RedisMessageQueue } from "@fedify/redis";
 import { Redis } from "ioredis";
 import { config } from "./config/index.ts";
+import userService from "./services/userService.ts";
+import { PostService } from "./services/postService.ts";
+import { postRepository } from "./repositories/postRepository.ts";
+import { userRepository } from "./repositories/userRepository.ts";
+import actorService from "./services/actorService.ts";
+import { Temporal } from '@js-temporal/polyfill';
 
 type KeyType = "RSASSA-PKCS1-v1_5" | "Ed25519";
 
@@ -40,11 +46,11 @@ const federation = createFederation({
   origin: config.serverUrl ?? "https://d3m0gyk7rj0vr1.cloudfront.net",
   kv: new RedisKvStore(redis),
   queue: new RedisMessageQueue(
-  () =>
-  new Redis({
-  host: config.databases.redis?.host || "localhost",
-  port: config.databases.redis?.port || 6379,
-  })
+    () =>
+      new Redis({
+        host: config.databases.redis?.host || "localhost",
+        port: config.databases.redis?.port || 6379,
+      })
   ),
 });
 
@@ -60,7 +66,6 @@ async function persistActor(actor: APActor) {
       handle: await getActorHandle(actor),
       name: actor.name?.toString(),
       inbox_url: actor.inboxId.href,
-      shared_inbox_url: actor.endpoints?.sharedInbox?.href ?? null,
       url: actor.url?.href ?? null,
     },
     {
@@ -86,15 +91,18 @@ federation
         preferredUsername: identifier,
         name: user.displayName,
         inbox: ctx.getInboxUri(identifier),
-        endpoints: new Endpoints({
-          sharedInbox: ctx.getInboxUri(),
-        }),
         url: ctx.getActorUri(identifier),
         publicKey: keys[0]?.cryptographicKey,
         assertionMethods: keys.map((k) => k.multikey),
         followers: ctx.getFollowersUri(identifier),
-        // following: ctx.getFollowingUri(identifier),
-        // outbox: ctx.getOutboxUri(identifier),
+        icon: user.avatar
+          ? new Image({
+              url: new URL(user.avatar),
+              mediaType: "image/jpeg",
+            })
+          : undefined,
+        following: ctx.getFollowingUri(identifier),
+        outbox: ctx.getOutboxUri(identifier),
       });
     }
   )
@@ -276,12 +284,11 @@ federation
 
     const attachments = [];
     for await (const attachment of object.getAttachments()) {
-      
-    attachments.push({
+      attachments.push({
         url: (attachment as any).url.href,
         mediaType: (attachment as any).mediaType,
         width: (attachment as any).width,
-        height: (attachment as any).height
+        height: (attachment as any).height,
       });
     }
 
@@ -373,6 +380,50 @@ federation
     return count;
   });
 
+federation
+  .setFollowingDispatcher(
+    "/users/{identifier}/following",
+    async (ctx, identifier, cursor) => {
+      const user = await UserModel.findOne({ username: identifier });
+      if (!user) return { items: [] };
+
+      const actor = await ActorModel.findOne({ user_id: user._id });
+      if (!actor) return { items: [] };
+
+      const following = await FollowModel.find({ follower_id: actor._id }).sort(
+        {
+          created: -1,
+        }
+      );
+
+      const followingIds = following.map((f) => f.following_id);
+
+      const followingActors = await ActorModel.find({
+        _id: { $in: followingIds },
+      });
+
+      const items: Person[] = followingActors.map((following) => {
+        return new Person({
+          id: new URL(following.uri),
+          inbox: new URL(following.inbox_url),
+        });
+      });
+
+      return { items };
+    }
+  )
+  .setCounter(async (ctx, identifier) => {
+    const user = await UserModel.findOne({ username: identifier });
+    if (!user) return 0;
+
+    const actor = await ActorModel.findOne({ user_id: user._id });
+    if (!actor) return 0;
+
+    const count = await FollowModel.countDocuments({ follower_id: actor._id });
+
+    return count;
+  });
+
 federation.setObjectDispatcher(
   Note,
   "/users/{identifier}/posts/{id}",
@@ -416,10 +467,187 @@ federation.setObjectDispatcher(
       to: PUBLIC_COLLECTION,
       cc: ctx.getFollowersUri(values.identifier),
       content: post.content,
-      mediaType: "text/html",
-      url: ctx.getObjectUri(Note, values),
+      attachments: (post.attachment || []).map((att: any) => {
+        if (att.mediaType && att.mediaType.toUpperCase().startsWith("IMAGE/")) {
+          return new Image({
+            url: new URL(att.url),
+            mediaType: att.mediaType,
+            width: att.width,
+            height: att.height,
+          });
+        } else {
+          return new Video({
+            url: new URL(att.url),
+            mediaType: att.mediaType,
+            width: att.width,
+            height: att.height,
+          });
+        }
+      }),
     });
   }
 );
 
+federation
+  .setOutboxDispatcher(
+    "/users/{identifier}/outbox",
+    async (ctx, identifier, cursor) => {
+      const user = await userService.getUserByUsername(identifier);
+      if (!user) return null;
+
+      const actor = await actorService.getActorByUserId(user.id);
+      if (!actor) return null;
+
+      const page = cursor ? parseInt(cursor) : 1;
+      const limit = 20;
+      const offset = (page - 1) * limit;
+
+      const postService = new PostService(postRepository, userRepository);
+
+      const posts = await postService.getPostsByAuthor(actor.id, limit, offset);
+
+      const activities = posts.map((post: any) => {
+        const note = new Note({
+          id: new URL(post.uri),
+          content: post.content,
+          to: PUBLIC_COLLECTION,
+          attribution: ctx.getActorUri(identifier),
+          attachments: (post.attachment || []).map((att: any) => {
+            if (att.mediaType && att.mediaType.toUpperCase().startsWith("IMAGE/")) {
+              return new Image({
+                url: new URL(att?.url),
+                mediaType: att?.mediaType,
+                width: att?.width,
+                height: att?.height,
+              });
+            } else {
+              return new Video({
+                url: new URL(att?.url),
+                mediaType: att?.mediaType,
+                width: att?.width,
+                height: att?.height,
+              });
+            }
+          }),
+        });
+
+        return new Create({
+          id: new URL(`${post.uri}/activity`),
+          actor: ctx.getActorUri(identifier),
+          object: note,
+          to: new URL("https://www.w3.org/ns/activitystreams#Public"),
+        });
+      });
+
+      return {
+        items: activities,
+        nextCursor: posts.length === limit ? (page + 1).toString() : null,
+      };
+    }
+  )
+  .setCounter(async (ctx, identifier) => {
+    const user = await UserModel.findOne({ username: identifier });
+    if (!user) return 0;
+
+    const actor = await ActorModel.findOne({ user_id: user._id });
+    if (!actor) return 0;
+
+    const count = await PostModel.countDocuments({ actor_id: actor._id });
+
+    return count;
+  });
+
+federation
+  .setInboxDispatcher(
+    "/users/{identifier}/inbox",
+    async (ctx, identifier, cursor) => {
+      const user = await userService.getUserByUsername(identifier);
+      if (!user) return null;
+
+      const actor = await actorService.getActorByUserId(user.id);
+      if (!actor) return null;
+
+      const page = cursor ? parseInt(cursor) : 1;
+      const limit = 20;
+      const offset = (page - 1) * limit;
+
+      // Find all actors whom the user follows
+      const follows = await FollowModel.find({ follower_id: actor.id }).lean();
+      const followedActorIds = follows.map((f) => f.following_id.toString());
+      // Include the user's own actor id
+      followedActorIds.push(actor.id.toString());
+
+      const posts = await PostModel.find({
+        actor_id: { $in: followedActorIds },
+      })
+        .sort({ created_at: -1 })
+        .skip(offset)
+        .limit(limit)
+        .lean();
+
+      const activities = await Promise.all(
+        posts.map(async (post: any) => {
+          // Find the actor for this post
+          const postActor = await ActorModel.findById(post.actor_id).lean();
+          let postActorUri = undefined;
+
+          if (postActor && postActor.uri) {
+            postActorUri = postActor.uri;
+          }
+          
+          const note = new Note({
+            id: new URL(post.uri),
+            content: post.content,
+            to: PUBLIC_COLLECTION,
+            attribution: postActorUri ? new URL(postActorUri) : undefined,
+            attachments: (post.attachment || []).map((att: any) => {
+              if (
+                att.mediaType &&
+                att.mediaType.toUpperCase().startsWith("IMAGE/")
+              ) {
+                return new Image({
+                  url: new URL(att?.url),
+                  mediaType: att?.mediaType,
+                  width: att?.width,
+                  height: att?.height,
+                });
+              } else {
+                return new Video({
+                  url: new URL(att?.url),
+                  mediaType: att?.mediaType,
+                  width: att?.width,
+                  height: att?.height,
+                });
+              }
+            }),
+          });
+          return new Create({
+            id: new URL(`${post.uri}/activity`),
+            actor: postActorUri
+              ? new URL(postActorUri)
+              : ctx.getActorUri(identifier),
+            object: note,
+            to: new URL("https://www.w3.org/ns/activitystreams#Public"),
+          });
+        })
+      );
+
+      return {
+        items: activities,
+        nextCursor: posts.length === limit ? (page + 1).toString() : null,
+      };
+    }
+  )
+  .setCounter(async (ctx, identifier) => {
+    const user = await UserModel.findOne({ username: identifier });
+    if (!user) return 0;
+    const actor = await ActorModel.findOne({ user_id: user._id });
+    if (!actor) return 0;
+    const follows = await FollowModel.find({ follower_id: actor.id }).lean();
+    const followedActorIds = follows.map((f) => f.following_id.toString());
+    followedActorIds.push(actor.id.toString());
+    return await PostModel.countDocuments({
+      actor_id: { $in: followedActorIds },
+    });
+  });
 export default federation;

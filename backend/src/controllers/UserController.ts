@@ -1,4 +1,5 @@
 import { createFederationContextFromExpressReq } from "@/federation/federationContext.ts";
+import { ActorModel } from "@/models/actorModel.ts";
 import { postRepository } from "@/repositories/postRepository.ts";
 import { userRepository } from "@/repositories/userRepository.ts";
 import actorService from "@/services/actorService.ts";
@@ -53,36 +54,31 @@ import { GraphService} from "@services/graphService.js";
   }
 
   async getUserByHandle(
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
   ): Promise<Response | void> {
     try {
+      if (!req?.user?.email) {
+        return res.status(401).send("No username for logged in user");
+      }
+      const requester = await userService.getUserByEmail(req?.user?.email);
+      if (!requester) {
+        return res.status(401).send("No user found with email");
+      }
+
+      const requesterActor = await ActorModel.findOne({ user_id: requester.id });
+      if (!requesterActor) {
+        return res.status(401).send("No actor found for user");
+      }
+
       const handle = req.params.handle;
       const match = await actorService.fetchActorByHandle(handle);
       if (!match) {
         return res.status(404).json({ error: "Actor not found" });
       }
-      const user = await mapActorToUserObject(match);
+      const user = await mapActorToUserObject(match, requesterActor.id);
       return res.json(user);
-    } catch (err) {
-      next(err);
-    }
-  }
-
-  async searchUsers(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<Response | void> {
-    try {
-      const search = req.query.search as string;
-      const match = await actorService.fetchActorByHandle(search);
-      if (!match) {
-        return res.status(200).json([]);
-      }
-      const user = await mapActorToUserObject(match);
-      return res.json([user]);
     } catch (err) {
       next(err);
     }
@@ -97,7 +93,7 @@ import { GraphService} from "@services/graphService.js";
       const userFollowers = await userService.getUserFollowers(
         req.params.username
       );
-      return res.json(userFollowers);
+      return res.json({ followers: userFollowers });
     } catch (err) {
       next(err);
     }
