@@ -1,7 +1,7 @@
-import type { CreatePost, Post, PostsPage } from "../models/Post";
+import { type CreatePost, type Post, type PostsPage } from "../models/Post";
 import { apiFetch, handleError } from "../util/api";
 
-// Get the public feed (all public posts)
+// Get the feed of the user (Posts from the users they follow)
 export async function getFeed({
   pageParam = 0,
 }: {
@@ -12,42 +12,33 @@ export async function getFeed({
     path: `/api/posts?limit=${limit}&offset=${pageParam}`,
     method: "GET",
   });
-  await handleError(response);
-
+  await handleError(response, "Failed to get users feed");
   const data = await response.json();
   return {
-    items: data,
-    nextOffset: data.length < limit ? undefined : pageParam + limit,
+    items: data || [],
+    nextOffset: data?.length < limit ? undefined : pageParam + limit,
   };
 }
 
 // Get posts for a specific user
 export async function getUsersFeed(userHandle: string): Promise<Post[]> {
-  // return [];
   const response = await apiFetch({
     path: `/api/posts/author/${userHandle}`,
     method: "GET",
   });
-  await handleError(response);
-
+  await handleError(response, "Failed to get posts for this user");
   const data = await response.json();
   return data || [];
 }
 
-// Like a post (if endpoint exists)
 export async function likePost(postId: string): Promise<Post> {
-  const userId = sessionStorage.getItem("MY_USER_ID");
-  if (!userId) throw new Error("Not authenticated");
-
   const response = await apiFetch({
     path: `/api/posts/${postId}/like`,
     method: "POST",
-    body: JSON.stringify({ authorId: userId }),
   });
-  await handleError(response);
-
+  await handleError(response, "Failed to like post");
   const data = await response.json();
-  return data.data;
+  return data;
 }
 
 export async function unlikePost(postId: string): Promise<Post> {
@@ -55,30 +46,22 @@ export async function unlikePost(postId: string): Promise<Post> {
     path: `/api/posts/${postId}/like`,
     method: "DELETE",
   });
-  await handleError(response);
-
+  await handleError(response, "Failed to unlike post");
   return await response.json();
 }
 
-// Create a new post
-export async function createPost(post: CreatePost): Promise<Post> {
+export async function createPost(post: CreatePost): Promise<void> {
   const formData = new FormData();
   formData.append("content", post.content);
   formData.append("title", "");
   formData.append("visibility", "public");
-  if (post.files) {
-    post.files.forEach((file) => {
-      formData.append("files", file);
-    });
+  if (post.file) {
+      formData.append("files", post.file);
   }
   const response = await apiFetch({
     path: `/api/posts`,
     method: "POST",
     body: formData,
   });
-
   await handleError(response);
-
-  const data = await response.json();
-  return data.data;
 }

@@ -15,10 +15,19 @@
 }
 
 #search-box {
-  padding: 0.5rem;
+  padding: 0.75rem;
   padding-right: 2rem;
   box-sizing: border-box;
   width: 100%;
+  border-radius: 1rem;
+  background-color: #e6f2fe !important;
+  outline: none;
+  border: none;
+  box-shadow: 0 3px 6px 3px rgba(0, 0, 0, 0.2);
+}
+
+#search-box:focus {
+  outline: none;
 }
 
 #search-icon {

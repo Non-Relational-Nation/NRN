@@ -64,7 +64,7 @@ export default function Search() {
         {isFetching ? (
           <Loader></Loader>
         ) : error ? (
-          <ErrorPage errorMessage={error.message} />
+          <ErrorPage errorMessage={"Search failed"} />
         ) : (
           hasSearched && <UserList users={users} />
         )}

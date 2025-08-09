@@ -1,12 +1,29 @@
-.button {
-    cursor: pointer;
-    background-color: white;
+.unbordered-button {
+  cursor: pointer;
+  background-color: #e6f2fe;
+  border: none;
+  border-radius: 0.5rem;
 }
-.button:hover {
-    cursor: pointer;
-    background-color: rgb(230, 230, 230);
+.unbordered-button:hover {
+  cursor: pointer;
+  background-color: #bcd0e4;
 }
 
-.fancy-font {
-    font-family: 'Monotype Corsiva', sans-serif;
+.filled-button {
+  cursor: pointer;
+  background-color: #286fff;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+}
+.filled-button:hover {
+  background-color: #0037FF;
+}
+
+.card {
+  box-shadow: 0 3px 6px 1px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+  padding: 1rem;
+  background-color: #e6f2fe;
+  border-radius: 1rem;
 }

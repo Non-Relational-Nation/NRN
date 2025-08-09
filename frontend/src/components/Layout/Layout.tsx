@@ -1,6 +1,6 @@
 import "./styles.css";
 import { type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Loader from "../Loader/Loader";
 import ErrorPage from "../../pages/ErrorPage/ErrorPage";
 import homeIcon from "../../assets/home.svg";
@@ -16,11 +16,12 @@ interface LayoutProps {
 
 function Layout({ children, loading = false, error = null }: LayoutProps) {
   const navigate = useNavigate();
+  const location = useLocation();
 
   return (
     <div id="layout">
-      <header id="header" className="fancy-font">
-        Non-Relational Nation
+      <header id="header">
+        <b>NRN</b>
       </header>
       <main id="content">
         {loading ? (
@@ -35,28 +36,36 @@ function Layout({ children, loading = false, error = null }: LayoutProps) {
         <nav id="navbar">
           <button
             title="Home"
-            className="button nav-button"
+            className={`nav-button${
+              location.pathname === "/" ? " nav-button-active" : ""
+            }`}
             onClick={() => navigate("/")}
           >
             <img src={homeIcon} alt="Home" width={20} height={20} />
           </button>
           <button
             title="Search"
-            className="button nav-button"
+            className={`nav-button${
+              location.pathname === "/search" ? " nav-button-active" : ""
+            }`}
             onClick={() => navigate("/search")}
           >
             <img src={searchIcon} alt="Search" width={20} height={20} />
           </button>
           <button
             title="Create Post"
-            className="button nav-button"
+            className={`nav-button${
+              location.pathname === "/create-post" ? " nav-button-active" : ""
+            }`}
             onClick={() => navigate("/create-post")}
           >
             <img src={addPostIcon} alt="Add Post" width={20} height={20} />
           </button>
           <button
             title="My Profile"
-            className="button nav-button"
+            className={`nav-button${
+              location.pathname.startsWith("/profile") ? " nav-button-active" : ""
+            }`}
             onClick={() => navigate("/profile")}
           >
             <img src={userIcon} alt="Profile" width={20} height={20} />
