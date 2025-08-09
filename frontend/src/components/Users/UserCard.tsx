@@ -13,21 +13,25 @@ interface UserCardProps {
 export default function UserCard({ user, disableUserAvatar }: UserCardProps) {
   const navigate = useNavigate();
   const [errorDialogMessage, setErrorDialogMessage] = useState("");
+  const [username, domain] = user?.handle.split("@") || [];
 
   const handleClick = () => {
     navigate(`/profile/${user?.handle}`);
   };
   return (
     <>
-      <article id="user-card" onClick={handleClick}>
+      <article id="user-card" className="card" onClick={handleClick}>
         {!disableUserAvatar && <UserAvatar imageUrl={user?.avatar} size={40} />}
-        <p>{user?.handle}</p>
+        <p id="user-handle-text">
+          @{username}
+          <wbr />@{domain}
+        </p>
       </article>
       <ErrorDialog
         isOpen={!!errorDialogMessage}
         onClose={() => setErrorDialogMessage("")}
         errorMessage={errorDialogMessage}
-      ></ErrorDialog>
+      />
     </>
   );
 }

@@ -6,7 +6,7 @@ import type { Post } from "../../models/Post";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { getUsersFeed } from "../../api/posts";
 import type { User } from "../../models/User";
-import { followUser, getUser } from "../../api/users";
+import { followUser, getUser, unfollowUser } from "../../api/users";
 import UserAvatar from "../../components/Users/UserAvatar";
 import { useEffect, useState } from "react";
 import { logout } from "../../util/logout";
@@ -14,9 +14,8 @@ import ErrorDialog from "../../components/Dialogs/ErrorDialog";
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { user = sessionStorage.getItem("MY_HANDLE") } = useParams();
-  const isMyProfile = user === sessionStorage.getItem("MY_HANDLE");
-
+  const { user = sessionStorage.getItem("HANDLE") } = useParams();
+  const isMyProfile = user === sessionStorage.getItem("HANDLE");
   const [errorDialogMessage, setErrorDialogMessage] = useState("");
 
   const {
@@ -53,71 +52,82 @@ export default function Profile() {
     gcTime: 0,
   });
 
+  useEffect(() => {
+    if (userFeedError) {
+      setErrorDialogMessage("Failed to get posts for this user");
+    }
+  }, [userFeedError]);
+
   const followMutation = useMutation({
     mutationFn: () => followUser(userData?.handle),
     onSuccess: () => {
       setFollowing(true);
       setFollowerCount((prev) => (prev ?? 0) + 1);
     },
-    onError: (error: Error) => setErrorDialogMessage(error.message),
+    onError: () => setErrorDialogMessage("Failed to follow user"),
   });
 
-  // const unfollowMutation = useMutation({
-  //   mutationFn: () => unfollowUser(userData?.handle),
-  //   onSuccess: () => {
-  //     setFollowing(false);
-  //     setFollowerCount((prev) => (prev ?? 0) - 1);
-  //   },
-  //   onError: (error: Error) => setErrorDialogMessage(error.message),
-  // });
+  const unfollowMutation = useMutation({
+    mutationFn: () => unfollowUser(userData?.handle),
+    onSuccess: () => {
+      setFollowing(false);
+      setFollowerCount((prev) => (prev ?? 0) - 1);
+    },
+    onError: () => setErrorDialogMessage("Failed to unfollow user"),
+  });
 
   const handleFollow = () => followMutation.mutate();
-  // const handleUnfollow = () => unfollowMutation.mutate();
+  const handleUnfollow = () => unfollowMutation.mutate();
+
+  const [username, domain] = userData?.handle.split("@") || [];
 
   return (
-    <Layout
-      loading={isUserFeedLoading || isUserLoading}
-      error={userFeedError || userError}
-    >
-      
+    <Layout loading={isUserFeedLoading || isUserLoading} error={userError}>
       <section id="profile-container">
         <section id="profile-header-container">
-          <header id="profile-header">
+          <header id="profile-header" className="card">
             <UserAvatar size={40} imageUrl={userData?.avatar} />
-            <h3 className="info-text">{userData?.displayName}</h3>
-            <p className="info-text">@{userData?.handle}</p>
+            <h3 className="info-text">{userData?.displayName}</h3> 
+            <p className="info-text">@{username}<wbr/>@{domain}</p>
             {userData?.bio && <p className="info-text">{userData.bio}</p>}
             <section id="follower-container">
               <section id="follow-counts">
                 <span
-                  onClick={() => isMyProfile && navigate(`/followers`)}
-                  className={isMyProfile ? "button" : ""}
+                  onClick={() => isMyProfile && navigate(`/profile/followers`)}
+                  className={
+                    isMyProfile
+                      ? "count unbordered-button count-button"
+                      : "count"
+                  }
                 >
                   Followers: <b>{followerCount}</b>
                 </span>
                 <span
-                  onClick={() => isMyProfile && navigate(`/following`)}
-                  className={isMyProfile ? "button" : ""}
+                  onClick={() => isMyProfile && navigate(`/profile/following`)}
+                  className={
+                    isMyProfile
+                      ? "count unbordered-button count-button"
+                      : "count"
+                  }
                 >
                   Following: <b>{userData?.followingCount}</b>
                 </span>
-                <span>
+                <span className="count">
                   Posts: <b>{userData?.postsCount}</b>
                 </span>
               </section>
               {!isMyProfile &&
                 (following ? (
-                  // <button
-                  //   className="button"
-                  //   id="follow-button"
-                  //   onClick={handleUnfollow}
-                  // >
-                  //   Unfollow
-                  // </button>
-                  <span>You are following this user</span>
-                ) : (
                   <button
                     className="button"
+                    id="follow-button"
+                    onClick={handleUnfollow}
+                  >
+                    Unfollow
+                  </button>
+                ) : (
+                  <button
+                    className="filled-button"
                     id="follow-button"
                     onClick={handleFollow}
                   >
@@ -125,22 +135,13 @@ export default function Profile() {
                   </button>
                 ))}
               {isMyProfile && (
-                <>
-                  {/* <button
-                    className="button"
-                    id="edit-profile-button"
-                    onClick={() => navigate("/profile/edit")}
-                  >
-                    Edit Profile
-                  </button> */}
-                  <button
-                    className="button"
-                    id="logout-button"
-                    onClick={() => logout()}
-                  >
-                    Logout
-                  </button>
-                </>
+                <button
+                  className="filled-button"
+                  id="logout-button"
+                  onClick={() => logout()}
+                >
+                  Logout
+                </button>
               )}
             </section>
           </header>

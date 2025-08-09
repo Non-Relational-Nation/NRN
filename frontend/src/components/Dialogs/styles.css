@@ -10,12 +10,13 @@
 #dialog {
   padding: 1.5rem;
   border-radius: 0.5rem;
-  width: 100%;
+  width: calc(100% - 2rem);
   max-width: 24rem;
   box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
   margin: auto;
   backdrop-filter: blur(2px);
-  background: white;
+  background-color: #e6f2fe;
+  border: none;
   box-sizing: border-box;
 }
 
@@ -37,7 +38,7 @@
 }
 
 #dialog-close {
-  color: #6b7280;
+  color: #154ec0;
   cursor: pointer;
   font-size: 2rem;
   font-weight: bold;
@@ -47,5 +48,9 @@
 }
 
 #dialog-close:hover {
-  color: #111827;
+  color: rgb(16, 49, 121);
+}
+
+#close-button {
+  padding: 0.5rem 1rem;
 }

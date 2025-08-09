@@ -2,7 +2,7 @@
   border-radius: 50%;
   overflow: hidden;
   display: inline-flex;
-  border: 1px gray solid;
+  border: 2px rgb(28, 7, 75) solid;
 }
 
 #avatar-image {
@@ -16,14 +16,13 @@
   width: 100%;
   align-items: center;
   gap: 1rem;
-  box-shadow: 0 3px 6px 1px rgba(0, 0, 0, 0.2);
-  padding: 0 0.5rem 0 0.5rem;
   cursor: pointer;
   box-sizing: border-box;
+  padding: 0 0.5rem 0 0.5rem;
 }
 
 #user-card:hover {
-  background: #e2e2e2;
+  background: #d1e1f1;
 }
 
 #users-list {

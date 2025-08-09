@@ -31,8 +31,8 @@ function App() {
       <Route path="/" element={<Feed />} />
       <Route path="/login/callback" element={<Callback />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/following" element={<Following />} />
-      <Route path="/followers" element={<Followers />} />
+      <Route path="/profile/following" element={<Following />} />
+      <Route path="/profile/followers" element={<Followers />} />
       <Route path="/profile/:user?" element={<Profile />} />
       <Route path="/search" element={<Search />} />
       <Route path="/create-post" element={<CreatePost />} />

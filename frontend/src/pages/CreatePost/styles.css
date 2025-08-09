@@ -2,11 +2,16 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
   max-width: 40rem;
   align-self: flex-start;
   padding: 1rem;
   box-sizing: border-box;
+}
+
+#create-post-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 #create-post-title {
@@ -23,6 +28,11 @@
   width: 100%;
   min-height: 6rem;
   padding: 0.5rem;
+  border-radius: 1rem;
+  border: none;
+  box-shadow: 0 3px 6px 1px rgba(0, 0, 0, 0.2);
+  outline: none;
+  background-color: rgb(245, 245, 245);
 }
 
 #add-files-button {
@@ -33,6 +43,12 @@
   align-items: center;
   gap: 0.25rem;
   border: none;
+  background-color: rgb(245, 245, 245);
+  border-radius: 1rem;
+}
+
+#add-files-button:hover {
+  background-color: rgb(230, 230, 230);
 }
 
 #create-post-button {
@@ -43,12 +59,13 @@
 }
 
 #attachment-section {
-  background-color: white;
+  background-color: rgb(245, 245, 245);
   box-shadow: 0 3px 6px 1px rgba(0, 0, 0, 0.2);
   padding: 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  border-radius: 1rem;
 }
 
 #file-list {
@@ -58,14 +75,54 @@
   gap: 0.25rem;
 }
 
+#no-attachments-text {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
 #file-item {
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  font-size: smaller;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
 }
 
-#no-attachments-text {
-  font-size: 0.75rem;
-  line-height: 1rem;
+.preview {
+  position: relative;
+  display: inline-block;
+  margin: 0 auto;
+  max-width: 100%;
+  max-height: 20rem;
+}
+
+.preview-file {
+  display: block;
+  max-width: 100%;
+  max-height: 20rem;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+#remove-attachment-btn {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  background: rgba(255, 185, 185, 0.8);
+  border: none;
+  border-radius: 50%;
+  padding: 0.25rem;
+  cursor: pointer;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#remove-attachment-btn:hover {
+  background: #cc7373;
 }

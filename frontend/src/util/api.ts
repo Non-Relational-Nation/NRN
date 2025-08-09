@@ -27,14 +27,19 @@ export const apiFetch = async ({
   return res;
 };
 
-export async function handleError(response: Response): Promise<void> {
+export async function handleError(
+  response: Response,
+  errorMessage?: string
+): Promise<void> {
   if (!response.ok) {
     if (response.status === 401) {
       logout();
     }
     const data = await response.json().catch(() => ({}));
     throw new Error(
-      data?.error
+      errorMessage
+        ? errorMessage
+        : data?.error
         ? `${response.status}: ${data?.error}`
         : `Request failed with status ${response.status}`
     );
