@@ -246,7 +246,7 @@ export function mapOutboxToPosts(outbox: any): Post[] {
   return (outbox.orderedItems || []).map(async (item: any) => {
     const obj = item.object || {};
     const postId = item?.id?.split("/").pop()
-    const count = await LikeModel.countDocuments({ posts_id: postId });
+    const count = await LikeModel.countDocuments({ post_id: postId });
     return {
       id: obj?.id || item.id,
       authorId: obj?.attributedTo || item.actor,
