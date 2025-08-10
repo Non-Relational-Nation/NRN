@@ -480,14 +480,15 @@ export class PostController {
   }
   // Like a post
   async likePost(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const { id } = req.params;
-      const userId = req.body.userId;
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { id } = req.params;
+    const userId = req.body.userId;
 
+<<<<<<< Updated upstream
       if (!userId) {
         res.status(401).json({ message: "Unauthorized" });
         return;
@@ -566,6 +567,90 @@ export class PostController {
     } catch (error: any) {
       console.error("Error in likePost:", error);
       res.status(500).json({ success: false, error: "Failed to like post", details: error.message, stack: error.stack });
+=======
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+>>>>>>> Stashed changes
     }
+
+    const user = await userService.getUserById(userId);
+    if (!user) {
+      res.status(404).send("User not found");
+      return;
+    }
+
+    const post = await this.postService.getPostById(id);
+    if (!post) {
+      res.status(404).send("Post not found");
+      return;
+    }
+
+    const liker = await actorService.getActorByUserId(userId);
+    if (!liker || !liker.uri) {
+      res.status(404).json({ message: "Actor not found or missing URI" });
+      return;
+    }
+
+    if (!post.uri) {
+      res.status(400).json({ message: "Post URI missing" });
+      return;
+    }
+
+    const existingPostLike = await this.postService.getLikedPost(
+      liker.id,
+      post.id
+    );
+
+    if (existingPostLike) {
+      res.status(409).json({ message: "Post already liked" });
+      return;
+    }
+
+    // Make sure post.uri is a valid absolute URL string
+    const postUrlString = typeof post.uri === "string" ? post.uri : post.uri?.toString();
+    if (!postUrlString) {
+      res.status(400).json({ message: "Invalid post URI" });
+      return;
+    }
+
+    // Create a unique Like id URL based on post URL
+    const likeId = new URL(`#like-${liker.id}-${post.id}`, postUrlString);
+
+    const actorUrl = new URL(liker.uri);
+
+    // Create Like activity with actor as liker URI string and object as post URL
+    const like = new Like({
+      id: likeId,
+      actor: actorUrl,
+      object: new URL(postUrlString),
+    });
+
+    const authorActor = await actorService.getActorById(post.actor_id);
+    if (!authorActor || !authorActor.uri || !authorActor.inbox_url) {
+      res.status(404).json({ message: "Post author actor or inbox missing" });
+      return;
+    }
+
+    await this.postService.likePost(liker.id, post.id);
+
+    const likeRecipient = {
+      id: new URL(authorActor.uri),
+      inboxId: new URL(authorActor.inbox_url),
+    };
+
+    const ctx = createFederationContextFromExpressReq(req);
+
+    await ctx.sendActivity(
+      { identifier: user.username },
+      likeRecipient,
+      like
+    );
+
+    res.status(200).json({ message: "Post liked" });
+  } catch (error) {
+    console.error("Error in likePost:", error);
+    res.status(500).json({ success: false, error: "Failed to like post" });
   }
+}
 }

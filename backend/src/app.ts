@@ -2,7 +2,6 @@ import express from "express";
 import { authRoutes } from "./routes/auth.ts";
 import { userRoutes } from "./routes/users.ts";
 import cors from "cors";
-import { authMiddleware } from "./middleware/auth.ts";
 import { errorHandler } from "./middleware/errorHandler.ts";
 import federation from "./federation.ts";
 import { integrateFederation } from "@fedify/express";
@@ -10,8 +9,8 @@ import { postRoutes } from "./routes/posts.ts";
 
 export const createApp = () => {
   const app = express();
-  // Basic middleware
-  app.use(express.json());
+
+  // CORS middleware
   app.use(
     cors({
       origin: [
@@ -24,17 +23,57 @@ export const createApp = () => {
       allowedHeaders: ["Content-Type", "Authorization"],
     })
   );
-  app.use(authMiddleware);
-  app.set("trust proxy", true);
 
-  // Health check
+  // Fix missing Accept header
+  app.use((req, res, next) => {
+    if (!req.headers.accept || req.headers.accept.trim() === "") {
+      req.headers.accept = "application/activity+json";
+    }
+    next();
+  });
+
+  // Federation middleware MUST be before any body parsing middleware
+  app.use(
+    integrateFederation(federation, (req) => {
+      const headers = new Headers(req.headers as any);
+
+      // Build absolute URL required by Request constructor
+      const protocol =
+        req.protocol ||
+        (req.headers["x-forwarded-proto"] as string) ||
+        "http";
+      const host = req.headers.host;
+      if (!host) {
+        throw new Error("Missing Host header");
+      }
+      const fullUrl = `${protocol}://${host}${req.url}`;
+
+      const body =
+        req.method !== "GET" && req.method !== "HEAD" ? req : undefined;
+
+      return new Request(fullUrl, {
+        method: req.method,
+        headers,
+        body,
+        duplex: "half",
+      } as RequestInit & { duplex: string });
+    })
+  );
+
+  // Use express.json() for your API routes AFTER federation middleware
+  app.use(express.json());
+
+  // Your API routes
+  app.use("/api/auth", authRoutes);
+  app.use("/api/posts", postRoutes);
+  app.use("/api/users", userRoutes);
+
+  // Health check route
   app.get("/api/health", async (req, res) => {
     try {
       const mongoose = await import("mongoose");
       const dbStatus =
-        mongoose.default.connection.readyState === 1
-          ? "connected"
-          : "disconnected";
+        mongoose.default.connection.readyState === 1 ? "connected" : "disconnected";
 
       res.status(200).json({
         status: "OK",
@@ -54,33 +93,15 @@ export const createApp = () => {
     }
   });
 
-  // API routes
-  app.use("/api/auth", authRoutes);
-  app.use("/api/posts", postRoutes);
-  app.use("/api/users", userRoutes);
-
-  // Fix for clients like ActivityPub Academy sending no Accept header
-  app.use((req, res, next) => {
-    if (
-      typeof req.headers.accept !== "string" ||
-      req.headers.accept.trim() === "" ||
-      !req.headers.accept.includes("application/activity+json") ||
-      !req.headers.accept.includes("application/ld+json")
-    ) {
-      req.headers.accept = "application/activity+json";
-    }
-    next();
-  });
-  // Federation routes
-  app.use(integrateFederation(federation, (req: express.Request) => undefined));
-
+  // 404 handler
   app.use("*", (req, res) => {
     res.status(404).json({
       success: false,
       error: "Route not found",
     });
   });
-  // Error handler middleware
+
+  // Error handler
   app.use(errorHandler);
 
   return app;

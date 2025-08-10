@@ -86,6 +86,7 @@ export const postRepository: IPostRepository = {
     return docs.map((d: any) => toPost(d.toObject()));
   },
 
+<<<<<<< Updated upstream
   async likePost(actorID: string, postId: string): Promise<PostLike | null> {
     try {
       const like = await LikeModel.create({
@@ -102,6 +103,45 @@ export const postRepository: IPostRepository = {
         return null;
       }
       throw err;
+=======
+  async likePost(actorID: string, postId: string): Promise<PostLike> {
+    try {
+      // Start a session for transaction
+      const session = await LikeModel.startSession();
+      let like: any[] = [];
+
+      await session.withTransaction(async () => {
+        // Create the like
+        like = await LikeModel.create(
+          [
+            {
+              actor_id: actorID,
+              post_id: postId,
+            },
+          ],
+          { session }
+        );
+
+        // Increment the post's like count
+        await PostModel.findByIdAndUpdate(
+          postId,
+          { $inc: { likes_count: 1 } },
+          { session }
+        );
+      });
+
+      await session.endSession();
+      if (!like || !Array.isArray(like) || like.length === 0) {
+        throw new Error("Failed to create like");
+      }
+      return toPostLike(like[0]);
+    } catch (error: any) {
+      // Check if this is a duplicate key error (11000)
+      if (error.code === 11000) {
+        throw new Error("Post already liked");
+      }
+      throw error;
+>>>>>>> Stashed changes
     }
   },
 

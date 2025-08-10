@@ -3,10 +3,11 @@ import { IPostRepository } from "../repositories/interfaces/IPostRepository.js";
 import { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
 import { Note, type RequestContext } from "@fedify/fedify";
 import type { Actor } from "@/types/actor.ts";
-import mongoose, { type Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import he from "he";
 import { PostModel } from "@/models/postModel.ts";
 import { actorRepository } from "@/repositories/actorRepository.ts";
+import { LikeModel } from "../models/likeModel.ts";
 
 // Define PostWithAuthor type if not already defined elsewhere
 export type PostWithAuthor = Post & {
@@ -209,7 +210,21 @@ export class PostService {
 
   // Like a post
   async likePost(actorId: string, postId: string) {
-    return await this.postRepository.likePost(actorId, postId);
+    // Ensure actorId and postId are ObjectIds
+    const actorObjectId = new Types.ObjectId(actorId);
+    const postObjectId = new Types.ObjectId(postId);
+
+    // Prevent duplicate likes (optional, as schema is unique)
+    const existing = await LikeModel.findOne({
+      actor_id: actorObjectId,
+      post_id: postObjectId,
+    });
+    if (existing) return existing;
+
+    return LikeModel.create({
+      actor_id: actorObjectId,
+      post_id: postObjectId,
+    });
   }
 
   async getLikedPost(actorId: string, postId: string) {
