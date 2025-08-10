@@ -57,18 +57,9 @@ export class PostController {
       if (Array.isArray((req as any).files)) {
         files = (req as any).files;
       } else if (req.files && typeof req.files === "object") {
-        // Multer can also provide files as an object (when using .fields)
         files = Object.values(req.files).flat();
       }
-      // Debugging: log file info
-      console.log(
-        "Received files:",
-        files.map((f) => ({
-          originalname: f.originalname,
-          mimetype: f.mimetype,
-          size: f.size,
-        }))
-      );
+      
       let media: any[] = [];
       if (files.length > 0) {
         media = await Promise.all(
@@ -103,8 +94,6 @@ export class PostController {
         attachment: media,
       };
 
-      // Debugging: log postData
-      console.log("Creating post with data:", postData);
       const post = await this.postService.createPost(
         ctx,
         user.username,
@@ -263,9 +252,7 @@ export class PostController {
   ): Promise<void> {
     try {
       const handle = req.params.handle;
-
       const author = await actorService.fetchActorByHandle(handle);
-      console.log("author: ", author);
 
       if (!author) {
         res.status(404).json({
@@ -380,7 +367,6 @@ export class PostController {
       }
 
       const actor = await actorService.getActorByUserId(user.id);
-
       
       if(!actor){
         res.status(404).send("Actor not found");
@@ -388,7 +374,6 @@ export class PostController {
       }
 
       const author = await actorService.fetchActorByHandle(actor.handle);
-
       if (!author) {
         res.status(404).json({
           success: false,
@@ -420,7 +405,6 @@ export class PostController {
         });
         return;
       }
-
       if (data?.first) {
         const firstPage = await fetch(data?.first, {
           headers: {
@@ -457,7 +441,6 @@ export class PostController {
         limit,
         offset
       );
-
       res.json({
         success: true,
         data: {

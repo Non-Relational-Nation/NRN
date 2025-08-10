@@ -197,11 +197,6 @@ export class PostService {
     limit?: number,
     offset?: number
   ): Promise<Post[]> {
-    // For now, return public posts
-    // In a real implementation, you would:
-    // 1. Get the user's following list
-    // 2. Get posts from followed users (public and followers-only)
-    // 3. Mix with some public posts from other users
     return this.postRepository.getPublicPosts(limit, offset);
   }
 
@@ -242,8 +237,8 @@ export function mapOutboxToPosts(outbox: any): Post[] {
             }))
           : [obj.attachment]
         : [],
-      isLiked: false, // TODO
-      likesCount: 0, //TODO
+      isLiked: false,
+      likesCount: 0,
       created_at: obj?.published ? new Date(obj?.published) : undefined,
     };
   });

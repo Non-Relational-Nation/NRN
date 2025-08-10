@@ -12,8 +12,12 @@ export const actorRepository = {
     return doc ? toActor(doc.toObject()) : null;
   },
 
-  async findById(actorId: string): Promise<Actor | null> {
-    const doc = await ActorModel.findOne({ _id: actorId });
-    return doc ? toActor(doc.toObject()) : null;
-  },
+async findById(actorId: string): Promise<Actor | null> {
+  let query: any = { _id: actorId };
+  if (actorId.startsWith('https')) {
+    query = { uri: actorId };
+  }
+  const doc = await ActorModel.findOne(query);
+  return doc ? toActor(doc.toObject()) : null;
+},
 };

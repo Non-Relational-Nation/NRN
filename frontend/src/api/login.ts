@@ -32,7 +32,6 @@ export async function handleOAuthCallback() {
         return response.json();
       })
       .then((data) => {
-        console.log(data)
         sessionStorage.setItem("JWT_TOKEN", data?.id_token);
         if (data?.handle) {
           sessionStorage.setItem("HANDLE", data?.handle);

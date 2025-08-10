@@ -1,8 +1,5 @@
 import { actorRepository } from "@/repositories/actorRepository.ts";
 import type { IActorRepository } from "@/repositories/interfaces/IActorRepository.ts";
-import type { Type } from "@aws-sdk/client-s3";
-import { Actor } from "@fedify/fedify";
-import type { Types } from "mongoose";
 
 export class ActorService {
   constructor(private actorRepository: IActorRepository) {}

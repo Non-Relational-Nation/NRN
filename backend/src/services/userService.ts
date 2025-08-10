@@ -67,6 +67,24 @@ export class UserService {
     return this.userRepository.findByEmail(email);
   }
 
+  async ensureUserActor(user: any, context: any) {
+    const existingActor = await ActorModel.findOne({ user_id: user.id });
+    if (!existingActor) {
+      await this.userRepository.upsertActor(new mongoose.Types.ObjectId(user.id), {
+        username: user.username,
+        name: user.displayName,
+        context,
+      });
+      
+      try {
+        await GraphService.addActor(user.id.toString(), 'User');
+      } catch (err) {
+        console.error('Failed to add user to Neo4j graph:', err);
+      }
+    }
+    return existingActor;
+  }
+
   async searchUsers(query?: string) {
     return this.userRepository.searchUsers(query || "");
   }
@@ -117,7 +135,7 @@ export async function mapActorToUserObject(
     following_id: actorObj?.id,
     follower_id: requester,
   });
-
+ console.log("Follow:", follow);
   return {
     avatar: actor?.icon?.url ?? actor?.image?.url ?? undefined,
     bio: actor?.summary ?? "",

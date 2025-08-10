@@ -13,7 +13,6 @@ export class AuthController {
     this.actorService = actorServiceInstance;
   }
   async login(req: Request, res: Response): Promise<Response> {
-    console.log('[AuthController] Login attempt started');
     try {
       const { code } = req.body as { code?: string };
 
@@ -68,7 +67,6 @@ export class AuthController {
         return res.status(400).json({ error: "No username or email found in token" });
       }
       const context = createFederationContextFromExpressReq(req);
-
       const existingUser = await this.userService.getUserByUsername(username);
       let user = existingUser;
       if (!user) {

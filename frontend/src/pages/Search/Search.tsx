@@ -37,7 +37,7 @@ export default function Search() {
       setSuggestionsLoading(true);
       setSuggestionsError(null);
       try {
-        const handles = await getSuggestedUserHandles(sessionStorage.getItem("MY_HANDLE")!);
+        const handles = await getSuggestedUserHandles(sessionStorage.getItem("HANDLE")!);
         if (isMounted) setSuggestedHandles(handles);
       } catch (err) {
         if (isMounted) setSuggestionsError("");
@@ -86,9 +86,8 @@ export default function Search() {
         </div>
         {isFetching ? (
           <Loader></Loader>
-        ) : error ? (
-          <ErrorPage errorMessage={"Search failed"} />
-        ) : (
+        ) 
+         : (
           hasSearched && <UserList users={users} />
         )}
         <SuggestedUsers

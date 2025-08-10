@@ -25,7 +25,6 @@ export const postRepository: IPostRepository = {
 
   async findById(id: string): Promise<Post | null> {
     const doc = await PostModel.findById(id);
-    console.log(doc);
     return doc ? toPost(doc.toObject()) : null;
   },
 
