@@ -16,7 +16,7 @@ export class PostController {
   }
 
   async createPost(req: AuthenticatedRequest, res: Response): Promise<void> {
-    try {
+  try {
       if (!req?.user?.email) {
         res.status(401).send("No username for logged in user");
         return;
@@ -494,37 +494,30 @@ export class PostController {
       }
 
       const user = await userService.getUserById(userId);
-
       if (!user) {
         res.status(404).send("User not found");
         return;
       }
 
       const post = await this.postService.getPostById(id);
-
       if (!post) {
         res.status(404).send("Post not found");
         return;
       }
 
       const liker = await actorService.getActorByUserId(userId);
-
       if (!liker) {
         res.status(404).json({ message: "Actor not found" });
         return;
       }
 
-      const existingPostLike = await this.postService.getLikedPost(
-        liker.id,
-        post.id
-      );
-
+      const existingPostLike = await this.postService.getLikedPost(liker.id, post.id);
       if (existingPostLike) {
         res.status(409).json({ message: "Post already liked" });
         return;
       }
 
-      // Send federated Like activity
+      // Prepare federated Like activity
       const like = new Like({
         id: new URL(`#like-${liker.id}-${post.id}`, post.uri), // unique
         actor: liker.uri,
@@ -532,13 +525,19 @@ export class PostController {
       });
 
       const authorActor = await actorService.getActorById(post.actor_id);
-
       if (!authorActor) {
         res.status(404).json({ message: "Post author not found" });
         return;
       }
 
-      const likeResult = await this.postService.likePost(liker.id, post.id);
+      let likeResult;
+      try {
+        likeResult = await this.postService.likePost(liker.id, post.id);
+      } catch (err: any) {
+        console.error("Error in repository likePost:", err);
+        res.status(500).json({ success: false, error: "Failed to like post", details: err.message, stack: err.stack });
+        return;
+      }
       if (!likeResult) {
         res.status(409).json({ message: "Post already liked" });
         return;
@@ -550,17 +549,23 @@ export class PostController {
       };
 
       const ctx = createFederationContextFromExpressReq(req);
-
-      await ctx.sendActivity(
-        { identifier: user.username },
-        likeRecipient,
-        like
-      );
+      try {
+        await ctx.sendActivity(
+          { identifier: user.username },
+          likeRecipient,
+          like
+        );
+      } catch (err: any) {
+        console.error("Error in ctx.sendActivity:", err);
+        res.status(500).json({ success: false, error: "Failed to federate like activity", details: err.message, stack: err.stack });
+        return;
+      }
 
       res.status(200).json({ message: "Post liked" });
-    } catch (error) {
+      return;
+    } catch (error: any) {
       console.error("Error in likePost:", error);
-      res.status(500).json({ success: false, error: "Failed to like post" });
+      res.status(500).json({ success: false, error: "Failed to like post", details: error.message, stack: error.stack });
     }
   }
 }
