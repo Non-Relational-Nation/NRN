@@ -9,6 +9,7 @@ export const s3 = new S3Client({ region: REGION, forcePathStyle: false });
 export async function uploadFileToS3(file: Express.Multer.File): Promise<string> {
   const ext = file.originalname.split('.').pop();
   const key = `media/${uuidv4()}.${ext}`;
+  
   const command = new PutObjectCommand({
     Bucket: BUCKET,
     Key: key,
