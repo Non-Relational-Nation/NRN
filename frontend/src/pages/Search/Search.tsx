@@ -37,7 +37,7 @@ export default function Search() {
       try {
         const handles = await getSuggestedUserHandles(sessionStorage.getItem("HANDLE")!);
         if (isMounted) setSuggestedHandles(handles);
-      } catch (err) {
+      } catch {
         if (isMounted) setSuggestionsError("");
       } finally {
         setSuggestionsLoading(false);

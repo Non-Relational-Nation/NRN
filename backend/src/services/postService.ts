@@ -2,7 +2,7 @@ import { Post, CreatePostData, UpdatePostData } from "../types/post.js";
 import { IPostRepository } from "../repositories/interfaces/IPostRepository.js";
 import { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
 import { Note, type RequestContext } from "@fedify/fedify";
-import  { Types } from "mongoose";
+import { Types } from "mongoose";
 import he from "he";
 import { PostModel } from "@/models/postModel.ts";
 import { LikeModel } from "../models/likeModel.ts";
@@ -231,23 +231,37 @@ function extractHandleFromActor(actorUrl: string): string {
   return `${username}@${url.hostname}`;
 }
 
-export async function mapOutboxToPosts(outbox: any, email: string): Promise<Post[]> {
+export async function mapOutboxToPosts(
+  outbox: any,
+  email: string
+): Promise<Post[]> {
   const user = await userService.getUserByEmail(email);
   if (!user) {
     throw new Error("User not found");
   }
-   const actor = await actorService.getActorByUserId(user.id)
+  const actor = await actorService.getActorByUserId(user.id);
 
   const posts = await Promise.all(
     (outbox.orderedItems || []).map(async (item: any) => {
       const obj = item.object || {};
       const postId = obj?.id?.split("/").pop();
 
-      const count = await LikeModel.countDocuments({ post_id: postId });
-      const isLiked = await LikeModel.findOne({
-        post_id: postId,
-        actor_id: actor?.id,
-      });
+      if (item.type !== "Create") {
+        return;
+      }
+
+      let count = 0;
+      let isLiked = false;
+
+      try {
+        count = await LikeModel.countDocuments({ post_id: postId });
+        isLiked = !!(await LikeModel.findOne({
+          post_id: postId,
+          actor_id: actor?.id,
+        }));
+      } catch {
+        console.log("Post uses unsupported id");
+      }
 
       return {
         id: obj?.id || item.id,
@@ -271,5 +285,5 @@ export async function mapOutboxToPosts(outbox: any, email: string): Promise<Post
     })
   );
 
-  return posts;
+  return posts?.filter(Boolean);
 }
