@@ -307,9 +307,9 @@ export class PostController {
             Accept: "application/json",
           },
         });
-        res.json(mapOutboxToPosts(await firstPage.json()));
+        res.json(await mapOutboxToPosts(await firstPage.json()));
       } else {
-        res.json(mapOutboxToPosts(data));
+        res.json(await mapOutboxToPosts(data));
       }
     } catch (err) {
       next(err);
@@ -429,9 +429,9 @@ export class PostController {
             Accept: "application/json",
           },
         });
-        res.json(mapOutboxToPosts(await firstPage.json()));
+        res.json(await mapOutboxToPosts(await firstPage.json()));
       } else {
-        res.json(mapOutboxToPosts(data));
+        res.json(await mapOutboxToPosts(data));
       }
     } catch (err) {
       next(err);
@@ -487,7 +487,7 @@ export class PostController {
     try {
       const { id } = req.params;
 
-      const email = req?.user?.email ?? 'alice@example.com'
+      const email = req?.user?.email;
 
       if (!email) {
         return res.status(401).send("User not authenticated");

@@ -243,8 +243,10 @@ function extractHandleFromActor(actorUrl: string): string {
 }
 
 export function mapOutboxToPosts(outbox: any): Post[] {
-  return (outbox.orderedItems || []).map((item: any) => {
+  return (outbox.orderedItems || []).map(async (item: any) => {
     const obj = item.object || {};
+    const postId = item?.id?.split("/").pop()
+    const count = await LikeModel.countDocuments({ posts_id: postId });
     return {
       id: obj?.id || item.id,
       authorId: obj?.attributedTo || item.actor,
@@ -261,7 +263,7 @@ export function mapOutboxToPosts(outbox: any): Post[] {
           : [obj.attachment]
         : [],
       isLiked: false, // TODO
-      likesCount: 0, //TODO
+      likesCount: count, 
       created_at: obj?.published ? new Date(obj?.published) : undefined,
     };
   });
