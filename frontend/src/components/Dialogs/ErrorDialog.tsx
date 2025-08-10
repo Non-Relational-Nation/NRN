@@ -12,7 +12,7 @@ function ErrorDialog({ isOpen, onClose, errorMessage }: ErrorDialogProps) {
     <Dialog isOpen={isOpen} onClose={onClose} title="An error has occurred">
       <section id="error-section">{errorMessage}</section>
       <section id="button-section">
-        <button type="button" onClick={onClose} className="button">
+        <button type="button" onClick={onClose} id="close-button" className="filled-button">
           Close
         </button>
       </section>

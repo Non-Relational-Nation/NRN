@@ -26,12 +26,20 @@ export default function UserAvatar({
   }, [image, imageUrl]);
 
   return (
-    <div id="user-avatar" style={{ width: size, height: size }}>
+    <div
+      id="user-avatar"
+      style={{
+        width: size,
+        height: size,
+        minWidth: size,
+        minHeight: size,
+      }}
+    >
       <img
         src={previewUrl || defaultAvatar}
         alt="User avatar"
         id="avatar-image"
-        style={{ width: size, height: size }}
+        style={{ width: size, height: size, minWidth: size, minHeight: size }}
       />
     </div>
   );

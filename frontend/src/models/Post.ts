@@ -7,7 +7,7 @@ export enum PostType {
 
 export interface CreatePost {
   content: string;
-  files?: File[];
+  file?: File;
 }
 
 export interface MediaItem {
@@ -27,7 +27,7 @@ export interface Post {
   authorHandle: string;
   type: PostType;
   content?: string;
-  media?: MediaItem[]; // Stored in S3, URLs in MongoDB
+  media?: MediaItem[];
   isLiked: boolean;
   likesCount: number;
   created_at: Date;

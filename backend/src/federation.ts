@@ -467,6 +467,9 @@ federation.setObjectDispatcher(
       to: PUBLIC_COLLECTION,
       cc: ctx.getFollowersUri(values.identifier),
       content: post.content,
+      published: post.created_at
+        ? Temporal.Instant.from(post?.created_at?.toISOString())
+        : undefined,
       attachments: (post.attachment || []).map((att: any) => {
         if (att.mediaType && att.mediaType.toUpperCase().startsWith("IMAGE/")) {
           return new Image({
@@ -511,6 +514,9 @@ federation
           id: new URL(post.uri),
           content: post.content,
           to: PUBLIC_COLLECTION,
+          published: post.created_at
+            ? Temporal.Instant.from(post?.created_at?.toISOString())
+            : undefined,
           attribution: ctx.getActorUri(identifier),
           attachments: (post.attachment || []).map((att: any) => {
             if (att.mediaType && att.mediaType.toUpperCase().startsWith("IMAGE/")) {
@@ -594,11 +600,14 @@ federation
           if (postActor && postActor.uri) {
             postActorUri = postActor.uri;
           }
-          
+
           const note = new Note({
             id: new URL(post.uri),
             content: post.content,
             to: PUBLIC_COLLECTION,
+            published: post.created_at
+              ? Temporal.Instant.from(post?.created_at?.toISOString())
+              : undefined,
             attribution: postActorUri ? new URL(postActorUri) : undefined,
             attachments: (post.attachment || []).map((att: any) => {
               if (

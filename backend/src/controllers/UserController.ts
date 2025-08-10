@@ -6,7 +6,7 @@ import actorService from "@/services/actorService.ts";
 import { PostService } from "@/services/postService.ts";
 import userService, { mapActorToUserObject } from "@/services/userService.ts";
 import { AuthenticatedRequest } from "@/types/common.ts";
-import { Create, Follow, isActor, lookupWebFinger, Note } from "@fedify/fedify";
+import { Create, Follow, isActor, lookupWebFinger, Note, Undo } from "@fedify/fedify";
 import { Request, Response, type NextFunction } from "express";
 import { GraphService} from "@services/graphService.js";
 
@@ -155,6 +155,55 @@ import { GraphService} from "@services/graphService.js";
       return res
         .status(201)
         .json({ message: "Follow request sent successfully" });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async unfollow(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> {
+    try {
+      if (!req?.user?.email) {
+        return res.status(401).send("Unauthorized");
+      }
+      const follower = await userService.getUserByEmail(req?.user?.email);
+      if (!follower) {
+        return res.status(404).send("User not found");
+      }
+      const followerUsername = follower?.username;
+
+      const handle = req.params.handle;
+      const ctx = createFederationContextFromExpressReq(req);
+
+      const actor = await ctx.lookupObject(`${handle}`);
+
+      if (!isActor(actor)) {
+        return res.status(400).send("Invalid actor handle or URL");
+      }
+
+      const followActivity = new Follow({
+        actor: ctx.getActorUri(followerUsername),
+        object: actor.id,
+        to: actor.id,
+      });
+
+      const undoActivity = new Undo({
+        actor: ctx.getActorUri(followerUsername),
+        object: followActivity,
+        to: actor.id,
+      });
+
+      await ctx.sendActivity(
+        { identifier: followerUsername },
+        actor,
+        undoActivity
+      );
+      return res
+        .status(200)
+        .json({ message: `You have unfollowed ${handle}` });
     } catch (err) {
       next(err);
     }

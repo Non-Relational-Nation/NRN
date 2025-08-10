@@ -34,16 +34,15 @@ export async function handleOAuthCallback() {
       .then((data) => {
         console.log(data)
         sessionStorage.setItem("JWT_TOKEN", data?.id_token);
-        // Store the real MongoDB user id returned by the backend
         if (data?.handle) {
-          sessionStorage.setItem("MY_HANDLE", data?.handle);
+          sessionStorage.setItem("HANDLE", data?.handle);
         } else {
-          throw new Error("No handle returned from backend");
+          throw new Error("Login failed");
         }
         if (data?.user?.username) {
-          sessionStorage.setItem("MY_USERNAME", data?.user?.username);
+          sessionStorage.setItem("USERNAME", data?.user?.username);
         } else {
-          throw new Error("No username returned from backend");
+          throw new Error("Login failed");
         }
       });
   } else {
