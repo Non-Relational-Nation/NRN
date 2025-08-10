@@ -353,7 +353,7 @@ const redis = new Redis({
     }
   }
 
-  async suggestUsers(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  async suggestUsers(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<Response | void> {
     try {
       const currentActorHandler = req.query.handle;
       if (!currentActorHandler) {
@@ -378,11 +378,10 @@ const redis = new Redis({
       return res.json(result);
     } catch (err) {
       next(err);
-      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
-  async getRecommendations(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  async getRecommendations(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<Response | void> {
     try {
       if (!req?.user?.email) {
         return res.status(401).send("Unauthorized");
@@ -407,11 +406,10 @@ const redis = new Redis({
       return res.json(recommendations);
     } catch (err) {
       next(err);
-      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
-  async getNetworkStats(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  async getNetworkStats(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<Response | void> {
     try {
       if (!req?.user?.email) {
         return res.status(401).send("Unauthorized");
@@ -436,7 +434,6 @@ const redis = new Redis({
       return res.json(stats);
     } catch (err) {
       next(err);
-      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
