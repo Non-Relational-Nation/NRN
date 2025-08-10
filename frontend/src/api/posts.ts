@@ -53,10 +53,11 @@ export async function likePost(postIdOrUrl: string): Promise<Post> {
   return data;
 }
 
-export async function unlikePost(postId: string): Promise<Post> {
+export async function unlikePost(postIdOrUrl: string): Promise<Post> {
+  const postId = extractPostId(postIdOrUrl);
   const response = await apiFetch({
-    path: `/api/posts/${postId}/like`,
-    method: "DELETE",
+    path: `/api/posts/${postId}/unlike`,
+    method: "POST",
   });
   await handleError(response, "Failed to unlike post");
   return await response.json();

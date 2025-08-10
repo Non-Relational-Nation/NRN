@@ -6,7 +6,6 @@ import { searchUsers } from "../../api/users";
 import { getSuggestedUserHandles } from "../../api/suggestions";
 import { useQuery } from "@tanstack/react-query";
 import Loader from "../../components/Loader/Loader";
-import ErrorPage from "../ErrorPage/ErrorPage";
 import searchIcon from "../../assets/search.svg";
 import UserList from "../../components/Users/UsersList";
 import SuggestedUsers from "../../components/Users/SuggestedUsers";
@@ -22,7 +21,6 @@ export default function Search() {
     data: users = [],
     refetch,
     isFetching,
-    error,
   } = useQuery<User[]>({
     queryKey: ["searchUsers"],
     queryFn: () => searchUsers(searchTerm),

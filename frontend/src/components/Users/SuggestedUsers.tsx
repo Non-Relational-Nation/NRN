@@ -67,7 +67,7 @@ const SuggestedUsers: React.FC<SuggestedUsersProps> = ({ userIds, loading, error
 
   return (
     <div>
-      {suggestedUsers.map((user, index) => {
+      {suggestedUsers.map((user) => {
         const recommendation = useSmartRecommendations ? recommendations.find(r => r.userId === user.handle) : null;
         return (
           <div key={user.id} style={{ marginBottom: 12 }}>
