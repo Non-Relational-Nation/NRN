@@ -31,7 +31,19 @@ export async function getUsersFeed(userHandle: string): Promise<Post[]> {
   return data || [];
 }
 
-export async function likePost(postId: string): Promise<Post> {
+function extractPostId(postIdOrUrl: string): string {
+  try {
+    const url = new URL(postIdOrUrl);
+    const segments = url.pathname.split("/");
+    return segments.pop() || postIdOrUrl;
+  } catch {
+    return postIdOrUrl;
+  }
+}
+
+export async function likePost(postIdOrUrl: string): Promise<Post> {
+  const postId = extractPostId(postIdOrUrl);
+
   const response = await apiFetch({
     path: `/api/posts/${postId}/like`,
     method: "POST",
