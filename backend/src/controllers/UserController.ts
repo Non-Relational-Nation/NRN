@@ -107,7 +107,7 @@ const redis = new Redis({
       const handle = req.params.handle;
       const match = await actorService.fetchActorByHandle(handle);
       if (!match) {
-        return res.status(204).send();
+          return res.status(404).send("User not found");
       }
       const user = await mapActorToUserObject(match, requesterActor.id);
       return res.json(user);
