@@ -2,10 +2,11 @@ import { Post, CreatePostData, UpdatePostData } from "../types/post.js";
 import { IPostRepository } from "../repositories/interfaces/IPostRepository.js";
 import { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
 import { Note, type RequestContext } from "@fedify/fedify";
-import mongoose, { type Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import he from "he";
 import { PostModel } from "@/models/postModel.ts";
 import { actorRepository } from "@/repositories/actorRepository.ts";
+import { LikeModel } from "../models/likeModel.ts";
 
 export type PostWithAuthor = Post & {
   author: {
@@ -201,7 +202,21 @@ export class PostService {
   }
 
   async likePost(actorId: string, postId: string) {
-    return await this.postRepository.likePost(actorId, postId);
+    // Ensure actorId and postId are ObjectIds
+    const actorObjectId = new Types.ObjectId(actorId);
+    const postObjectId = new Types.ObjectId(postId);
+
+    // Prevent duplicate likes (optional, as schema is unique)
+    const existing = await LikeModel.findOne({
+      actor_id: actorObjectId,
+      post_id: postObjectId,
+    });
+    if (existing) return existing;
+
+    return LikeModel.create({
+      actor_id: actorObjectId,
+      post_id: postObjectId,
+    });
   }
 
   async getLikedPost(actorId: string, postId: string) {
@@ -220,8 +235,10 @@ function extractHandleFromActor(actorUrl: string): string {
 }
 
 export function mapOutboxToPosts(outbox: any): Post[] {
-  return (outbox.orderedItems || []).map((item: any) => {
+  return (outbox.orderedItems || []).map(async (item: any) => {
     const obj = item.object || {};
+    const postId = item?.id?.split("/").pop()
+    const count = await LikeModel.countDocuments({ post_id: postId });
     return {
       id: obj?.id || item.id,
       authorId: obj?.attributedTo || item.actor,

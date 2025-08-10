@@ -85,13 +85,23 @@ export const postRepository: IPostRepository = {
     return docs.map((d: any) => toPost(d.toObject()));
   },
 
-  async likePost(actorID: string, postId: string): Promise<PostLike> {
-    const like = await LikeModel.create({
-      actor_id: actorID,
-      post_id: postId,
-    });
+  async likePost(actorID: string, postId: string): Promise<PostLike | null> {
+    try {
+      const like = await LikeModel.create({
+        actor_id: actorID,
+        post_id: postId,
+      });
 
-    return toPostLike(like);
+      await PostModel.findByIdAndUpdate(postId, { $inc: { likes_count: 1 } });
+      return toPostLike(like);
+    } catch (err: any) {
+      console.error("Error in LikeModel.create or PostModel.update:", err);
+      // Duplicate like (unique index violation)
+      if (err.code === 11000) {
+        return null;
+      }
+      throw err;
+    }
   },
 
   async findLikedPost(

@@ -320,6 +320,7 @@ federation
     });
   })
   .on(Like, async (ctx, like) => {
+    console.log("We are here")
     if (!like.objectId || !like.actorId) return;
 
     const liker = await persistActor((await like.getActor()) as Person);

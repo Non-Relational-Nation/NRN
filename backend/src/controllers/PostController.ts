@@ -17,7 +17,7 @@ export class PostController {
   }
 
   async createPost(req: AuthenticatedRequest, res: Response): Promise<void> {
-    try {
+  try {
       if (!req?.user?.email) {
         res.status(401).send("No username for logged in user");
         return;
@@ -292,9 +292,9 @@ export class PostController {
             Accept: "application/json",
           },
         });
-        res.json(mapOutboxToPosts(await firstPage.json()));
+        res.json(await mapOutboxToPosts(await firstPage.json()));
       } else {
-        res.json(mapOutboxToPosts(data));
+        res.json(await mapOutboxToPosts(data));
       }
     } catch (err) {
       next(err);
@@ -411,9 +411,9 @@ export class PostController {
             Accept: "application/json",
           },
         });
-        res.json(mapOutboxToPosts(await firstPage.json()));
+        res.json(await mapOutboxToPosts(await firstPage.json()));
       } else {
-        res.json(mapOutboxToPosts(data));
+        res.json(await mapOutboxToPosts(data));
       }
     } catch (err) {
       next(err);
@@ -460,38 +460,38 @@ export class PostController {
     }
   }
   // Like a post
-  async likePost(
-    req: Request,
+   async likePost(
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
-  ): Promise<void> {
+  ): Promise<Response | void> {
     try {
       const { id } = req.params;
-      const userId = req.body.userId;
 
-      if (!userId) {
-        res.status(401).json({ message: "Unauthorized" });
-        return;
+      const email = req?.user?.email;
+
+      if (!email) {
+        return res.status(401).send("User not authenticated");
       }
-
-      const user = await userService.getUserById(userId);
-
-      if (!user) {
-        res.status(404).send("User not found");
-        return;
+      const likerUser = await userService.getUserByEmail(email);
+      if (!likerUser) {
+        return res.status(401).send("No user found with email");
       }
 
       const post = await this.postService.getPostById(id);
-
       if (!post) {
         res.status(404).send("Post not found");
         return;
       }
 
-      const liker = await actorService.getActorByUserId(userId);
+      const liker = await actorService.getActorByUserId(likerUser.id);
+      if (!liker || !liker.uri) {
+        res.status(404).json({ message: "Actor not found or missing URI" });
+        return;
+      }
 
-      if (!liker) {
-        res.status(404).json({ message: "Actor not found" });
+      if (!post.uri) {
+        res.status(400).json({ message: "Post URI missing" });
         return;
       }
 
@@ -501,20 +501,33 @@ export class PostController {
       );
 
       if (existingPostLike) {
+        res.status(409).json({ message: "Post already liked" });
         return;
       }
 
-      // Send federated Like activity
+      // Make sure post.uri is a valid absolute URL string
+      const postUrlString = typeof post.uri === "string" ? post.uri : post.uri?.toString();
+      if (!postUrlString) {
+        res.status(400).json({ message: "Invalid post URI" });
+        return;
+      }
+
+      // Create a unique Like id URL based on post URL
+      const likeId = new URL(`#like-${liker.id}-${post.id}`, postUrlString);
+
+      // Use URL object for actor URI, as required by fedify
+      const actorUrl = new URL(liker.uri);
+
+      // Create Like activity with actor as URL object and object as post URL
       const like = new Like({
-        id: new URL(`#like-${liker.id}-${post.id}`, post.uri), // unique
-        actor: liker.uri,
-        object: new URL(post.uri),
+        id: likeId,
+        actor: actorUrl,
+        object: new URL(postUrlString),
       });
 
       const authorActor = await actorService.getActorById(post.actor_id);
-
-      if (!authorActor) {
-        res.status(404).json({ message: "Post author not found" });
+      if (!authorActor || !authorActor.uri || !authorActor.inbox_url) {
+        res.status(404).json({ message: "Post author actor or inbox missing" });
         return;
       }
 
@@ -528,7 +541,7 @@ export class PostController {
       const ctx = createFederationContextFromExpressReq(req);
 
       await ctx.sendActivity(
-        { identifier: user.username },
+        { identifier: likerUser.username },
         likeRecipient,
         like
       );
@@ -540,3 +553,4 @@ export class PostController {
     }
   }
 }
+
