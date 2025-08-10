@@ -38,8 +38,8 @@ export async function unfollowUser(handle?: string): Promise<void> {
     throw new Error(`No user handle provided for unfollow`);
   }
   const response = await apiFetch({
-    path: `/api/users/${handle}/following`,
-    method: "DELETE",
+    path: `/api/users/${handle}/unfollow`,
+    method: "POST",
   });
   await handleError(response, "Failed to unfollow user");
   return await response.json();
