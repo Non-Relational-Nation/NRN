@@ -520,6 +520,7 @@ export class PostController {
       );
 
       if (existingPostLike) {
+        res.status(409).json({ message: "Post already liked" });
         return;
       }
 
@@ -537,7 +538,11 @@ export class PostController {
         return;
       }
 
-      await this.postService.likePost(liker.id, post.id);
+      const likeResult = await this.postService.likePost(liker.id, post.id);
+      if (!likeResult) {
+        res.status(409).json({ message: "Post already liked" });
+        return;
+      }
 
       const likeRecipient = {
         id: new URL(authorActor.uri),
