@@ -2,14 +2,12 @@ import { Request, Response, type NextFunction } from "express";
 import { mapOutboxToPosts, PostService } from "../services/postService.js";
 import { UpdatePostData } from "../types/post.js";
 import { uploadFileToS3 } from "../util/s3Upload.ts";
-import actorService from '@/services/actorService.ts';
-import { Create, Like, Note } from '@fedify/fedify';
-import { createFederationContextFromExpressReq } from '@/federation/federationContext.ts';
-import userService from '@/services/userService.ts';
-import { imageSize } from 'image-size';
-import type { noteArgs } from '@/types/noteArgs.ts';
-import type { AuthenticatedRequest } from '@/types/common.ts';
-import {GraphService} from '@/services/graphService.ts';
+import actorService from "@/services/actorService.ts";
+import { Create, Like, Note, Undo } from "@fedify/fedify";
+import { createFederationContextFromExpressReq } from "@/federation/federationContext.ts";
+import userService from "@/services/userService.ts";
+import { imageSize } from "image-size";
+import type { AuthenticatedRequest } from "@/types/common.ts";
 
 export class PostController {
   constructor(private postService: PostService) {
@@ -17,14 +15,13 @@ export class PostController {
   }
 
   async createPost(req: AuthenticatedRequest, res: Response): Promise<void> {
-  try {
+    try {
       if (!req?.user?.email) {
         res.status(401).send("No username for logged in user");
         return;
       }
       const user = await userService.getUserByEmail(req?.user?.email);
       let authorId = user?.id;
-      // Always prefer user_id if present and valid (for actor->user mapping)
       if (
         req.body.user_id &&
         typeof req.body.user_id === "string" &&
@@ -59,7 +56,7 @@ export class PostController {
       } else if (req.files && typeof req.files === "object") {
         files = Object.values(req.files).flat();
       }
-      
+
       let media: any[] = [];
       if (files.length > 0) {
         media = await Promise.all(
@@ -161,7 +158,7 @@ export class PostController {
     try {
       const { id } = req.params;
       const updateData: UpdatePostData = req.body;
-      const authorId = req.body.authorId; 
+      const authorId = req.body.authorId;
 
       if (!authorId) {
         res.status(401).json({
@@ -205,7 +202,7 @@ export class PostController {
   async deletePost(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const authorId = req.body.authorId; 
+      const authorId = req.body.authorId;
 
       if (!authorId) {
         res.status(401).json({
@@ -246,7 +243,7 @@ export class PostController {
   }
 
   async getPostsByAuthor(
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: Function
   ): Promise<void> {
@@ -292,9 +289,11 @@ export class PostController {
             Accept: "application/json",
           },
         });
-        res.json(await mapOutboxToPosts(await firstPage.json()));
+        res.json(
+          await mapOutboxToPosts(await firstPage.json(), req?.user?.email ?? "")
+        );
       } else {
-        res.json(await mapOutboxToPosts(data));
+        res.json(await mapOutboxToPosts(data, req?.user?.email ?? ""));
       }
     } catch (err) {
       next(err);
@@ -353,7 +352,6 @@ export class PostController {
     next: Function
   ): Promise<void> {
     try {
-
       if (!req?.user?.email) {
         res.status(401).send("No username for logged in user");
         return;
@@ -361,14 +359,14 @@ export class PostController {
 
       const user = await userService.getUserByEmail(req?.user?.email);
 
-      if(!user){
+      if (!user) {
         res.status(404).send("User not found");
         return;
       }
 
       const actor = await actorService.getActorByUserId(user.id);
-      
-      if(!actor){
+
+      if (!actor) {
         res.status(404).send("Actor not found");
         return;
       }
@@ -411,9 +409,11 @@ export class PostController {
             Accept: "application/json",
           },
         });
-        res.json(await mapOutboxToPosts(await firstPage.json()));
+        res.json(
+          await mapOutboxToPosts(await firstPage.json(), req?.user?.email ?? "")
+        );
       } else {
-        res.json(await mapOutboxToPosts(data));
+        res.json(await mapOutboxToPosts(data, req?.user?.email ?? ""));
       }
     } catch (err) {
       next(err);
@@ -422,7 +422,7 @@ export class PostController {
 
   async getFeed(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.body.userId; 
+      const userId = req.body.userId;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
       const offset = req.query.offset
         ? parseInt(req.query.offset as string)
@@ -459,8 +459,7 @@ export class PostController {
       });
     }
   }
-  // Like a post
-   async likePost(
+  async likePost(
     req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
@@ -505,33 +504,30 @@ export class PostController {
         return;
       }
 
-      // Make sure post.uri is a valid absolute URL string
-      const postUrlString = typeof post.uri === "string" ? post.uri : post.uri?.toString();
+      const postUrlString =
+        typeof post.uri === "string" ? post.uri : post.uri?.toString();
       if (!postUrlString) {
         res.status(400).json({ message: "Invalid post URI" });
         return;
       }
 
-      // Create a unique Like id URL based on post URL
       const likeId = new URL(`#like-${liker.id}-${post.id}`, postUrlString);
 
-      // Use URL object for actor URI, as required by fedify
       const actorUrl = new URL(liker.uri);
 
-      // Create Like activity with actor as URL object and object as post URL
       const like = new Like({
         id: likeId,
         actor: actorUrl,
         object: new URL(postUrlString),
       });
 
-      const authorActor = await actorService.getActorById(post.actor_id);
+      const authorActor = await actorService.getActorById(
+        post.actor_id.toString()
+      );
       if (!authorActor || !authorActor.uri || !authorActor.inbox_url) {
         res.status(404).json({ message: "Post author actor or inbox missing" });
         return;
       }
-
-      await this.postService.likePost(liker.id, post.id);
 
       const likeRecipient = {
         id: new URL(authorActor.uri),
@@ -552,5 +548,99 @@ export class PostController {
       res.status(500).json({ success: false, error: "Failed to like post" });
     }
   }
-}
 
+  async unlikePost(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> {
+    try {
+      const { id } = req.params;
+
+      const email = req?.user?.email;
+
+      if (!email) {
+        return res.status(401).send("User not authenticated");
+      }
+      const unLikerUser = await userService.getUserByEmail(email);
+      if (!unLikerUser) {
+        return res.status(401).send("No user found with email");
+      }
+
+      const post = await this.postService.getPostById(id);
+      if (!post) {
+        res.status(404).send("Post not found");
+        return;
+      }
+
+      const unLiker = await actorService.getActorByUserId(unLikerUser.id);
+      if (!unLiker || !unLiker.uri) {
+        res.status(404).json({ message: "Actor not found or missing URI" });
+        return;
+      }
+
+      if (!post.uri) {
+        res.status(400).json({ message: "Post URI missing" });
+        return;
+      }
+
+      const existingPostLike = await this.postService.getLikedPost(
+        unLiker.id,
+        post.id
+      );
+
+      if (!existingPostLike) {
+        res.status(409).json({ message: "Post not liked" });
+        return;
+      }
+
+      const postUrlString =
+        typeof post.uri === "string" ? post.uri : post.uri?.toString();
+      if (!postUrlString) {
+        res.status(400).json({ message: "Invalid post URI" });
+        return;
+      }
+
+      const likeId = new URL(`#like-${unLiker.id}-${post.id}`, postUrlString);
+
+      const actorUrl = new URL(unLiker.uri);
+
+      const authorActor = await actorService.getActorById(
+        post.actor_id.toString()
+      );
+      if (!authorActor || !authorActor.uri || !authorActor.inbox_url) {
+        res.status(404).json({ message: "Post author actor or inbox missing" });
+        return;
+      }
+
+      const likeRecipient = {
+        id: new URL(authorActor.uri),
+        inboxId: new URL(authorActor.inbox_url),
+      };
+
+      const ctx = createFederationContextFromExpressReq(req);
+
+      const likeActivity = new Like({
+        id: likeId,
+        actor: actorUrl,
+        object: new URL(postUrlString),
+      });
+      const undoActivity = new Undo({
+        actor: ctx.getActorUri(unLikerUser.username),
+        object: likeActivity,
+        to: new URL(postUrlString),
+      });
+
+      await ctx.sendActivity(
+        { identifier: unLikerUser.username },
+        likeRecipient,
+        undoActivity
+      );
+
+      res.status(200).json({ message: "Post un-liked" });
+    } catch (error) {
+      console.error("Error in un-likePost:", error);
+      res.status(500).json({ success: false, error: "Failed to un-like post" });
+    }
+  }
+}

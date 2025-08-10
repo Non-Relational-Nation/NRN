@@ -2,11 +2,12 @@ import { Post, CreatePostData, UpdatePostData } from "../types/post.js";
 import { IPostRepository } from "../repositories/interfaces/IPostRepository.js";
 import { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
 import { Note, type RequestContext } from "@fedify/fedify";
-import mongoose, { Types } from "mongoose";
+import  { Types } from "mongoose";
 import he from "he";
 import { PostModel } from "@/models/postModel.ts";
-import { actorRepository } from "@/repositories/actorRepository.ts";
 import { LikeModel } from "../models/likeModel.ts";
+import userService from "./userService.ts";
+import actorService from "./actorService.ts";
 
 export type PostWithAuthor = Post & {
   author: {
@@ -48,7 +49,6 @@ export class PostService {
       let newPost;
       const escapedContent = he.encode(postData.content ?? "");
 
-      // Create post with temporary URI
       const [post] = await PostModel.create([
         {
           ...postData,
@@ -61,7 +61,6 @@ export class PostService {
         throw new Error("Failed to create post");
       }
 
-      // Generate final object URI
       const url = ctx.getObjectUri(Note, {
         identifier: username,
         id: post.id,
@@ -202,11 +201,9 @@ export class PostService {
   }
 
   async likePost(actorId: string, postId: string) {
-    // Ensure actorId and postId are ObjectIds
     const actorObjectId = new Types.ObjectId(actorId);
     const postObjectId = new Types.ObjectId(postId);
 
-    // Prevent duplicate likes (optional, as schema is unique)
     const existing = await LikeModel.findOne({
       actor_id: actorObjectId,
       post_id: postObjectId,
@@ -234,29 +231,45 @@ function extractHandleFromActor(actorUrl: string): string {
   return `${username}@${url.hostname}`;
 }
 
-export function mapOutboxToPosts(outbox: any): Post[] {
-  return (outbox.orderedItems || []).map(async (item: any) => {
-    const obj = item.object || {};
-    const postId = item?.id?.split("/").pop()
-    const count = await LikeModel.countDocuments({ post_id: postId });
-    return {
-      id: obj?.id || item.id,
-      authorId: obj?.attributedTo || item.actor,
-      authorHandle: extractHandleFromActor(obj?.attributedTo || item.actor),
-      type: obj?.type || "Note",
-      content: obj?.content || "",
-      media: obj?.attachment
-        ? Array.isArray(obj?.attachment)
-          ? obj.attachment.map((att: any) => ({
-              url: att?.url,
-              type: att?.type,
-              mediaType: att?.mediaType,
-            }))
-          : [obj.attachment]
-        : [],
-      isLiked: false,
-      likesCount: 0,
-      created_at: obj?.published ? new Date(obj?.published) : undefined,
-    };
-  });
+export async function mapOutboxToPosts(outbox: any, email: string): Promise<Post[]> {
+  const user = await userService.getUserByEmail(email);
+  if (!user) {
+    throw new Error("User not found");
+  }
+   const actor = await actorService.getActorByUserId(user.id)
+
+  const posts = await Promise.all(
+    (outbox.orderedItems || []).map(async (item: any) => {
+      const obj = item.object || {};
+      const postId = obj?.id?.split("/").pop();
+
+      const count = await LikeModel.countDocuments({ post_id: postId });
+      const isLiked = await LikeModel.findOne({
+        post_id: postId,
+        actor_id: actor?.id,
+      });
+
+      return {
+        id: obj?.id || item.id,
+        authorId: obj?.attributedTo || item.actor,
+        authorHandle: extractHandleFromActor(obj?.attributedTo || item.actor),
+        type: obj?.type || "Note",
+        content: obj?.content || "",
+        media: obj?.attachment
+          ? Array.isArray(obj?.attachment)
+            ? obj.attachment.map((att: any) => ({
+                url: att?.url,
+                type: att?.type,
+                mediaType: att?.mediaType,
+              }))
+            : [obj.attachment]
+          : [],
+        isLiked: isLiked,
+        likesCount: count,
+        created_at: obj?.published ? new Date(obj?.published) : undefined,
+      };
+    })
+  );
+
+  return posts;
 }

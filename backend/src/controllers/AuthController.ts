@@ -8,7 +8,10 @@ import { createFederationContextFromExpressReq } from "@/federation/federationCo
 export class AuthController {
   private userService;
   private actorService;
-  constructor(userServiceInstance = userService, actorServiceInstance = actorService) {
+  constructor(
+    userServiceInstance = userService,
+    actorServiceInstance = actorService
+  ) {
     this.userService = userServiceInstance;
     this.actorService = actorServiceInstance;
   }
@@ -45,26 +48,42 @@ export class AuthController {
       const tokenJson = await tokenResponse.json();
       const { id_token } = tokenJson as { id_token: string };
       if (!id_token) {
-        return res.status(400).json({ error: 'No id_token in Google response', details: tokenJson });
+        return res
+          .status(400)
+          .json({
+            error: "No id_token in Google response",
+            details: tokenJson,
+          });
       }
       let decoded;
       try {
-        const JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
+        const JWKS = createRemoteJWKSet(
+          new URL("https://www.googleapis.com/oauth2/v3/certs")
+        );
         const { payload } = await jwtVerify(id_token, JWKS, {
-          issuer: 'https://accounts.google.com',
-          audience: config?.google.clientId ?? '',
+          issuer: "https://accounts.google.com",
+          audience: config?.google.clientId ?? "",
         });
         decoded = payload;
       } catch (err) {
-        return res.status(400).json({ error: 'Invalid Google id_token', details: err instanceof Error ? err.message : String(err) });
+        return res
+          .status(400)
+          .json({
+            error: "Invalid Google id_token",
+            details: err instanceof Error ? err.message : String(err),
+          });
       }
 
       const email = (decoded.email || "").toString();
-      const username = email.split('@')[0] || (decoded.username || decoded.sub || "").toString();
+      const username =
+        email.split("@")[0] ||
+        (decoded.username || decoded.sub || "").toString();
       const displayName = (decoded.name || username).toString();
 
       if (!username || !email) {
-        return res.status(400).json({ error: "No username or email found in token" });
+        return res
+          .status(400)
+          .json({ error: "No username or email found in token" });
       }
       const context = createFederationContextFromExpressReq(req);
       const existingUser = await this.userService.getUserByUsername(username);
@@ -76,24 +95,28 @@ export class AuthController {
             email,
             displayName,
             bio: "",
-            avatar: typeof decoded?.picture === "string" ? decoded?.picture : "",
-            context
+            avatar:
+              typeof decoded?.picture === "string" ? decoded?.picture : "",
+            context,
           });
           user = await this.userService.getUserByUsername(username);
-          
         } catch (err) {
-          return res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
+          return res
+            .status(400)
+            .json({ error: err instanceof Error ? err.message : String(err) });
         }
       }
 
       if (!user) {
-        return res.status(500).json({ error: "User not found after registration" });
+        return res
+          .status(500)
+          .json({ error: "User not found after registration" });
       }
 
       return res.status(200).json({
         id_token,
         user,
-        handle: `@${username}@${config?.serverDomain}`
+        handle: `@${username}@${config?.serverDomain}`,
       });
     } catch (err) {
       return res.status(500).json({ error: "Login failed" });

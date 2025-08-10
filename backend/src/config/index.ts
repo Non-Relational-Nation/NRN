@@ -18,7 +18,6 @@ export interface AppConfig {
   serverUrl?: string;
   serverDomain?: string;
 
-  // ActivityPub federation (for later)
   federation?: {
     enabled: boolean;
     domain: string;
@@ -28,22 +27,26 @@ export interface AppConfig {
   };
 
   databases: {
-    primary?: DatabaseConfig; // MongoDB for posts and user profiles
+    primary?: DatabaseConfig; 
     redis?: { url: string 
-      host: string; // Redis host
-      port: number; // Redis port
-      db?: number; // Redis database index
-      username?: string; // Optional for Redis clusters
-      password?: string; // Optional password for Redis
-    }; // Redis for caching
+      host: string; 
+      port: number; 
+      db?: number; 
+      username?: string; 
+      password?: string; 
+    }; 
+    neo4j?: {
+      uri: string;
+      user: string;
+      password: string;
+    }
   };
 
-  // External services
   aws?: {
     region: string;
     accessKeyId: string;
     secretAccessKey: string;
-    s3Bucket: string; // For media storage
+    s3Bucket: string; 
   };
 
   google: {
@@ -61,7 +64,6 @@ export const config: AppConfig = {
   serverUrl: process.env.SERVER_URL || "http://localhost:3001",
   serverDomain: process.env.SERVER_DOMAIN || "localhost:3001",
 
-  // ActivityPub federation configuration
   federation: {
     enabled: process.env.FEDERATION_ENABLED === "true",
     domain: process.env.FEDERATION_DOMAIN || "localhost:3001",
@@ -71,14 +73,13 @@ export const config: AppConfig = {
   },
 
   databases: {
-    // MongoDB for primary data (users, posts, comments)
     primary: {
       host: process.env.MONGODB_HOST || "localhost",
       port: parseInt(process.env.MONGODB_PORT || "27017"),
       name: process.env.MONGODB_DATABASE || "nrn_social",
       username: process.env.MONGODB_USERNAME,
       password: process.env.MONGODB_PASSWORD,
-      uri: process.env.MONGODB_URI, // For MongoDB Atlas connection string
+      uri: process.env.MONGODB_URI, 
     },
 
     redis: {
@@ -88,6 +89,11 @@ export const config: AppConfig = {
       db: parseInt(process.env.REDIS_DB || "0"),
       url: process.env.REDIS_URL || "redis://localhost:6379",
     },
+    neo4j: {
+      uri: process.env.NEO4J_URI || "bolt://localhost:7687",
+      user: process.env.NEO4J_USER || "neo4j",
+      password: process.env.NEO4J_PASSWORD || "password",
+    }
   },
 
   aws: {

@@ -135,7 +135,6 @@ export async function mapActorToUserObject(
     following_id: actorObj?.id,
     follower_id: requester,
   });
- console.log("Follow:", follow);
   return {
     avatar: actor?.icon?.url ?? actor?.image?.url ?? undefined,
     bio: actor?.summary ?? "",

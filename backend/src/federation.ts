@@ -276,7 +276,6 @@ federation
       });
     } catch (err: any) {
       if (err.code === 11000) {
-        // Duplicate follow; ignore
       } else {
         throw err;
       }
@@ -309,7 +308,7 @@ federation
     const existingPost = await PostModel.findOne({
       uri: object.id.href,
     });
-    if (existingPost) return; // Already saved
+    if (existingPost) return; 
 
     await PostModel.create({
       uri: object.id.href,
@@ -331,7 +330,6 @@ federation
     const post = await PostModel.findOne({ uri: postUri });
     if (!post) return;
 
-    // Prevent duplicate likes
     const existing = await LikeModel.findOne({
       actor_id: liker._id,
       post_id: post._id,
@@ -343,7 +341,6 @@ federation
         post_id: post._id,
       });
 
-      // Optional: increment likes counter on the post
     }
   });
 
@@ -589,10 +586,8 @@ federation
       const limit = 20;
       const offset = (page - 1) * limit;
 
-      // Find all actors whom the user follows
       const follows = await FollowModel.find({ follower_id: actor.id }).lean();
       const followedActorIds = follows.map((f) => f.following_id.toString());
-      // Include the user's own actor id
       followedActorIds.push(actor.id.toString());
 
       const posts = await PostModel.find({
@@ -605,7 +600,6 @@ federation
 
       const activities = await Promise.all(
         posts.map(async (post: any) => {
-          // Find the actor for this post
           const postActor = await ActorModel.findById(post.actor_id).lean();
           let postActorUri = undefined;
 

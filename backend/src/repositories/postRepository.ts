@@ -96,7 +96,6 @@ export const postRepository: IPostRepository = {
       return toPostLike(like);
     } catch (err: any) {
       console.error("Error in LikeModel.create or PostModel.update:", err);
-      // Duplicate like (unique index violation)
       if (err.code === 11000) {
         return null;
       }

@@ -1,7 +1,6 @@
 import { createFederationContextFromExpressReq } from "@/federation/federationContext.ts";
 import { ActorModel } from "@/models/actorModel.ts";
 import { FollowModel } from "@/models/followSchema.ts";
-
 import actorService from "@/services/actorService.ts";
 import userService, { mapActorToUserObject } from "@/services/userService.ts";
 import { AuthenticatedRequest } from "@/types/common.ts";
@@ -408,6 +407,7 @@ const redis = new Redis({
       return res.json(recommendations);
     } catch (err) {
       next(err);
+      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
@@ -436,6 +436,7 @@ const redis = new Redis({
       return res.json(stats);
     } catch (err) {
       next(err);
+      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
@@ -461,6 +462,7 @@ const redis = new Redis({
       return res.json({ path, degrees: path.length - 1 });
     } catch (err) {
       next(err);
+      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 }

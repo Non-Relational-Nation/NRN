@@ -1,6 +1,5 @@
 import { getNeo4jDriver, NEO4J_DB } from '../config/neo4j.js';
 import { actorRepository } from '../repositories/actorRepository.ts';
-import { followRepository } from '../repositories/followRepository.ts';
 
 export class GraphService {
   static async addActor(actorId: string, actorType: string) {
@@ -111,7 +110,6 @@ export class GraphService {
     const session = driver.session({ database: NEO4J_DB });
 
     try {
-      // Get all users not followed by current user
       const result = await session.run(`
         MATCH (suggestion:Actor)
         WHERE NOT EXISTS((:Actor {id: $currentActorId})-[:FOLLOWS]->(suggestion))
