@@ -2,6 +2,7 @@ import express from "express";
 import { authRoutes } from "./routes/auth.ts";
 import { userRoutes } from "./routes/users.ts";
 import cors from "cors";
+import { authMiddleware } from "./middleware/auth.ts";
 import { errorHandler } from "./middleware/errorHandler.ts";
 import federation from "./federation.ts";
 import { integrateFederation } from "@fedify/express";
@@ -10,7 +11,6 @@ import { postRoutes } from "./routes/posts.ts";
 export const createApp = () => {
   const app = express();
 
-  // CORS middleware
   app.use(
     cors({
       origin: [
@@ -24,7 +24,9 @@ export const createApp = () => {
     })
   );
 
-  // Fix missing Accept header
+  app.use(authMiddleware);
+  app.set("trust proxy", true);
+
   app.use((req, res, next) => {
     if (!req.headers.accept || req.headers.accept.trim() === "") {
       req.headers.accept = "application/activity+json";
@@ -32,12 +34,10 @@ export const createApp = () => {
     next();
   });
 
-  // Federation middleware MUST be before any body parsing middleware
   app.use(
     integrateFederation(federation, (req) => {
       const headers = new Headers(req.headers as any);
 
-      // Build absolute URL required by Request constructor
       const protocol =
         req.protocol ||
         (req.headers["x-forwarded-proto"] as string) ||
@@ -60,10 +60,9 @@ export const createApp = () => {
     })
   );
 
-  // Use express.json() for your API routes AFTER federation middleware
   app.use(express.json());
 
-  // Your API routes
+  // API routes
   app.use("/api/auth", authRoutes);
   app.use("/api/posts", postRoutes);
   app.use("/api/users", userRoutes);
@@ -93,7 +92,6 @@ export const createApp = () => {
     }
   });
 
-  // 404 handler
   app.use("*", (req, res) => {
     res.status(404).json({
       success: false,
@@ -101,7 +99,6 @@ export const createApp = () => {
     });
   });
 
-  // Error handler
   app.use(errorHandler);
 
   return app;
