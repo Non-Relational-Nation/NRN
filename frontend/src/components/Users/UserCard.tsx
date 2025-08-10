@@ -13,10 +13,11 @@ interface UserCardProps {
 export default function UserCard({ user, disableUserAvatar }: UserCardProps) {
   const navigate = useNavigate();
   const [errorDialogMessage, setErrorDialogMessage] = useState("");
-  const [username, domain] = user?.handle.split("@") || [];
+  const handle = user?.handle?.startsWith("@") ? user?.handle?.slice(1) : user?.handle
+  const [username, domain] = handle.split("@") || [];
 
   const handleClick = () => {
-    navigate(`/profile/${user?.handle}`);
+    navigate(`/profile/${handle}`);
   };
   return (
     <>

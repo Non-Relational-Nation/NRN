@@ -480,23 +480,21 @@ export class PostController {
   }
   // Like a post
    async likePost(
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
-  ): Promise<void> {
+  ): Promise<Response | void> {
     try {
       const { id } = req.params;
-      const userId = req.body.userId;
 
-      if (!userId) {
-        res.status(401).json({ message: "Unauthorized" });
-        return;
+      const email = req?.user?.email ?? 'alice@example.com'
+
+      if (!email) {
+        return res.status(401).send("User not authenticated");
       }
-
-      const user = await userService.getUserById(userId);
-      if (!user) {
-        res.status(404).send("User not found");
-        return;
+      const likerUser = await userService.getUserByEmail(email);
+      if (!likerUser) {
+        return res.status(401).send("No user found with email");
       }
 
       const post = await this.postService.getPostById(id);
@@ -505,7 +503,7 @@ export class PostController {
         return;
       }
 
-      const liker = await actorService.getActorByUserId(userId);
+      const liker = await actorService.getActorByUserId(likerUser.id);
       if (!liker || !liker.uri) {
         res.status(404).json({ message: "Actor not found or missing URI" });
         return;
@@ -562,7 +560,7 @@ export class PostController {
       const ctx = createFederationContextFromExpressReq(req);
 
       await ctx.sendActivity(
-        { identifier: user.username },
+        { identifier: likerUser.username },
         likeRecipient,
         like
       );

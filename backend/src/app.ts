@@ -24,7 +24,7 @@ export const createApp = () => {
     })
   );
 
-  app.use(authMiddleware);
+  //app.use(authMiddleware);
   app.set("trust proxy", true);
 
   app.use((req, res, next) => {
