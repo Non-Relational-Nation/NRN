@@ -18,8 +18,11 @@ export default function PostCard({ post }: PostCardProps) {
   const [likesCount, setLikesCount] = useState(post.likesCount);
   const [errorDialogMessage, setErrorDialogMessage] = useState("");
 
+  // Replace this with however you get the actorUri, e.g. from context, props, or localStorage
+  const actorUri = localStorage.getItem("actorUri") || "";
+
   const likeMutation = useMutation({
-    mutationFn: () => likePost(post.id),
+    mutationFn: () => likePost(post.id, actorUri),
     onSuccess: () => {
       setIsLiked(true);
       setLikesCount((prev) => prev + 1);
@@ -30,7 +33,7 @@ export default function PostCard({ post }: PostCardProps) {
   });
 
   const unlikeMutation = useMutation({
-    mutationFn: () => unlikePost(post.id),
+    mutationFn: () => unlikePost(post.id, actorUri),
     onSuccess: () => {
       setIsLiked(false);
       setLikesCount((prev) => prev - 1);

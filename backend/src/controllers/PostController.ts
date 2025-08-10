@@ -486,17 +486,17 @@ export class PostController {
   ): Promise<void> {
     try {
       const { id } = req.params;
-      const userId = req.body.userId;
+      const actorUri = req.body.actorUri;
 
-      if (!userId) {
-        res.status(401).json({ message: "Unauthorized" });
+      if (!actorUri) {
+        res.status(400).json({ message: "Missing actorUri" });
         return;
       }
 
-      const user = await userService.getUserById(userId);
+      const liker = await actorService.getActorByUri(actorUri);
 
-      if (!user) {
-        res.status(404).send("User not found");
+      if (!liker) {
+        res.status(404).json({ message: "Actor not found" });
         return;
       }
 
@@ -507,25 +507,20 @@ export class PostController {
         return;
       }
 
-      const liker = await actorService.getActorByUserId(userId);
-
-      if (!liker) {
-        res.status(404).json({ message: "Actor not found" });
-        return;
-      }
-
+      // Prevent duplicate likes
       const existingPostLike = await this.postService.getLikedPost(
         liker.id,
         post.id
       );
 
       if (existingPostLike) {
+        res.status(200).json({ message: "Already liked" });
         return;
       }
 
       // Send federated Like activity
       const like = new Like({
-        id: new URL(`#like-${liker.id}-${post.id}`, post.uri), // unique
+        id: new URL(`#like-${liker.id}-${post.id}`, post.uri),
         actor: liker.uri,
         object: new URL(post.uri),
       });
@@ -547,7 +542,7 @@ export class PostController {
       const ctx = createFederationContextFromExpressReq(req);
 
       await ctx.sendActivity(
-        { identifier: user.username },
+        { identifier: liker.handle },
         likeRecipient,
         like
       );

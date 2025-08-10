@@ -1,10 +1,11 @@
 import { API_URL } from "../config";
 import { logout } from "./logout";
 
-type Props = {
-  method: string;
+export type Props = {
   path: string;
-  body?: string | FormData;
+  method?: string;
+  body?: any;
+  headers?: Record<string, string>;
 };
 
 export const apiFetch = async ({

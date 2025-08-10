@@ -16,4 +16,8 @@ export const actorRepository = {
     const doc = await ActorModel.findOne({ _id: actorId });
     return doc ? toActor(doc.toObject()) : null;
   },
+
+  async findByUri(uri: string): Promise<Actor | null> {
+    return ActorModel.findOne({ uri });
+  },
 };

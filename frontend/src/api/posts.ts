@@ -31,20 +31,24 @@ export async function getUsersFeed(userHandle: string): Promise<Post[]> {
   return data || [];
 }
 
-export async function likePost(postId: string): Promise<Post> {
+export async function likePost(postId: string, actorUri: string): Promise<Post> {
   const response = await apiFetch({
     path: `/api/posts/${postId}/like`,
     method: "POST",
+    body: JSON.stringify({ actorUri }),
+    headers: { "Content-Type": "application/json" },
   });
   await handleError(response, "Failed to like post");
   const data = await response.json();
   return data;
 }
 
-export async function unlikePost(postId: string): Promise<Post> {
+export async function unlikePost(postId: string, actorUri: string): Promise<Post> {
   const response = await apiFetch({
     path: `/api/posts/${postId}/like`,
     method: "DELETE",
+    body: JSON.stringify({ actorUri }),
+    headers: { "Content-Type": "application/json" },
   });
   await handleError(response, "Failed to unlike post");
   return await response.json();

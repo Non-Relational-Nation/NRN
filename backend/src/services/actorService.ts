@@ -15,6 +15,10 @@ export class ActorService {
     return this.actorRepository.findById(actorId);
   };
 
+  getActorByUri = async (uri: string) => {
+    return this.actorRepository.findByUri(uri);
+  };
+
   async fetchActorByHandle(handle: string): Promise<any | null> {
     if (handle.startsWith("@")) {
       handle = handle.slice(1);
