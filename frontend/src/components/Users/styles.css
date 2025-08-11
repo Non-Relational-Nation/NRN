@@ -37,3 +37,12 @@
   justify-content: center;
   align-items: center;
 }
+
+.following-badge {
+  background-color: #28a745;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: bold;
+}

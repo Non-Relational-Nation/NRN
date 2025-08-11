@@ -29,22 +29,35 @@ export default function Search() {
     gcTime: 0,
   });
 
-  useEffect(() => {
-    let isMounted = true;
-    async function fetchSuggestions() {
-      setSuggestionsLoading(true);
-      setSuggestionsError(null);
-      try {
-        const handles = await getSuggestedUserHandles(sessionStorage.getItem("HANDLE")!);
-        if (isMounted) setSuggestedHandles(handles);
-      } catch {
-        if (isMounted) setSuggestionsError("");
-      } finally {
-        setSuggestionsLoading(false);
-      }
+  const fetchSuggestions = async () => {
+    setSuggestionsLoading(true);
+    setSuggestionsError(null);
+    try {
+      const handles = await getSuggestedUserHandles(sessionStorage.getItem("HANDLE")!);
+      setSuggestedHandles(handles);
+    } catch {
+      setSuggestionsError("");
+    } finally {
+      setSuggestionsLoading(false);
     }
+  };
+
+  useEffect(() => {
     fetchSuggestions();
-    return () => { isMounted = false; };
+  }, []);
+
+  useEffect(() => {
+    const handleFollowChange = () => {
+      setTimeout(fetchSuggestions, 1000);
+    };
+    
+    window.addEventListener('userFollowed', handleFollowChange);
+    window.addEventListener('userUnfollowed', handleFollowChange);
+    
+    return () => {
+      window.removeEventListener('userFollowed', handleFollowChange);
+      window.removeEventListener('userUnfollowed', handleFollowChange);
+    };
   }, []);
 
   const handleSearch = () => {
