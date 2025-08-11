@@ -165,6 +165,8 @@ jobs:
           echo "REDIS_HOST=localhost" >> .env
           echo "REDIS_PORT=6379" >> .env
           echo "NEO4J_URI=bolt://localhost:7687" >> .env
+          echo "NEO4J_USERNAME=${{ secrets.NEO4J_USERNAME }}" >> .env
+          echo "NEO4J_PASSWORD=${{ secrets.NEO4J_PASSWORD }}" >> .env
           echo "S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}" >> .env
           echo "AWS_S3_BUCKET=${{ secrets.S3_BUCKET_NAME }}" >> .env
           echo "AWS_REGION=${{ env.AWS_REGION }}" >> .env 

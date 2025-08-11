@@ -1,5 +1,6 @@
 import { type CreatePost, type Post, type PostsPage } from "../models/Post";
 import { apiFetch, handleError } from "../util/api";
+import { logout } from "../util/logout";
 
 // Get the feed of the user (Posts from the users they follow)
 export async function getFeed({
@@ -26,9 +27,26 @@ export async function getUsersFeed(userHandle: string): Promise<Post[]> {
     path: `/api/posts/author/${userHandle}`,
     method: "GET",
   });
-  await handleError(response, "Failed to get posts for this user");
-  const data = await response.json();
-  return data || [];
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      logout();
+    }
+    throw new Error(`Failed to get posts for this user: ${response.status}`);
+  }
+  
+  const text = await response.text();
+  if (!text.trim()) {
+    return [];
+  }
+  
+  try {
+    const data = JSON.parse(text);
+    return data || [];
+  } catch (error) {
+    console.error('Failed to parse JSON response:', text);
+    return [];
+  }
 }
 
 function extractPostId(postIdOrUrl: string): string {
