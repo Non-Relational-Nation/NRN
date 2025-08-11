@@ -43,7 +43,6 @@ export default function Profile() {
   const {
     data: userFeed = [],
     isLoading: isUserFeedLoading,
-    error: userFeedError,
   } = useQuery<Post[]>({
     queryKey: ["feed", user],
     queryFn: () => getUsersFeed(user || "1"),
