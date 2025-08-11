@@ -216,6 +216,16 @@ export class PostService {
     });
   }
 
+  async unlikePost(actorId: string, postId: string) {
+    const actorObjectId = new Types.ObjectId(actorId);
+    const postObjectId = new Types.ObjectId(postId);
+
+    return LikeModel.deleteOne({
+      actor_id: actorObjectId,
+      post_id: postObjectId,
+    });
+  }
+
   async getLikedPost(actorId: string, postId: string) {
     return this.postRepository.findLikedPost(actorId, postId);
   }

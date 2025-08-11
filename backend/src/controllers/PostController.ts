@@ -545,6 +545,8 @@ export class PostController {
         like
       );
 
+      await this.postService.likePost(liker.id, post.id);
+
       res.status(200).json({ message: "Post liked" });
     } catch (error) {
       console.error("Error in likePost:", error);
@@ -640,6 +642,8 @@ export class PostController {
         likeRecipient,
         undoActivity
       );
+
+      await this.postService.unlikePost(unLiker.id, post.id);
 
       res.status(200).json({ message: "Post un-liked" });
     } catch (error) {
