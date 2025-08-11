@@ -1,128 +1,271 @@
 #create-post-container {
   width: 100%;
+  max-width: 37.5rem;
+  margin: 0 auto;
+  padding: 1.25rem;
+}
+
+#create-post-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  text-align: center;
+  margin: 0 0 1.5rem 0;
+}
+
+#create-post-card.card {
+  background: white;
+  border-radius: 1.5rem;
+  padding: 2rem;
+  box-shadow: 0 1.25rem 3.75rem rgba(0, 0, 0, 0.1);
+  border: 0.0625rem solid #e1e5e9;
   display: flex;
   flex-direction: column;
-  max-width: 40rem;
-  align-self: flex-start;
+  gap: 1.5rem;
+}
+
+#create-post-textarea {
+  width: 100%;
+  min-height: 7.5rem;
   padding: 1rem;
+  border: 0.125rem solid #e1e5e9;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  transition: all 0.2s ease;
+  background: #fafbfc;
   box-sizing: border-box;
 }
 
-#create-post-card {
+#create-post-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 0.1875rem rgba(102, 126, 234, 0.1);
+}
+
+#create-post-textarea::placeholder {
+  color: #999;
+}
+
+#attachment-section {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-#create-post-title {
-  text-align: center;
+#file-input-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+#add-files-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+}
+
+#add-files-button:hover {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  box-shadow: 0 0.5rem 1rem rgba(102, 126, 234, 0.3);
+}
+
+#add-files-button img {
+  filter: brightness(0) invert(1);
 }
 
 #file-input-button {
   display: none;
 }
 
-#create-post-textarea {
-  box-sizing: border-box;
-  resize: none;
-  width: 100%;
-  min-height: 6rem;
-  padding: 0.5rem;
-  border-radius: 1rem;
-  border: none;
-  box-shadow: 0 3px 6px 1px rgba(0, 0, 0, 0.2);
-  outline: none;
-  background-color: rgb(245, 245, 245);
-}
-
-#add-files-button {
-  box-sizing: border-box;
-  cursor: pointer;
-  height: 2rem;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  border: none;
-  background-color: rgb(245, 245, 245);
-  border-radius: 1rem;
-}
-
-#add-files-button:hover {
-  background-color: rgb(230, 230, 230);
-}
-
-#create-post-button {
-  box-sizing: border-box;
-  width: 100%;
-  cursor: pointer;
-  height: 2rem;
-}
-
-#attachment-section {
-  background-color: rgb(245, 245, 245);
-  box-shadow: 0 3px 6px 1px rgba(0, 0, 0, 0.2);
-  padding: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  border-radius: 1rem;
-}
-
 #file-list {
-  padding: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  margin-top: 0.5rem;
 }
 
 #no-attachments-text {
-  font-size: 0.75rem;
-  line-height: 1rem;
+  display: block;
+  padding: 1rem;
+  text-align: center;
+  color: #666;
+  font-size: 0.875rem;
+  background: #f8f9fa;
+  border-radius: 0.75rem;
+  border: 0.125rem dashed #e1e5e9;
 }
 
 #file-item {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
+  background: #f8f9fa;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  border: 0.0625rem solid #e9ecef;
 }
 
 .preview {
   position: relative;
   display: inline-block;
-  margin: 0 auto;
-  max-width: 100%;
-  max-height: 20rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
 }
 
 .preview-file {
-  display: block;
   max-width: 100%;
-  max-height: 20rem;
+  max-height: 12.5rem;
   width: auto;
   height: auto;
+  display: block;
+  border-radius: 0.5rem;
+}
+
+.media-image {
+  object-fit: cover;
+}
+
+.media-video {
   object-fit: contain;
 }
 
 #remove-attachment-btn {
   position: absolute;
-  top: 0.25rem;
-  right: 0.25rem;
-  background: rgba(255, 185, 185, 0.8);
-  border: none;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(255, 255, 255, 0.9);
+  border: 0.0625rem solid #e9ecef;
   border-radius: 50%;
-  padding: 0.25rem;
-  cursor: pointer;
-  z-index: 2;
+  width: 2rem;
+  height: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(0.25rem);
 }
 
 #remove-attachment-btn:hover {
-  background: #cc7373;
+  background: rgba(255, 240, 240, 0.95);
+  border-color: #fcc;
+  transform: scale(1.1);
+}
+
+#remove-attachment-btn:focus {
+  outline: 0.125rem solid #667eea;
+  outline-offset: 0.125rem;
+}
+
+#remove-attachment-btn img {
+  filter: brightness(0) saturate(100%) invert(27%) sepia(51%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%);
+}
+
+#create-post-button.filled-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-end;
+  min-width: 8rem;
+}
+
+#create-post-button.filled-button:hover {
+  transform: translateY(-0.125rem);
+  box-shadow: 0 0.5rem 1.5625rem rgba(102, 126, 234, 0.3);
+}
+
+#create-post-button.filled-button:focus {
+  outline: 0.125rem solid #ffffff;
+  outline-offset: 0.125rem;
+}
+
+#create-post-button.filled-button:active {
+  transform: translateY(0);
+}
+
+#create-post-button.filled-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+@media (max-width: 48rem) {
+  #create-post-container {
+    padding: 1rem;
+  }
+  #create-post-card.card {
+    padding: 1.5rem 1.25rem;
+  }
+  #create-post-button.filled-button {
+    align-self: stretch;
+    width: 100%;
+  }
+  #file-input-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  #add-files-button {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 30rem) {
+  #create-post-title {
+    font-size: 1.25rem;
+  }
+  #create-post-card.card {
+    padding: 1rem;
+  }
+  .preview-file {
+    max-height: 10rem;
+  }
+  #remove-attachment-btn {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+  #remove-attachment-btn img {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+}
+
+#create-post-button.filled-button[disabled] {
+  position: relative;
+  color: transparent;
+}
+
+#create-post-button.filled-button[disabled]::after {
+  content: "";
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  border: 0.125rem solid rgba(255, 255, 255, 0.3);
+  border-top: 0.125rem solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+*:focus {
+  outline: 0.125rem solid #667eea;
+  outline-offset: 0.125rem;
 }
