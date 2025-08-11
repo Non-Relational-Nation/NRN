@@ -84,15 +84,15 @@ export default function Search() {
         </div>
         {isFetching ? (
           <Loader></Loader>
-        ) 
-         : (
-          hasSearched && <UserList users={users} />
+        ) : hasSearched ? (
+          <UserList users={users} />
+        ) : (
+          <SuggestedUsers
+            userIds={suggestedHandles}
+            loading={suggestionsLoading}
+            error={suggestionsError}
+          />
         )}
-        <SuggestedUsers
-          userIds={suggestedHandles}
-          loading={suggestionsLoading}
-          error={suggestionsError}
-        />
       </div>
     </Layout>
   );

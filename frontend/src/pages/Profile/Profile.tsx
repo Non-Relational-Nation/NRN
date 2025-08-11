@@ -43,7 +43,6 @@ export default function Profile() {
   const {
     data: userFeed = [],
     isLoading: isUserFeedLoading,
-    error: userFeedError,
   } = useQuery<Post[]>({
     queryKey: ["feed", user],
     queryFn: () => getUsersFeed(user || "1"),
@@ -52,11 +51,7 @@ export default function Profile() {
     gcTime: 0,
   });
 
-  useEffect(() => {
-    if (userFeedError) {
-      setErrorDialogMessage("Failed to get posts for this user");
-    }
-  }, [userFeedError]);
+  const profileNotFound = userError;
 
   const followMutation = useMutation({
     mutationFn: () => followUser(userData?.handle),
@@ -81,8 +76,18 @@ export default function Profile() {
 
   const [username, domain] = userData?.handle.split("@") || [];
 
+  if (profileNotFound) {
+    return (
+      <Layout loading={false} error={null}>
+        <div className="profile-not-found">
+          <h2>Profile not found</h2>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
-    <Layout loading={isUserFeedLoading || isUserLoading} error={userError}>
+    <Layout loading={isUserFeedLoading || isUserLoading} error={null}>
       <section id="profile-container">
         <section id="profile-header-container">
           <header id="profile-header" className="card">
