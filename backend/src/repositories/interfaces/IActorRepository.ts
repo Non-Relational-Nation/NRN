@@ -1,5 +1,4 @@
 import type { Actor } from "@/types/actor.ts";
-import type { Types } from "mongoose";
 
 export interface IActorRepository {
   findByUserId(userId: string): Promise<Actor | null>;
