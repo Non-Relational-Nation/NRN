@@ -52,7 +52,7 @@ export default function Profile() {
     gcTime: 0,
   });
 
-  const profileNotFound = userError || userFeedError;
+  const profileNotFound = userError;
 
   const followMutation = useMutation({
     mutationFn: () => followUser(userData?.handle),

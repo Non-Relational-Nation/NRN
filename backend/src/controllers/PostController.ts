@@ -275,7 +275,26 @@ export class PostController {
           Accept: "application/json",
         },
       });
-      const data = await userPosts.json();
+      
+      if (!userPosts.ok) {
+        res.status(404).json({
+          success: false,
+          error: "No posts found for this author",
+        });
+        return;
+      }
+      
+      let data;
+      try {
+        data = await userPosts.json();
+      } catch (error) {
+        res.status(404).json({
+          success: false,
+          error: "No posts found for this author",
+        });
+        return;
+      }
+      
       if (!data) {
         res.status(404).json({
           success: false,
@@ -290,9 +309,18 @@ export class PostController {
             Accept: "application/json",
           },
         });
-        res.json(
-          await mapOutboxToPosts(await firstPage.json(), req?.user?.email ?? "")
-        );
+        
+        if (!firstPage.ok) {
+          res.json([]);
+          return;
+        }
+        
+        try {
+          const firstPageData = await firstPage.json();
+          res.json(await mapOutboxToPosts(firstPageData, req?.user?.email ?? ""));
+        } catch (error) {
+          res.json([]);
+        }
       } else {
         res.json(await mapOutboxToPosts(data, req?.user?.email ?? ""));
       }
