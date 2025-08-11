@@ -216,6 +216,16 @@ export class PostService {
     });
   }
 
+  async unlikePost(actorId: string, postId: string) {
+    const actorObjectId = new Types.ObjectId(actorId);
+    const postObjectId = new Types.ObjectId(postId);
+
+    return LikeModel.deleteOne({
+      actor_id: actorObjectId,
+      post_id: postObjectId,
+    });
+  }
+
   async getLikedPost(actorId: string, postId: string) {
     return this.postRepository.findLikedPost(actorId, postId);
   }
@@ -244,7 +254,6 @@ export async function mapOutboxToPosts(
   const posts = await Promise.all(
     (outbox.orderedItems || []).map(async (item: any) => {
       const obj = item.object || {};
-      const postId = obj?.id?.split("/").pop();
 
       if (item.type !== "Create") {
         return;
@@ -253,14 +262,16 @@ export async function mapOutboxToPosts(
       let count = 0;
       let isLiked = false;
 
-      try {
-        count = await LikeModel.countDocuments({ post_id: postId });
+      const post = await PostModel.findOne({
+        uri: obj?.id,
+      });
+
+      if (post) {
+        count = await LikeModel.countDocuments({ post_id: post._id });
         isLiked = !!(await LikeModel.findOne({
-          post_id: postId,
+          post_id: post._id,
           actor_id: actor?.id,
         }));
-      } catch {
-        console.log("Post uses unsupported id");
       }
 
       return {
