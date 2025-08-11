@@ -1,4 +1,4 @@
-import mongoose, { type Types } from "mongoose";
+import mongoose from "mongoose";
 import { User, CreateUserData, UpdateUserData } from "../../types/user.js";
 
 export interface IUserRepository {
