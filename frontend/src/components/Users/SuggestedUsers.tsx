@@ -66,7 +66,7 @@ const SuggestedUsers: React.FC<SuggestedUsersProps> = ({ userIds, loading, error
   if (error) return <div>{error}</div>;
 
   return (
-    <div>
+    <div className="suggestions-container">
       {suggestedUsers.map((user) => {
         const recommendation = useSmartRecommendations ? recommendations.find(r => r.userId === user.handle) : null;
         return (
