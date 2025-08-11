@@ -25,7 +25,6 @@ export const postRepository: IPostRepository = {
 
   async findById(id: string): Promise<Post | null> {
     const doc = await PostModel.findById(id);
-    console.log(doc);
     return doc ? toPost(doc.toObject()) : null;
   },
 
@@ -86,13 +85,22 @@ export const postRepository: IPostRepository = {
     return docs.map((d: any) => toPost(d.toObject()));
   },
 
-  async likePost(actorID: string, postId: string): Promise<PostLike> {
-    const like = await LikeModel.create({
-      actor_id: actorID,
-      post_id: postId,
-    });
+  async likePost(actorID: string, postId: string): Promise<PostLike | null> {
+    try {
+      const like = await LikeModel.create({
+        actor_id: actorID,
+        post_id: postId,
+      });
 
-    return toPostLike(like);
+      await PostModel.findByIdAndUpdate(postId, { $inc: { likes_count: 1 } });
+      return toPostLike(like);
+    } catch (err: any) {
+      console.error("Error in LikeModel.create or PostModel.update:", err);
+      if (err.code === 11000) {
+        return null;
+      }
+      throw err;
+    }
   },
 
   async findLikedPost(

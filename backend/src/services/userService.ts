@@ -1,12 +1,10 @@
-// import { validateRegisterInput } from "@/validators/userValidator.ts";
-import { createFederationContextFromExpressReq } from "@/federation/federationContext.ts";
 import mongoose from "mongoose";
 import { IUserRepository } from "@/repositories/interfaces/IUserRepository.ts";
 import { userRepository } from "@/repositories/userRepository.ts";
 import { UserResponse } from "@/types/user.ts";
 import { ActorModel } from "@/models/actorModel.ts";
 import { FollowModel } from "@/models/followSchema.ts";
-
+import { GraphService } from "@/services/graphService.ts";
 export class UserService {
   constructor(private userRepository: IUserRepository) {}
 
@@ -51,6 +49,13 @@ export class UserService {
       name: displayName,
       context,
     });
+
+    try {
+      await GraphService.addActor(userId.toString(), 'User');
+    } catch (err) {
+      console.error('Failed to add user to Neo4j graph:', err);
+    }
+
     return { message: "User registered successfully" };
   }
 
@@ -60,6 +65,24 @@ export class UserService {
 
   async getUserByEmail(email: string) {
     return this.userRepository.findByEmail(email);
+  }
+
+  async ensureUserActor(user: any, context: any) {
+    const existingActor = await ActorModel.findOne({ user_id: user.id });
+    if (!existingActor) {
+      await this.userRepository.upsertActor(new mongoose.Types.ObjectId(user.id), {
+        username: user.username,
+        name: user.displayName,
+        context,
+      });
+      
+      try {
+        await GraphService.addActor(user.id.toString(), 'User');
+      } catch (err) {
+        console.error('Failed to add user to Neo4j graph:', err);
+      }
+    }
+    return existingActor;
   }
 
   async searchUsers(query?: string) {
@@ -112,7 +135,6 @@ export async function mapActorToUserObject(
     following_id: actorObj?.id,
     follower_id: requester,
   });
-
   return {
     avatar: actor?.icon?.url ?? actor?.image?.url ?? undefined,
     bio: actor?.summary ?? "",

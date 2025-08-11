@@ -34,7 +34,8 @@ import { PostService } from "./services/postService.ts";
 import { postRepository } from "./repositories/postRepository.ts";
 import { userRepository } from "./repositories/userRepository.ts";
 import actorService from "./services/actorService.ts";
-import { Temporal } from '@js-temporal/polyfill';
+import { GraphService } from "./services/graphService.ts";
+import {Temporal} from "@js-temporal/polyfill";
 
 type KeyType = "RSASSA-PKCS1-v1_5" | "Ed25519";
 
@@ -43,7 +44,7 @@ const redis = new Redis({
   port: config.databases.redis?.port || 6379,
 });
 const federation = createFederation({
-  origin: config.serverUrl ?? "https://d3m0gyk7rj0vr1.cloudfront.net",
+ origin: config.serverUrl ?? "https://d3m0gyk7rj0vr1.cloudfront.net",
   kv: new RedisKvStore(redis),
   queue: new RedisMessageQueue(
     () =>
@@ -56,7 +57,6 @@ const federation = createFederation({
 
 async function persistActor(actor: APActor) {
   if (!actor.id || !actor.inboxId) {
-    console.log("Actor is missing required fields");
     return null;
   }
 
@@ -118,11 +118,6 @@ federation
 
     for (const keyType of ["RSASSA-PKCS1-v1_5", "Ed25519"]) {
       if (!keyMap[keyType]) {
-        console.log(
-          `The actor ${identifier} is missing a ${keyType} key; generating...`,
-          { identifier, keyType }
-        );
-
         const { privateKey, publicKey } = await generateCryptoKeyPair(
           keyType as KeyType
         );
@@ -161,27 +156,45 @@ federation
     if (follow.objectId == null) return;
 
     const object = ctx.parseUri(follow.objectId);
-
     if (object === null || object.type !== "actor") return;
 
     const follower = await follow.getActor();
-
     if (!follower?.id || !follower.inboxId) return;
 
     const user = await UserModel.findOne({ username: object.identifier });
-
-    const followingId = user
+    const following = user
       ? await ActorModel.findOne({ user_id: user.id })
       : null;
 
-    if (!followingId) return;
+    if (!following) return;
 
     const followerId = (await persistActor(follower))?.id;
+    if (!followerId) return;
 
     await FollowModel.create({
-      following_id: followingId,
+      following_id: following._id,
       follower_id: followerId,
     });
+
+    try {
+      await GraphService.ensureActors([
+        {
+          id: follower.id.toString(),
+          username: getActorHandle(follower).toString(),
+        },
+        {
+          id: following.uri.toString(),
+          username:  following.handle,
+        },
+      ]);
+
+      await GraphService.addFollow(
+        follower.id.toString(),
+        following.uri.toString()
+      );
+    } catch (error) {
+      console.error("Failed to process follow activity:", error);
+    }
 
     const accept = new Accept({
       actor: follow.objectId,
@@ -263,7 +276,6 @@ federation
       });
     } catch (err: any) {
       if (err.code === 11000) {
-        // Duplicate follow; ignore
       } else {
         throw err;
       }
@@ -292,13 +304,11 @@ federation
       });
     }
 
-    console.log(attachments);
-
     const content = object.content?.toString();
     const existingPost = await PostModel.findOne({
       uri: object.id.href,
     });
-    if (existingPost) return; // Already saved
+    if (existingPost) return; 
 
     await PostModel.create({
       uri: object.id.href,
@@ -309,6 +319,7 @@ federation
     });
   })
   .on(Like, async (ctx, like) => {
+    console.log("We are here")
     if (!like.objectId || !like.actorId) return;
 
     const liker = await persistActor((await like.getActor()) as Person);
@@ -319,7 +330,6 @@ federation
     const post = await PostModel.findOne({ uri: postUri });
     if (!post) return;
 
-    // Prevent duplicate likes
     const existing = await LikeModel.findOne({
       actor_id: liker._id,
       post_id: post._id,
@@ -331,7 +341,6 @@ federation
         post_id: post._id,
       });
 
-      // Optional: increment likes counter on the post
     }
   });
 
@@ -577,10 +586,8 @@ federation
       const limit = 20;
       const offset = (page - 1) * limit;
 
-      // Find all actors whom the user follows
       const follows = await FollowModel.find({ follower_id: actor.id }).lean();
       const followedActorIds = follows.map((f) => f.following_id.toString());
-      // Include the user's own actor id
       followedActorIds.push(actor.id.toString());
 
       const posts = await PostModel.find({
@@ -593,7 +600,6 @@ federation
 
       const activities = await Promise.all(
         posts.map(async (post: any) => {
-          // Find the actor for this post
           const postActor = await ActorModel.findById(post.actor_id).lean();
           let postActorUri = undefined;
 

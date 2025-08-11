@@ -3,11 +3,10 @@ import { mapOutboxToPosts, PostService } from "../services/postService.js";
 import { UpdatePostData } from "../types/post.js";
 import { uploadFileToS3 } from "../util/s3Upload.ts";
 import actorService from "@/services/actorService.ts";
-import { Create, Like, Note } from "@fedify/fedify";
+import { Create, Like, Note, Undo } from "@fedify/fedify";
 import { createFederationContextFromExpressReq } from "@/federation/federationContext.ts";
 import userService from "@/services/userService.ts";
 import { imageSize } from "image-size";
-import type { noteArgs } from "@/types/noteArgs.ts";
 import type { AuthenticatedRequest } from "@/types/common.ts";
 
 export class PostController {
@@ -22,9 +21,7 @@ export class PostController {
         return;
       }
       const user = await userService.getUserByEmail(req?.user?.email);
-      // Validate authorId and log more details for debugging
       let authorId = user?.id;
-      // Always prefer user_id if present and valid (for actor->user mapping)
       if (
         req.body.user_id &&
         typeof req.body.user_id === "string" &&
@@ -53,23 +50,13 @@ export class PostController {
         return;
       }
 
-      // Handle file uploads
       let files: any[] = [];
       if (Array.isArray((req as any).files)) {
         files = (req as any).files;
       } else if (req.files && typeof req.files === "object") {
-        // Multer can also provide files as an object (when using .fields)
         files = Object.values(req.files).flat();
       }
-      // Debugging: log file info
-      console.log(
-        "Received files:",
-        files.map((f) => ({
-          originalname: f.originalname,
-          mimetype: f.mimetype,
-          size: f.size,
-        }))
-      );
+
       let media: any[] = [];
       if (files.length > 0) {
         media = await Promise.all(
@@ -97,7 +84,6 @@ export class PostController {
       }
 
       const content = req.body.content.toString();
-      // Check if author exists in users collection before proceeding
 
       const postData = {
         actor_id: actor.id,
@@ -105,8 +91,6 @@ export class PostController {
         attachment: media,
       };
 
-      // Debugging: log postData
-      console.log("Creating post with data:", postData);
       const post = await this.postService.createPost(
         ctx,
         user.username,
@@ -174,7 +158,7 @@ export class PostController {
     try {
       const { id } = req.params;
       const updateData: UpdatePostData = req.body;
-      const authorId = req.body.authorId; // In real app, get from auth middleware
+      const authorId = req.body.authorId;
 
       if (!authorId) {
         res.status(401).json({
@@ -218,7 +202,7 @@ export class PostController {
   async deletePost(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const authorId = req.body.authorId; // In real app, get from auth middleware
+      const authorId = req.body.authorId;
 
       if (!authorId) {
         res.status(401).json({
@@ -259,15 +243,13 @@ export class PostController {
   }
 
   async getPostsByAuthor(
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: Function
   ): Promise<void> {
     try {
       const handle = req.params.handle;
-
       const author = await actorService.fetchActorByHandle(handle);
-      console.log("author: ", author);
 
       if (!author) {
         res.status(404).json({
@@ -307,9 +289,11 @@ export class PostController {
             Accept: "application/json",
           },
         });
-        res.json(mapOutboxToPosts(await firstPage.json()));
+        res.json(
+          await mapOutboxToPosts(await firstPage.json(), req?.user?.email ?? "")
+        );
       } else {
-        res.json(mapOutboxToPosts(data));
+        res.json(await mapOutboxToPosts(data, req?.user?.email ?? ""));
       }
     } catch (err) {
       next(err);
@@ -368,7 +352,6 @@ export class PostController {
     next: Function
   ): Promise<void> {
     try {
-
       if (!req?.user?.email) {
         res.status(401).send("No username for logged in user");
         return;
@@ -376,21 +359,19 @@ export class PostController {
 
       const user = await userService.getUserByEmail(req?.user?.email);
 
-      if(!user){
+      if (!user) {
         res.status(404).send("User not found");
         return;
       }
 
       const actor = await actorService.getActorByUserId(user.id);
 
-      
-      if(!actor){
+      if (!actor) {
         res.status(404).send("Actor not found");
         return;
       }
 
       const author = await actorService.fetchActorByHandle(actor.handle);
-
       if (!author) {
         res.status(404).json({
           success: false,
@@ -422,16 +403,17 @@ export class PostController {
         });
         return;
       }
-
       if (data?.first) {
         const firstPage = await fetch(data?.first, {
           headers: {
             Accept: "application/json",
           },
         });
-        res.json(mapOutboxToPosts(await firstPage.json()));
+        res.json(
+          await mapOutboxToPosts(await firstPage.json(), req?.user?.email ?? "")
+        );
       } else {
-        res.json(mapOutboxToPosts(data));
+        res.json(await mapOutboxToPosts(data, req?.user?.email ?? ""));
       }
     } catch (err) {
       next(err);
@@ -440,7 +422,7 @@ export class PostController {
 
   async getFeed(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.body.userId; // In real app, get from auth middleware
+      const userId = req.body.userId;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
       const offset = req.query.offset
         ? parseInt(req.query.offset as string)
@@ -459,7 +441,6 @@ export class PostController {
         limit,
         offset
       );
-
       res.json({
         success: true,
         data: {
@@ -478,39 +459,38 @@ export class PostController {
       });
     }
   }
-  // Like a post
   async likePost(
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
-  ): Promise<void> {
+  ): Promise<Response | void> {
     try {
       const { id } = req.params;
-      const userId = req.body.userId;
 
-      if (!userId) {
-        res.status(401).json({ message: "Unauthorized" });
-        return;
+      const email = req?.user?.email;
+
+      if (!email) {
+        return res.status(401).send("User not authenticated");
       }
-
-      const user = await userService.getUserById(userId);
-
-      if (!user) {
-        res.status(404).send("User not found");
-        return;
+      const likerUser = await userService.getUserByEmail(email);
+      if (!likerUser) {
+        return res.status(401).send("No user found with email");
       }
 
       const post = await this.postService.getPostById(id);
-
       if (!post) {
         res.status(404).send("Post not found");
         return;
       }
 
-      const liker = await actorService.getActorByUserId(userId);
+      const liker = await actorService.getActorByUserId(likerUser.id);
+      if (!liker || !liker.uri) {
+        res.status(404).json({ message: "Actor not found or missing URI" });
+        return;
+      }
 
-      if (!liker) {
-        res.status(404).json({ message: "Actor not found" });
+      if (!post.uri) {
+        res.status(400).json({ message: "Post URI missing" });
         return;
       }
 
@@ -520,24 +500,34 @@ export class PostController {
       );
 
       if (existingPostLike) {
+        res.status(409).json({ message: "Post already liked" });
         return;
       }
 
-      // Send federated Like activity
+      const postUrlString =
+        typeof post.uri === "string" ? post.uri : post.uri?.toString();
+      if (!postUrlString) {
+        res.status(400).json({ message: "Invalid post URI" });
+        return;
+      }
+
+      const likeId = new URL(`#like-${liker.id}-${post.id}`, postUrlString);
+
+      const actorUrl = new URL(liker.uri);
+
       const like = new Like({
-        id: new URL(`#like-${liker.id}-${post.id}`, post.uri), // unique
-        actor: liker.uri,
-        object: new URL(post.uri),
+        id: likeId,
+        actor: actorUrl,
+        object: new URL(postUrlString),
       });
 
-      const authorActor = await actorService.getActorById(post.actor_id);
-
-      if (!authorActor) {
-        res.status(404).json({ message: "Post author not found" });
+      const authorActor = await actorService.getActorById(
+        post.actor_id.toString()
+      );
+      if (!authorActor || !authorActor.uri || !authorActor.inbox_url) {
+        res.status(404).json({ message: "Post author actor or inbox missing" });
         return;
       }
-
-      await this.postService.likePost(liker.id, post.id);
 
       const likeRecipient = {
         id: new URL(authorActor.uri),
@@ -547,7 +537,7 @@ export class PostController {
       const ctx = createFederationContextFromExpressReq(req);
 
       await ctx.sendActivity(
-        { identifier: user.username },
+        { identifier: likerUser.username },
         likeRecipient,
         like
       );
@@ -556,6 +546,101 @@ export class PostController {
     } catch (error) {
       console.error("Error in likePost:", error);
       res.status(500).json({ success: false, error: "Failed to like post" });
+    }
+  }
+
+  async unlikePost(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<Response | void> {
+    try {
+      const { id } = req.params;
+
+      const email = req?.user?.email;
+
+      if (!email) {
+        return res.status(401).send("User not authenticated");
+      }
+      const unLikerUser = await userService.getUserByEmail(email);
+      if (!unLikerUser) {
+        return res.status(401).send("No user found with email");
+      }
+
+      const post = await this.postService.getPostById(id);
+      if (!post) {
+        res.status(404).send("Post not found");
+        return;
+      }
+
+      const unLiker = await actorService.getActorByUserId(unLikerUser.id);
+      if (!unLiker || !unLiker.uri) {
+        res.status(404).json({ message: "Actor not found or missing URI" });
+        return;
+      }
+
+      if (!post.uri) {
+        res.status(400).json({ message: "Post URI missing" });
+        return;
+      }
+
+      const existingPostLike = await this.postService.getLikedPost(
+        unLiker.id,
+        post.id
+      );
+
+      if (!existingPostLike) {
+        res.status(409).json({ message: "Post not liked" });
+        return;
+      }
+
+      const postUrlString =
+        typeof post.uri === "string" ? post.uri : post.uri?.toString();
+      if (!postUrlString) {
+        res.status(400).json({ message: "Invalid post URI" });
+        return;
+      }
+
+      const likeId = new URL(`#like-${unLiker.id}-${post.id}`, postUrlString);
+
+      const actorUrl = new URL(unLiker.uri);
+
+      const authorActor = await actorService.getActorById(
+        post.actor_id.toString()
+      );
+      if (!authorActor || !authorActor.uri || !authorActor.inbox_url) {
+        res.status(404).json({ message: "Post author actor or inbox missing" });
+        return;
+      }
+
+      const likeRecipient = {
+        id: new URL(authorActor.uri),
+        inboxId: new URL(authorActor.inbox_url),
+      };
+
+      const ctx = createFederationContextFromExpressReq(req);
+
+      const likeActivity = new Like({
+        id: likeId,
+        actor: actorUrl,
+        object: new URL(postUrlString),
+      });
+      const undoActivity = new Undo({
+        actor: ctx.getActorUri(unLikerUser.username),
+        object: likeActivity,
+        to: new URL(postUrlString),
+      });
+
+      await ctx.sendActivity(
+        { identifier: unLikerUser.username },
+        likeRecipient,
+        undoActivity
+      );
+
+      res.status(200).json({ message: "Post un-liked" });
+    } catch (error) {
+      console.error("Error in un-likePost:", error);
+      res.status(500).json({ success: false, error: "Failed to un-like post" });
     }
   }
 }

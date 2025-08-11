@@ -18,5 +18,6 @@ router.get('/', (req, res, next) => postController.getPublicPosts(req, res, next
 router.get('/search', (req, res) => postController.searchPosts(req, res));
 router.get('/feed/:userId', (req, res) => postController.getFeed(req, res));
 router.post('/:id/like', (req, res, next) => postController.likePost(req, res, next));
+router.post('/:id/unlike', (req, res, next) => postController.unlikePost(req, res, next));
 
 export { router as postRoutes };

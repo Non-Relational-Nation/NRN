@@ -9,7 +9,6 @@ export const connectDB = async () => {
   } catch (err) {
     console.error("MongoDB connection error:", err);
     
-    // Only exit in development, in production let the app run and report via health check
     if (process.env.NODE_ENV !== 'production') {
       process.exit(1);
     }

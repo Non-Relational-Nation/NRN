@@ -119,7 +119,7 @@ export default function Profile() {
               {!isMyProfile &&
                 (following ? (
                   <button
-                    className="button"
+                    className="filled-button"
                     id="follow-button"
                     onClick={handleUnfollow}
                   >

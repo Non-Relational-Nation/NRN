@@ -2,13 +2,13 @@ import { Post, CreatePostData, UpdatePostData } from "../types/post.js";
 import { IPostRepository } from "../repositories/interfaces/IPostRepository.js";
 import { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
 import { Note, type RequestContext } from "@fedify/fedify";
-import type { Actor } from "@/types/actor.ts";
-import mongoose, { type Types } from "mongoose";
+import { Types } from "mongoose";
 import he from "he";
 import { PostModel } from "@/models/postModel.ts";
-import { actorRepository } from "@/repositories/actorRepository.ts";
+import { LikeModel } from "../models/likeModel.ts";
+import userService from "./userService.ts";
+import actorService from "./actorService.ts";
 
-// Define PostWithAuthor type if not already defined elsewhere
 export type PostWithAuthor = Post & {
   author: {
     id: string;
@@ -49,7 +49,6 @@ export class PostService {
       let newPost;
       const escapedContent = he.encode(postData.content ?? "");
 
-      // Create post with temporary URI
       const [post] = await PostModel.create([
         {
           ...postData,
@@ -62,7 +61,6 @@ export class PostService {
         throw new Error("Failed to create post");
       }
 
-      // Generate final object URI
       const url = ctx.getObjectUri(Note, {
         identifier: username,
         id: post.id,
@@ -199,17 +197,23 @@ export class PostService {
     limit?: number,
     offset?: number
   ): Promise<Post[]> {
-    // For now, return public posts
-    // In a real implementation, you would:
-    // 1. Get the user's following list
-    // 2. Get posts from followed users (public and followers-only)
-    // 3. Mix with some public posts from other users
     return this.postRepository.getPublicPosts(limit, offset);
   }
 
-  // Like a post
   async likePost(actorId: string, postId: string) {
-    return await this.postRepository.likePost(actorId, postId);
+    const actorObjectId = new Types.ObjectId(actorId);
+    const postObjectId = new Types.ObjectId(postId);
+
+    const existing = await LikeModel.findOne({
+      actor_id: actorObjectId,
+      post_id: postObjectId,
+    });
+    if (existing) return existing;
+
+    return LikeModel.create({
+      actor_id: actorObjectId,
+      post_id: postObjectId,
+    });
   }
 
   async getLikedPost(actorId: string, postId: string) {
@@ -227,27 +231,59 @@ function extractHandleFromActor(actorUrl: string): string {
   return `${username}@${url.hostname}`;
 }
 
-export function mapOutboxToPosts(outbox: any): Post[] {
-  return (outbox.orderedItems || []).map((item: any) => {
-    const obj = item.object || {};
-    return {
-      id: obj?.id || item.id,
-      authorId: obj?.attributedTo || item.actor,
-      authorHandle: extractHandleFromActor(obj?.attributedTo || item.actor),
-      type: obj?.type || "Note",
-      content: obj?.content || "",
-      media: obj?.attachment
-        ? Array.isArray(obj?.attachment)
-          ? obj.attachment.map((att: any) => ({
-              url: att?.url,
-              type: att?.type,
-              mediaType: att?.mediaType,
-            }))
-          : [obj.attachment]
-        : [],
-      isLiked: false, // TODO
-      likesCount: 0, //TODO
-      created_at: obj?.published ? new Date(obj?.published) : undefined,
-    };
-  });
+export async function mapOutboxToPosts(
+  outbox: any,
+  email: string
+): Promise<Post[]> {
+  const user = await userService.getUserByEmail(email);
+  if (!user) {
+    throw new Error("User not found");
+  }
+  const actor = await actorService.getActorByUserId(user.id);
+
+  const posts = await Promise.all(
+    (outbox.orderedItems || []).map(async (item: any) => {
+      const obj = item.object || {};
+      const postId = obj?.id?.split("/").pop();
+
+      if (item.type !== "Create") {
+        return;
+      }
+
+      let count = 0;
+      let isLiked = false;
+
+      try {
+        count = await LikeModel.countDocuments({ post_id: postId });
+        isLiked = !!(await LikeModel.findOne({
+          post_id: postId,
+          actor_id: actor?.id,
+        }));
+      } catch {
+        console.log("Post uses unsupported id");
+      }
+
+      return {
+        id: obj?.id || item.id,
+        authorId: obj?.attributedTo || item.actor,
+        authorHandle: extractHandleFromActor(obj?.attributedTo || item.actor),
+        type: obj?.type || "Note",
+        content: obj?.content || "",
+        media: obj?.attachment
+          ? Array.isArray(obj?.attachment)
+            ? obj.attachment.map((att: any) => ({
+                url: att?.url,
+                type: att?.type,
+                mediaType: att?.mediaType,
+              }))
+            : [obj.attachment]
+          : [],
+        isLiked: isLiked,
+        likesCount: count,
+        created_at: obj?.published ? new Date(obj?.published) : undefined,
+      };
+    })
+  );
+
+  return posts?.filter(Boolean);
 }

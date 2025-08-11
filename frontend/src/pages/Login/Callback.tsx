@@ -21,9 +21,9 @@ function Callback() {
 
   if (error) {
     return (
-      <div className="login-card">
+      <div className="login-card card">
         <h2 className="login-heading" id="login-failed-heading">Login failed</h2>
-        <button className="button" onClick={() => navigate("/login")}>Return to Login</button>
+        <button className="filled-button" id="return-button" onClick={() => navigate("/login")}>Return to Login</button>
       </div>
     );
   } else {
