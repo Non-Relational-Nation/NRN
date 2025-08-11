@@ -244,7 +244,6 @@ export async function mapOutboxToPosts(
   const posts = await Promise.all(
     (outbox.orderedItems || []).map(async (item: any) => {
       const obj = item.object || {};
-      const postId = obj?.id?.split("/").pop();
 
       if (item.type !== "Create") {
         return;
@@ -254,13 +253,13 @@ export async function mapOutboxToPosts(
       let isLiked = false;
 
       const post = await PostModel.findOne({
-        uri: postId,
+        uri: obj?.id,
       });
 
       if (post) {
         count = await LikeModel.countDocuments({ post_id: post._id });
         isLiked = !!(await LikeModel.findOne({
-          post_id: postId,
+          post_id: post._id,
           actor_id: actor?.id,
         }));
       }
