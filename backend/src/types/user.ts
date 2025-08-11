@@ -1,5 +1,3 @@
-import type { Types } from "mongoose";
-
 export interface User {
   id: string;
   username: string;
@@ -26,20 +24,6 @@ export interface UserResponse {
   handle: string;
   following?: boolean;
 }
-export interface UserPreferences {
-  notifications: {
-    likes: boolean;
-    comments: boolean;
-    follows: boolean;
-    mentions: boolean;
-    directMessages: boolean;
-  };
-  privacy: {
-    showEmail: boolean;
-    showFollowers: boolean;
-    showFollowing: boolean;
-  };
-}
 
 export interface CreateUserData {
   username: string;
@@ -53,22 +37,4 @@ export interface UpdateUserData {
   displayName?: string;
   bio?: string;
   avatar?: string;
-}
-
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-export interface AuthTokens {
-  accessToken: string;
-  refreshToken: string;
-}
-
-export interface JWTPayload {
-  userId: string;
-  username: string;
-  email: string;
-  iat: number;
-  exp: number;
 }

@@ -1,5 +1,3 @@
-import type { Types } from "mongoose";
-
 export enum PostType {
   TEXT = "text",
   IMAGE = "image",

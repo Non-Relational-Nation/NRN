@@ -1,6 +1,6 @@
 import { AuthUser } from "../types/auth.ts";
 import { Request, Response, NextFunction, RequestHandler } from "express";
-import { createRemoteJWKSet, JWTPayload, jwtVerify } from "jose";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
 const JWKS = createRemoteJWKSet(
   new URL("https://www.googleapis.com/oauth2/v3/certs")

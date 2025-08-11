@@ -3,7 +3,6 @@ import { IPostRepository } from "../repositories/interfaces/IPostRepository.js";
 import { IUserRepository } from "../repositories/interfaces/IUserRepository.js";
 import { Note, type RequestContext } from "@fedify/fedify";
 import { Types } from "mongoose";
-import he from "he";
 import { PostModel } from "@/models/postModel.ts";
 import { LikeModel } from "../models/likeModel.ts";
 import userService from "./userService.ts";
@@ -47,7 +46,7 @@ export class PostService {
   ): Promise<Partial<CreatePostData> | undefined> {
     try {
       let newPost;
-      const escapedContent = he.encode(postData.content ?? "");
+      const escapedContent = postData.content;
 
       const [post] = await PostModel.create([
         {

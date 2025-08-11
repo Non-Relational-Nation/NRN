@@ -1,5 +1,3 @@
-import type { Types } from "mongoose";
-
 export interface Actor {
   id: string;
   user_id: string | null;
