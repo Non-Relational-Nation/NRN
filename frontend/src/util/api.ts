@@ -15,7 +15,6 @@ export const apiFetch = async ({
   const headers: Record<string, string> = {
     Authorization: `Bearer ${sessionStorage.getItem("JWT_TOKEN")}`,
   };
-  // Only set Content-Type if not FormData
   if (!(body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
@@ -35,7 +34,16 @@ export async function handleError(
     if (response.status === 401) {
       logout();
     }
-    const data = await response.json().catch(() => ({}));
+    
+    let data: any = {};
+    try {
+      const text = await response.text();
+      if (text) {
+        data = JSON.parse(text);
+      }
+    } catch (error) {
+    }
+    
     throw new Error(
       errorMessage
         ? errorMessage

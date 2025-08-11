@@ -34,7 +34,18 @@ export class ActorService {
     if (!webfingerResponse.ok) {
       return null;
     }
-    const webfingerData = await webfingerResponse.json();
+    
+    let webfingerData;
+    try {
+      webfingerData = await webfingerResponse.json();
+    } catch (error) {
+      return null;
+    }
+    
+    if (!webfingerData.links?.[0]?.href) {
+      return null;
+    }
+    
     let actorResponse;
     try {
       actorResponse = await fetch(webfingerData.links[0].href, {
@@ -43,10 +54,16 @@ export class ActorService {
     } catch (error) {
       return null;
     }
+    
     if (!actorResponse.ok) {
       return null;
     }
-    return await actorResponse.json();
+    
+    try {
+      return await actorResponse.json();
+    } catch (error) {
+      return null;
+    }
   }
 }
 

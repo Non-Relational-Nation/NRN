@@ -64,3 +64,8 @@
 .count-button {
   border-radius: 0.5rem;
 }
+
+.profile-not-found {
+  text-align: center;
+  padding: 2rem;
+}

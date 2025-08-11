@@ -336,34 +336,54 @@ const redis = new Redis({
     }
   }
 
-  async suggestUsers(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+async suggestUsers(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<Response | void> {
+  try {
+    const currentActorHandler = req.query.handle;
+    if (!currentActorHandler) {
+      return res.status(404).json({ error: 'Missing current actor handle' });
+    }
+
+    const suggestionsCacheKey = `suggestions:${currentActorHandler}`;
+
+    let cached;
     try {
-      const currentActorHandler = req.query.handle;
-      if (!currentActorHandler) {
-        return res.status(404).json({ error: 'Missing current actor handle' });
-      }
-
-      const suggestionsCacheKey = `suggestions:${currentActorHandler}`;
-      const cached = await redis.get(suggestionsCacheKey);
-      if (cached) {
-        return res.json(JSON.parse(cached));
-      }
-
-      const ctx = createFederationContextFromExpressReq(req);
-      const actor = await ctx.lookupObject(`${currentActorHandler}`);
-      if (!isActor(actor)) {
-        return res.status(400).json({ error: 'Invalid actor handle or URL' });
-      }
-      const suggestions = await GraphService.getSuggestedUsersToFollow(actor.id!.toString());
-      const result = { suggestions };
-      
-      await redis.setex(suggestionsCacheKey, 600, JSON.stringify(result)); // 10 min cache
-      return res.json(result);
+      cached = await redis.get(suggestionsCacheKey);
     } catch (err) {
-      next(err);
+      console.warn('Redis GET failed', err);
+    }
+
+    if (cached) {
+      return res.json(JSON.parse(cached));
+    }
+
+    const ctx = createFederationContextFromExpressReq(req);
+    const actor = await ctx.lookupObject(`${currentActorHandler}`);
+    if (!isActor(actor)) {
+      return res.status(400).json({ error: 'Invalid actor handle or URL' }); 
+    }
+
+    if (!actor.id) {
+      return res.status(400).json({ error: 'Actor missing ID' }); 
+    }
+
+    const suggestions = await GraphService.getSuggestedUsersToFollow(actor.id.toString());
+    const result = { suggestions };
+
+    try {
+      await redis.setex(suggestionsCacheKey, 600, JSON.stringify(result));
+    } catch (err) {
+      console.warn('Redis SETEX failed', err);
+    }
+
+    return res.json(result); 
+  } catch (err) {
+    console.error('Error in suggestUsers:', err);
+    if (!res.headersSent) {
       return res.status(500).json({ error: 'Internal server error' });
     }
+    next(err);
   }
+}
 
   async getRecommendations(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
