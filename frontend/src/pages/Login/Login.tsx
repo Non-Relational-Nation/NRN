@@ -1,17 +1,13 @@
 import "./styles.css";
 import { initiateGoogleLogin } from "../../api/login";
+import NrnLogo from "../../components/Logo";
 
 function Login() {
   return (
     <main className="login-container">
       <section className="login-card">
-        <section className="logo-section">
-          <section className="logo">
-            <p className="logo-icon">nrn</p>
-          </section>
-          <h1 className="app-name">nrn social</h1>
-        </section>
-
+        <NrnLogo/>
+        
         <section className="welcome-section">
           <p className="welcome-message">
             Connect with friends, share your moments, and discover what's

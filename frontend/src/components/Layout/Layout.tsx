@@ -7,6 +7,8 @@ import homeIcon from "../../assets/home.svg";
 import searchIcon from "../../assets/search.svg";
 import addPostIcon from "../../assets/add-post.svg";
 import userIcon from "../../assets/user.svg";
+import { logout } from "../../util/logout";
+import NrnLogo from "../Logo";
 
 interface LayoutProps {
   children?: ReactNode;
@@ -21,7 +23,16 @@ function Layout({ children, loading = false, error = null }: LayoutProps) {
   return (
     <div id="layout">
       <header id="header">
-        <b>NRN</b>
+        <section className="logo">
+          <p className="logo-icon">nrn</p>
+        </section>
+        <button
+          type="button"
+          className="button"
+          onClick={() => logout()}
+        >
+          Sign out
+        </button>
       </header>
       <main id="content">
         {loading ? (
@@ -41,7 +52,12 @@ function Layout({ children, loading = false, error = null }: LayoutProps) {
             }`}
             onClick={() => navigate("/")}
           >
-            <img src={homeIcon} alt="Home" width={20} height={20} />
+            <img
+              src={homeIcon}
+              alt="Home"
+              width={20}
+              height={20}
+            />
           </button>
           <button
             title="Search"
@@ -50,7 +66,12 @@ function Layout({ children, loading = false, error = null }: LayoutProps) {
             }`}
             onClick={() => navigate("/search")}
           >
-            <img src={searchIcon} alt="Search" width={20} height={20} />
+            <img
+              src={searchIcon}
+              alt="Search"
+              width={20}
+              height={20}
+            />
           </button>
           <button
             title="Create Post"
@@ -59,16 +80,28 @@ function Layout({ children, loading = false, error = null }: LayoutProps) {
             }`}
             onClick={() => navigate("/create-post")}
           >
-            <img src={addPostIcon} alt="Add Post" width={20} height={20} />
+            <img
+              src={addPostIcon}
+              alt="Add Post"
+              width={20}
+              height={20}
+            />
           </button>
           <button
             title="My Profile"
             className={`nav-button${
-              location.pathname.startsWith("/profile") ? " nav-button-active" : ""
+              location.pathname.startsWith("/profile")
+                ? " nav-button-active"
+                : ""
             }`}
             onClick={() => navigate("/profile")}
           >
-            <img src={userIcon} alt="Profile" width={20} height={20} />
+            <img
+              src={userIcon}
+              alt="Profile"
+              width={20}
+              height={20}
+            />
           </button>
         </nav>
       </footer>
