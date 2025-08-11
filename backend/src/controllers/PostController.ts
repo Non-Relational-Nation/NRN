@@ -8,6 +8,7 @@ import { createFederationContextFromExpressReq } from "@/federation/federationCo
 import userService from "@/services/userService.ts";
 import { imageSize } from "image-size";
 import type { AuthenticatedRequest } from "@/types/common.ts";
+import { PostModel } from "@/models/postModel.ts";
 
 export class PostController {
   constructor(private postService: PostService) {
@@ -477,7 +478,10 @@ export class PostController {
         return res.status(401).send("No user found with email");
       }
 
-      const post = await this.postService.getPostById(id);
+      const post = await PostModel.findOne({
+        uri: { $regex: new RegExp(`${id}$`) },
+      });
+
       if (!post) {
         res.status(404).send("Post not found");
         return;
@@ -504,8 +508,7 @@ export class PostController {
         return;
       }
 
-      const postUrlString =
-        typeof post.uri === "string" ? post.uri : post.uri?.toString();
+      const postUrlString = post.uri;
       if (!postUrlString) {
         res.status(400).json({ message: "Invalid post URI" });
         return;
@@ -522,7 +525,7 @@ export class PostController {
       });
 
       const authorActor = await actorService.getActorById(
-        post.actor_id.toString()
+        post.actor_id?.toString() ?? ""
       );
       if (!authorActor || !authorActor.uri || !authorActor.inbox_url) {
         res.status(404).json({ message: "Post author actor or inbox missing" });
@@ -567,7 +570,9 @@ export class PostController {
         return res.status(401).send("No user found with email");
       }
 
-      const post = await this.postService.getPostById(id);
+      const post = await PostModel.findOne({
+        uri: { $regex: new RegExp(`${id}$`) },
+      });
       if (!post) {
         res.status(404).send("Post not found");
         return;
@@ -594,8 +599,7 @@ export class PostController {
         return;
       }
 
-      const postUrlString =
-        typeof post.uri === "string" ? post.uri : post.uri?.toString();
+      const postUrlString = post.uri?.toString();
       if (!postUrlString) {
         res.status(400).json({ message: "Invalid post URI" });
         return;
@@ -606,7 +610,7 @@ export class PostController {
       const actorUrl = new URL(unLiker.uri);
 
       const authorActor = await actorService.getActorById(
-        post.actor_id.toString()
+        post.actor_id?.toString() ?? ""
       );
       if (!authorActor || !authorActor.uri || !authorActor.inbox_url) {
         res.status(404).json({ message: "Post author actor or inbox missing" });

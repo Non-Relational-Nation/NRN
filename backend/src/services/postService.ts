@@ -253,14 +253,16 @@ export async function mapOutboxToPosts(
       let count = 0;
       let isLiked = false;
 
-      try {
-        count = await LikeModel.countDocuments({ post_id: postId });
+      const post = await PostModel.findOne({
+        uri: postId,
+      });
+
+      if (post) {
+        count = await LikeModel.countDocuments({ post_id: post._id });
         isLiked = !!(await LikeModel.findOne({
           post_id: postId,
           actor_id: actor?.id,
         }));
-      } catch {
-        console.log("Post uses unsupported id");
       }
 
       return {
