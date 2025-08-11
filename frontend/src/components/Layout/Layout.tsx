@@ -8,7 +8,6 @@ import searchIcon from "../../assets/search.svg";
 import addPostIcon from "../../assets/add-post.svg";
 import userIcon from "../../assets/user.svg";
 import { logout } from "../../util/logout";
-import NrnLogo from "../Logo";
 
 interface LayoutProps {
   children?: ReactNode;
